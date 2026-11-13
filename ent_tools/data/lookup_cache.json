@@ -1,0 +1,80 @@
+{
+  "山西省人民医院": {
+    "id": "web-26228133",
+    "name": "山西省人民医院",
+    "nature": "未知",
+    "city": "未知",
+    "industry": "未知",
+    "jobs": [],
+    "jobSource": "未知",
+    "jobEvidence": "未知",
+    "source": "https://www.sxsrmyy.com/index.asp",
+    "date": "2026-10-29",
+    "note": "没抓到页面"
+  },
+  "中共黔西南州委组织部": {
+    "id": "web-35263363",
+    "name": "中共黔西南州委组织部",
+    "nature": "未知",
+    "city": "兴义市",
+    "industry": "未知",
+    "jobs": [],
+    "jobSource": "未知",
+    "jobEvidence": "未知",
+    "source": "https://movement.gzstv.com/news/detail/HjMBBx/",
+    "date": "2026-10-29",
+    "note": "没抓到页面"
+  },
+  "上海杉泰私募基金管理有限公司": {
+    "id": "web-56517705",
+    "name": "上海杉泰私募基金管理有限公司",
+    "nature": "未知",
+    "city": "上海市",
+    "industry": "制造",
+    "jobs": [],
+    "jobSource": "未知",
+    "jobEvidence": "未知",
+    "source": "https://www.sohu.com/a/782032844_121124009",
+    "date": "2026-10-29",
+    "note": "没抓到页面"
+  },
+  "新航道（北京）管理咨询有限公司": {
+    "id": "web-89980475",
+    "name": "新航道（北京）管理咨询有限公司",
+    "nature": "未知",
+    "city": "左右在南京市",
+    "industry": "制造",
+    "jobs": [],
+    "jobSource": "未知",
+    "jobEvidence": "未知",
+    "source": "https://www.sina.com.cn/",
+    "date": "2026-10-29",
+    "note": "没抓到页面"
+  },
+  "上海芒啾网络科技有限公司": {
+    "id": "web-59482490",
+    "name": "上海芒啾网络科技有限公司",
+    "nature": "未知",
+    "city": "上海市",
+    "industry": "制造",
+    "jobs": [],
+    "jobSource": "未知",
+    "jobEvidence": "未知",
+    "source": "https://www.sohu.com/a/782032844_121124009",
+    "date": "2026-10-29",
+    "note": "没抓到页面"
+  },
+  "比亚迪股份有限公司": {
+    "id": "web-25596204",
+    "name": "比亚迪股份有限公司",
+    "nature": "未知",
+    "city": "深圳",
+    "industry": "制造",
+    "jobs": [],
+    "jobSource": "校招公告",
+    "jobEvidence": "清华大学学生职业发展指导中心 用户登录 首页 学生 招聘信息 职业辅导 手续办理 多媒体中心 教师 通知公告 院系交流 就业管理 师资培",
+    "source": "https://career.cic.tsinghua.edu.cn/xsglxt/f/jyxt/anony/showZwxx?zpxxid=561145448",
+    "date": "2026-11-13",
+    "note": "规则抽取，未用大模型"
+  }
+}

@@ -1,0 +1,6086 @@
+{
+  "rows": [
+    {
+      "name": "京东方科技集团股份有限公司",
+      "city": "北京",
+      "nature": "国企",
+      "industry": "制造",
+      "scale_tier": "龙头特大",
+      "matched_jobs": [
+        "设备与工艺工程师",
+        "电路开发/设计研究员",
+        "软件开发工程师",
+        "图像/软件算法研究员"
+      ],
+      "work_cities": [
+        "北京",
+        "成都",
+        "合肥",
+        "苏州",
+        "深圳",
+        "重庆",
+        "绵阳",
+        "南京",
+        "福州",
+        "武汉",
+        "鄂尔多斯",
+        "昆明",
+        "烟台",
+        "义乌"
+      ],
+      "industry_rank": {
+        "list": "2025中国电子信息企业百强（电子信息竞争力前百家企业）",
+        "year": 2025,
+        "rank": 8,
+        "source_url": "https://innohere.com/subject/rank-11468.html",
+        "confidence": "high",
+        "rank_tier": "national_leader",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2025中国电子信息企业百强（电子信息竞争力前百家企业）",
+          "year": 2025,
+          "rank": 8,
+          "source_url": "https://innohere.com/subject/rank-11468.html",
+          "confidence": "high",
+          "rank_tier": "national_leader",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "以半导体显示为核心，物联网创新、传感器及解决方案、MLED、智慧医工融合发展的“1+4+N+生态链”业务架构；显示器件覆盖 TFT-LCD、AMOLED 的手机/平板/笔记本/显示器/电视/车载显示屏",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "high",
+      "segment_source_url": "https://www.boe.com.cn/about/index",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京学而思教育科技有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "素养教师(科学思维方向)",
+        "高中主讲教师(物理)",
+        "国际语言教师(英语方向)",
+        "启明星计划竞赛教练(C++)"
+      ],
+      "work_cities": [
+        "北京",
+        "上海",
+        "广州",
+        "深圳",
+        "成都",
+        "西安",
+        "重庆",
+        "武汉",
+        "沈阳",
+        "郑州",
+        "天津"
+      ],
+      "industry_rank": {
+        "list": "2026年第三季度中国学习平板市场品牌销量份额（洛图科技）",
+        "year": "2026",
+        "rank": "第3（16.4%）",
+        "rank_dim": "industry",
+        "rank_tier": "niche",
+        "source_url": "https://digi.hsw.cn/system/2026/1026/178371.shtml",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2022中国民营企业500强",
+          "year": 2022,
+          "rank": 414,
+          "source_url": "https://mp.weixin.qq.com/s/zUJjQHBqdyQbhEOFMUuUTQ",
+          "confidence": "high",
+          "rank_tier": "china500",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        },
+        {
+          "list": "2026年第三季度中国学习平板市场品牌销量份额（洛图科技）",
+          "year": "2026",
+          "rank": "第3（16.4%）",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://digi.hsw.cn/system/2026/1026/178371.shtml",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "好未来（学而思）2026财年业绩·媒体转述",
+          "year": "2026",
+          "metric": "同比增速",
+          "value": "33.7%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.163.com/dy/article/L1SFL4OJ05390CEQ.html",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "综合性教育品牌，覆盖素养教育（科学思维、人文创作、编程与机器人）、高中教育、国际教育、大学生服务与托管，并自研智能学习硬件（学而思学习机、智能图书）",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.xueersi.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中国科学技术大学附属第一医院 （安徽省立医院）",
+      "city": "合肥",
+      "nature": "事业单位",
+      "industry": "医药",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "科研助理(刘尧课题组)",
+        "心内科医助",
+        "临床/医技/管理岗"
+      ],
+      "work_cities": [
+        "合肥"
+      ],
+      "industry_rank": {
+        "list": "复旦版中国医院排行榜（2023年度）",
+        "year": "2023",
+        "rank": "全国百强（连续七年入榜，等级A++）",
+        "rank_dim": "industry",
+        "rank_tier": "national_leader",
+        "source_url": "https://www.ahslyy.com.cn/col219/873077",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "复旦版中国医院排行榜（2023年度）",
+          "year": "2023",
+          "rank": "全国百强（连续七年入榜，等级A++）",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://www.ahslyy.com.cn/col219/873077",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "国家三级公立医院绩效考核（2022年度）",
+          "year": "2022",
+          "rank": "第20位（等级A+）",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://www.ahslyy.com.cn/col219/873077",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "省级大型三级甲等综合性医院：医疗、教学、科研、预防、保健、康复、急救（49个临床医技学科、13个国家临床重点专科建设项目）",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "high",
+      "segment_source_url": "https://www.ahslyy.com.cn/col219/873077",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "上海矩量光启计算技术有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "微型",
+      "matched_jobs": [
+        "量子硬件校准工程师",
+        "硬件开发工程师"
+      ],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "全栈超导量子计算——硅基超导量子芯片、量子计算机整机、微波测控系统与量子操作系统，沿“量子芯片→量子整机→量子算力系统”路径提供完整量子计算解决方案（IDM模式）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://career.hit.edu.cn/zhxy-xszyfzpt/zpxx/zczphxq?id=NzU3Njg5NThkMDExNDgyMzkxMmE3NWYyNDE3OGNkYzM=",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海千象资产管理有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "量化开发工程师(C++)",
+        "量化策略研究员(Alpha/CTA)"
+      ],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": {
+        "list": "中国证券私募英华示范案例·50强示范机构",
+        "year": 2025,
+        "rank": "50强示范机构（入选，未披露具体名次）",
+        "source_url": "https://finance.sina.com.cn/money/smjj/2025-09-17/doc-infqvakc2617988.shtml",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "中国证券私募英华示范案例·50强示范机构",
+          "year": 2025,
+          "rank": "50强示范机构（入选，未披露具体名次）",
+          "source_url": "https://finance.sina.com.cn/money/smjj/2025-09-17/doc-infqvakc2617988.shtml",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "量化私募基金管理——以“CTA+股票”双引擎策略为基础，打造指数增强、CTA、量化选股等“工具型产品线”及高中低波动“宏观量化多策略产品线”，通过数据挖掘、数学建模和计算机技术投资国内二级市场",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://qxinvest.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "东方电气集团东方电机有限公司",
+      "city": "德阳",
+      "nature": "央企",
+      "industry": "制造",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "电机研究试验(电气类)",
+        "产品设计(电气类)",
+        "水力设计(机械类)",
+        "信息系统应用与开发(计算机类)"
+      ],
+      "work_cities": [
+        "成都",
+        "德阳"
+      ],
+      "industry_rank": {
+        "list": "2025四川制造业企业100强",
+        "year": 2025,
+        "rank": 27,
+        "source_url": "http://www.scqy100.com/cms/view/502.html",
+        "confidence": "high",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2025四川制造业企业100强",
+          "year": 2025,
+          "rank": 27,
+          "source_url": "http://www.scqy100.com/cms/view/502.html",
+          "confidence": "high",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025中国能源企业品牌建设100强",
+          "year": "2025",
+          "rank": "56",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://mp.weixin.qq.com/s/WhMqwrQvwjO8QQPy1aQEFw",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "大型发电设备研发制造：水轮发电机组、汽轮发电机（燃煤/燃气/核能）、风力发电机、调相机、交直流电机及泵",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://dfem.dongfang.com/zjdd/gsjs.htm",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海市滴水湖学校",
+      "city": "上海",
+      "nature": "事业单位",
+      "industry": "教育",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "中学英语老师",
+        "中学数学老师",
+        "小学全科老师",
+        "计算机与信息技术老师",
+        "智能制造与自动化老师"
+      ],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "十二年一贯制公办学校（小学、初中、高中），由上海市教委、浦东新区人民政府、临港新片区管委会三方共建，科创特色课程+小班化教学（每班不超过30人）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://sghexport.shobserver.com/html/toutiao/2024/05/08/1316467.html",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京北方华创微电子装备有限公司",
+      "city": "北京",
+      "nature": "国企",
+      "industry": "制造",
+      "scale_tier": "龙头特大",
+      "matched_jobs": [
+        "半导体工艺工程师",
+        "机械工程师",
+        "软件/软件测试工程师",
+        "电气工程师"
+      ],
+      "work_cities": [
+        "北京",
+        "上海",
+        "合肥",
+        "成都",
+        "深圳",
+        "广州",
+        "西安",
+        "武汉",
+        "苏州"
+      ],
+      "industry_rank": {
+        "list": "中国电子信息企业百强",
+        "year": 2023,
+        "rank": 69,
+        "source_url": "https://www.naura.com/content/details_30_2224.html",
+        "confidence": "medium",
+        "rank_tier": "national_leader",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "中国电子信息企业百强",
+          "year": 2023,
+          "rank": 69,
+          "source_url": "https://www.naura.com/content/details_30_2224.html",
+          "confidence": "medium",
+          "rank_tier": "national_leader",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "中国电子信息企业百强",
+          "year": "",
+          "rank": "69",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "半导体工艺装备：刻蚀机、PVD、ALD、CVD、氧化/扩散炉、清洗机、气体质量流量计等高端半导体工艺装备及核心零部件，应用于集成电路、先进封装、功率半导体、新能源光伏、平板显示等",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.naura.com/product/semiconductor.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "厦门国际信托有限公司",
+      "city": "厦门",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "管理培训生",
+        "市场营运助理岗",
+        "金融科技开发助理岗",
+        "财富管理服务助理岗"
+      ],
+      "work_cities": [
+        "厦门",
+        "北京",
+        "上海",
+        "深圳",
+        "成都"
+      ],
+      "industry_rank": {
+        "list": "2025年度上海证券交易所债券交易百强（信托类）",
+        "year": 2025,
+        "rank": 12,
+        "source_url": "https://finance.sina.cn/2026-04-06/detail-inhtqsxv7725974.d.html",
+        "confidence": "high",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2025年度上海证券交易所债券交易百强（信托类）",
+          "year": 2025,
+          "rank": 12,
+          "source_url": "https://finance.sina.cn/2026-04-06/detail-inhtqsxv7725974.d.html",
+          "confidence": "high",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "经济参考网（引Wind数据）厦门信托人事变动报道",
+          "year": "2025",
+          "metric": "营业收入同比增速",
+          "value": "9.68%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.jjckb.cn/20260615/39d38b543cf54edfa54d6789830075db/c.html",
+          "confidence": "high"
+        },
+        {
+          "report": "经济参考网（引Wind数据）厦门信托人事变动报道",
+          "year": "2025",
+          "metric": "信托资产规模同比增速",
+          "value": "62.5%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.jjckb.cn/20260615/39d38b543cf54edfa54d6789830075db/c.html",
+          "confidence": "high"
+        }
+      ],
+      "segment": "信托业务（产业金融服务、固收资管服务、权益资管服务、服务信托、财富管理服务五大条线）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.xmitic.com/aboutUs/companyProfile",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中建八局第一建设有限公司",
+      "city": "济南",
+      "nature": "央企",
+      "industry": "建筑",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "施工管理岗",
+        "科技研发(博士)岗",
+        "建筑设计岗",
+        "新能源岗"
+      ],
+      "work_cities": [
+        "济南",
+        "青岛",
+        "北京",
+        "上海",
+        "广州",
+        "深圳",
+        "成都",
+        "西安",
+        "武汉",
+        "福州",
+        "合肥",
+        "郑州",
+        "长沙",
+        "海口"
+      ],
+      "industry_rank": {
+        "list": "2024山东企业100强",
+        "year": 2024,
+        "rank": 30,
+        "source_url": "http://gxt.shandong.gov.cn/art/2024/10/22/art_15201_10346850.html",
+        "confidence": "high",
+        "rank_tier": "province100",
+        "rank_dim": "scale",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "scale",
+      "rank_tier": "province100",
+      "rank_hits": [
+        {
+          "list": "2024山东企业100强",
+          "year": 2024,
+          "rank": 30,
+          "source_url": "http://gxt.shandong.gov.cn/art/2024/10/22/art_15201_10346850.html",
+          "confidence": "high",
+          "rank_tier": "province100",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025山东企业200强",
+          "year": "2025",
+          "rank": "34",
+          "rank_dim": "scale",
+          "rank_tier": "province100",
+          "source_url": "https://www.sdeda.org.cn/News/News-814.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "以房屋建筑工程施工总承包特级、市政公用工程施工总承包特级双特资质，开展高端房建、基础设施、专业业务、投融资四大成熟业务，覆盖高科技厂房、超高层、城市综合体、路桥隧、高铁、地铁、航空港等领域",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.cscec81.com/218.snipet.block.phtml",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "东方财富信息股份有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "金融",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "金融工程师(证券方向)",
+        "基金投顾运营岗(证券)",
+        "产品设计",
+        "后端开发",
+        "前端开发"
+      ],
+      "work_cities": [
+        "上海",
+        "北京",
+        "广州",
+        "深圳",
+        "成都",
+        "南京",
+        "扬州",
+        "拉萨",
+        "杭州",
+        "福州",
+        "济南",
+        "郑州",
+        "武汉",
+        "西安"
+      ],
+      "industry_rank": {
+        "list": "2025胡润中国500强",
+        "year": 2025,
+        "rank": 24,
+        "source_url": "https://hurun.net/zh-CN/Rank/HsRankDetails?pagetype=ctop500",
+        "confidence": "high",
+        "rank_tier": "china500",
+        "rank_dim": "scale",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "scale",
+      "rank_tier": "china500",
+      "rank_hits": [
+        {
+          "list": "2025胡润中国500强",
+          "year": 2025,
+          "rank": 24,
+          "source_url": "https://hurun.net/zh-CN/Rank/HsRankDetails?pagetype=ctop500",
+          "confidence": "high",
+          "rank_tier": "china500",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "21世纪经济报道《四大金融信息服务商上半年日赚超5000万元》",
+          "year": "2026",
+          "metric": "营业收入同比增速",
+          "value": "53.22%",
+          "rank": "四家中第1（增速领跑）",
+          "cls": "C",
+          "source_url": "https://www.21jingji.com/article/20260902/herald/a16b37633a7ea3e339723b63a815cd43.html",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "互联网财富管理综合运营商：证券业务、金融电子商务服务（互联网基金销售）、金融数据服务",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://about.eastmoney.com/about/us/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "华为技术有限公司",
+      "city": "深圳",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "龙头特大",
+      "matched_jobs": [
+        "AI算法工程师",
+        "软件开发工程师",
+        "研发 R&D",
+        "销售 Sales"
+      ],
+      "work_cities": [
+        "深圳",
+        "北京",
+        "上海"
+      ],
+      "industry_rank": {
+        "list": "2026软件和信息技术服务竞争力100强",
+        "year": 2026,
+        "rank": 1,
+        "source_url": "https://mp.weixin.qq.com/s/ARctw2j1XjPiaz40XlwYRQ",
+        "confidence": "high",
+        "rank_tier": "national_leader",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2026软件和信息技术服务竞争力100强",
+          "year": 2026,
+          "rank": 1,
+          "source_url": "https://mp.weixin.qq.com/s/ARctw2j1XjPiaz40XlwYRQ",
+          "confidence": "high",
+          "rank_tier": "national_leader",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2026年上半年中国智能手机市场份额（IDC）",
+          "year": "2026",
+          "rank": "第1（20.6%）",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://cinic.org.cn/zgzz/yx/1652005.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "全球领先的ICT（信息与通信）基础设施和智能终端提供商，业务覆盖运营商网络、企业业务、终端、华为云、数字能源、智能汽车解决方案",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.huawei.com/cn/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "大参林医药集团股份有限公司",
+      "city": "广州",
+      "nature": "民企",
+      "industry": "医药",
+      "scale_tier": "龙头特大",
+      "matched_jobs": [
+        "MT-集团管培生-营运类",
+        "MT-集团管培生-审计类",
+        "数据分析岗"
+      ],
+      "work_cities": [
+        "广州"
+      ],
+      "industry_rank": {
+        "list": "2026中国药店价值100强",
+        "year": "2026",
+        "rank": "1",
+        "rank_dim": "industry",
+        "rank_tier": "national_leader",
+        "source_url": "https://m.maigoo.com/news/745453.html",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2026财富中国500强",
+          "year": 2026,
+          "rank": 478,
+          "source_url": "https://www.fortunechina.com/fortune500/c/2026-07/21/content_475181.htm",
+          "confidence": "high",
+          "rank_tier": "china500",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        },
+        {
+          "list": "2026中国药店价值100强",
+          "year": "2026",
+          "rank": "1",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://m.maigoo.com/news/745453.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "2026中国连锁企业100强",
+          "year": "2026",
+          "rank": "21",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "http://www.ccfa.org.cn/portal/cn/xiangxi.jsp?type=10003&id=447216",
+          "confidence": "high",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "上海证券交易所2025年年报/中国证券网（上证报）报道",
+          "year": "2025",
+          "metric": "营业收入同比增速",
+          "value": "3.80%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.cnstock.com/commonDetail/683308",
+          "confidence": "high"
+        },
+        {
+          "report": "上海证券交易所2025年年报/中国证券网（上证报）报道",
+          "year": "2025",
+          "metric": "归母净利润同比增速",
+          "value": "35.04%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.cnstock.com/commonDetail/683308",
+          "confidence": "high"
+        }
+      ],
+      "segment": "药品零售连锁（以直营药店+直营式加盟药店经营药品、中参药材、非药品，直营网络覆盖21个省级区域）",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.dslyy.com",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "无锡奥特维科技股份有限公司",
+      "city": "无锡",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "软件工程师-上位机",
+        "软件工程师-算法",
+        "电气工程师",
+        "机械工程师",
+        "软件工程师-视觉"
+      ],
+      "work_cities": [
+        "无锡"
+      ],
+      "industry_rank": {
+        "list": "2025中国创新板块上市公司100强",
+        "year": 2025,
+        "rank": 44,
+        "source_url": "http://www.warton.com.cn/index.php?m=&c=Index&a=show&catid=83&id=274",
+        "confidence": "medium",
+        "rank_tier": "national_leader",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2025中国创新板块上市公司100强",
+          "year": 2025,
+          "rank": 44,
+          "source_url": "http://www.warton.com.cn/index.php?m=&c=Index&a=show&catid=83&id=274",
+          "confidence": "medium",
+          "rank_tier": "national_leader",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "光伏、锂电/储能及半导体领域高端智能装备制造：核心产品单晶炉、多主栅串焊机、硅片分选机、模组/PACK线、键合机与AOI设备",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://cn.wxautowell.com/about",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "江苏共创人造草坪股份有限公司",
+      "city": "南京",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "国际业务管培生—英语方向",
+        "国际业务管培生—西班牙语方向",
+        "人力资源管理管培生",
+        "IT运维管理管培生",
+        "制造管理管培生"
+      ],
+      "work_cities": [
+        "南京",
+        "淮安",
+        "越南"
+      ],
+      "industry_rank": {
+        "list": "2023淮安市制造业企业30强",
+        "year": 2023,
+        "rank": 14,
+        "source_url": "https://gxj.huaian.gov.cn/xwzx/tzgg/art/o/17013600/1703832287074fzAyLDjA.html",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2023淮安市制造业企业30强",
+          "year": 2023,
+          "rank": 14,
+          "source_url": "https://gxj.huaian.gov.cn/xwzx/tzgg/art/o/17013600/1703832287074fzAyLDjA.html",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2023淮安市企业50强",
+          "year": "2023",
+          "rank": "17",
+          "rank_dim": "scale",
+          "rank_tier": "province100",
+          "source_url": "http://www.huaian.gov.cn/col/4122_231438/xxgk/m/17067168/1708911845768wL3HT1Zv.html",
+          "confidence": "high",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "人民网江苏频道（引创始人、全国人大代表王强众）：共创草坪所属集团2025年营收",
+          "year": "2025",
+          "metric": "营业收入同比增速",
+          "value": "超25%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://js.people.com.cn/BIG5/n2/2026/0311/c360301-41520215.html",
+          "confidence": "high"
+        },
+        {
+          "report": "共创草坪（605099）2026年半年度业绩说明会",
+          "year": "2026",
+          "metric": "营业收入同比增速",
+          "value": "8.32%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "http://fxbaogao.com/detail/5734482",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "人造草坪研发、生产与销售：以运动草（足球场/曲棍球/橄榄球/门球场）与休闲景观草为核心主业，兼及幼儿园人造草坪，产品销往160余个国家",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.ccgrass.cn/comp/xibDkContent/row?compId=xibDkContent_row-15620443256077457&columnId=23&xibcommonId=23&title=",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中粮期货有限公司",
+      "city": "北京",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "境外资金管理岗",
+        "交易执行岗",
+        "合规风控岗",
+        "研究岗",
+        "系统运维岗"
+      ],
+      "work_cities": [
+        "北京",
+        "太原",
+        "上海",
+        "宁波",
+        "成都"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "商品期货经纪、金融期货经纪、期货投资咨询与资产管理，以服务产业客户、机构客户为主，专注风险管理和期货投资的衍生品金融服务",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.zlqh.com/searchs/archives.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "招商证券股份有限公司",
+      "city": "深圳",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "龙头特大",
+      "matched_jobs": [
+        "行业研究类",
+        "金融科技类",
+        "投资银行类"
+      ],
+      "work_cities": [
+        "深圳",
+        "北京",
+        "上海",
+        "广州",
+        "杭州",
+        "南京",
+        "武汉",
+        "青岛",
+        "成都",
+        "济南"
+      ],
+      "industry_rank": {
+        "list": "2025中国上市公司500强",
+        "year": 2025,
+        "rank": 88,
+        "source_url": "http://www.warton.com.cn/index.php?m=&c=Index&a=show&catid=83&id=274",
+        "confidence": "medium",
+        "rank_tier": "national_leader",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2025中国上市公司500强",
+          "year": 2025,
+          "rank": 88,
+          "source_url": "http://www.warton.com.cn/index.php?m=&c=Index&a=show&catid=83&id=274",
+          "confidence": "medium",
+          "rank_tier": "national_leader",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025年证券公司营业收入/净利润行业排名（92家可比券商）",
+          "year": "2025",
+          "rank": "第6（经纪净收入第5）",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://www.cqrb.cn/caifurenwu/2026-05-08/2661130_pc.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "中国证券报·中证网《招商证券2025年年报》统计（证券Ⅲ行业13家已披露公司）",
+          "year": "2025",
+          "metric": "三年营业总收入复合增长率",
+          "value": "9.12%",
+          "rank": "5/13",
+          "cls": "C",
+          "source_url": "https://newzzbcx.cs.com.cn/cxnews.html?name=new20260328190233heawggmt&random=3ZhKR1nX",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "综合类证券公司：财富管理和机构业务、投资银行、投资管理、投资及交易四大板块",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.cmschina.com",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "郑州宇通集团有限公司",
+      "city": "郑州",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "龙头特大",
+      "matched_jobs": [
+        "研发类管培生",
+        "营销类管培生",
+        "运营类管培生",
+        "职能类管培生"
+      ],
+      "work_cities": [
+        "郑州"
+      ],
+      "industry_rank": {
+        "list": "2025中国制造业企业500强",
+        "year": "2025",
+        "rank": "279",
+        "rank_dim": "industry",
+        "rank_tier": "national_leader",
+        "source_url": "https://mp.weixin.qq.com/s/V2LIqf3kTt6AzVEk5VfMyQ",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2025中国民营企业500强",
+          "year": 2025,
+          "rank": 279,
+          "source_url": "https://www.acfic.org.cn/qlyw/202508/t20250827_319997.html",
+          "confidence": "high",
+          "rank_tier": "china500",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025中国制造业企业500强",
+          "year": "2025",
+          "rank": "279",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://mp.weixin.qq.com/s/V2LIqf3kTt6AzVEk5VfMyQ",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025中国汽车工业（制造业）20强（中国制造企业协会）",
+          "year": "2025",
+          "rank": "18",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "http://www.zhizaowang.com.cn/index.php?m=home&c=View&a=index&aid=22597",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025河南制造业企业100强（河南省企业联合会）",
+          "year": "2025",
+          "rank": "10",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "http://www.qy-qyj.com/xinwen/dongtai/2025-11-12/2728.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "2024河南高成长性企业100强（河南省发展和改革委员会）",
+          "year": "2024",
+          "rank": "59",
+          "metric": "高成长性企业排名",
+          "value": "",
+          "cls": "B",
+          "source_url": "https://mp.weixin.qq.com/s/qtMK972X3Mdy5VB0OX6g5Q",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "聚焦出行、物流、作业三大应用场景的新能源商用车集团，主营客车、重卡、轻卡、重工、专用车及零部件",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://www.yutong.com.cn/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海精测半导体技术有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "系统工程师",
+        "光学工程师",
+        "算法工程师",
+        "软件工程师",
+        "机械工程师"
+      ],
+      "work_cities": [
+        "上海",
+        "武汉",
+        "深圳"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "半导体量检测设备（量测/测试设备）为主的研发、生产和销售，同时开发部分显示与新能源领域检测设备",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://www.pmish-tech.com/gsjj",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://www.qibook.com/company-wiki-s/shanghaijingcebandaotijishuyouxiangongsi-7d2f05de.html?s=t",
+      "growth_note": "国家级专精特新'小巨人'企业（工信部第五批，2023年7月）；2025年度潜在独角兽企业（长城战略咨询，2026年发布）。",
+      "job_coverage": "full"
+    },
+    {
+      "name": "腾讯科技（上海）有限公司",
+      "city": "上海",
+      "nature": "外企",
+      "industry": "IT",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "后台开发",
+        "自然语言处理(技术研究)",
+        "计算机视觉(技术研究)",
+        "产品类"
+      ],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": {
+        "list": "2024上海软件和信息技术服务业100强",
+        "year": 2024,
+        "rank": 9,
+        "source_url": "https://app.sheitc.sh.gov.cn/gg/696132.htm",
+        "confidence": "high",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2024上海软件和信息技术服务业100强",
+          "year": 2024,
+          "rank": 9,
+          "source_url": "https://app.sheitc.sh.gov.cn/gg/696132.htm",
+          "confidence": "high",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025上海软件和信息技术服务业百强",
+          "year": "2025",
+          "rank": "9",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "http://www.gamelook.com.cn/2025/11/581922/",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "腾讯在沪经营主体，从事计算机软件的设计开发与技术服务、技术咨询；集团业务覆盖通信与社交、数字内容、金融科技服务、工具、腾讯广告营销、腾讯云与智慧产业、人工智能、物联网等",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.tencent.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中国民生银行股份有限公司南京分行",
+      "city": "南京",
+      "nature": "民企",
+      "industry": "金融",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "“扬帆”管培生",
+        "“启航”专才",
+        "实习生(南京分行)"
+      ],
+      "work_cities": [
+        "南京"
+      ],
+      "industry_rank": {
+        "list": "2023南京市服务业企业100强",
+        "year": "2023",
+        "rank": "26",
+        "rank_dim": "industry",
+        "rank_tier": "niche",
+        "source_url": "http://www.njec.org.cn/tzend.asp?id=1737",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2023南京市企业100强",
+          "year": 2023,
+          "rank": 54,
+          "source_url": "http://www.njec.org.cn/tzend.asp?id=1737",
+          "confidence": "medium",
+          "rank_tier": "province100",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        },
+        {
+          "list": "2023南京市服务业企业100强",
+          "year": "2023",
+          "rank": "26",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "http://www.njec.org.cn/tzend.asp?id=1737",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "商业银行一级分行：公司及零售存贷款、结算与票据、普惠小微金融、供应链金融与科创金融",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.cmbc.com.cn/fzjg/njfx/fxjs/index.htm",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "无锡卓海科技股份有限公司",
+      "city": "无锡",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "光学工程师",
+        "FPGA工程师",
+        "算法工程师(图像)",
+        "软件工程师",
+        "电子光学工程师"
+      ],
+      "work_cities": [
+        "无锡",
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "半导体前道检测与量测设备的研发、制造、修复、技术服务（应力测量、方块电阻测量、反射光谱膜厚量测、无图形晶圆缺陷检测等）",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://www.zhuohai.net/",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://www.wnd.gov.cn/doc/2026/09/01/4825268.shtml",
+      "growth_note": "国家级专精特新'小巨人'企业（工信部第五批，2023年7月）。",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海新舟投资管理有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "小学数学教师",
+        "数学/奥数竞赛教练",
+        "小学/初中数学教师",
+        "幼儿教师"
+      ],
+      "work_cities": [
+        "上海",
+        "长沙",
+        "南宁",
+        "曲靖"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "投资管理与教育产业投资——经营范围含投资管理、实业投资、资产管理、投资咨询、企业管理咨询；对外全资控股新舟教育科技、校佳家科技、新舟智能科技、趣宁多媒体等教培/科技主体",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://aiqicha.baidu.com/detail/compinfo?pid=18739191784419&subtab=annual",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海长宁区乐读线上教育培训学校",
+      "city": "上海",
+      "nature": "民办非企业",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "学科运营",
+        "产品教研",
+        "竞赛教练",
+        "在线小班主讲教师(小学/初中)"
+      ],
+      "work_cities": [
+        "北京",
+        "上海",
+        "广州",
+        "深圳",
+        "杭州",
+        "天津",
+        "南京",
+        "西安",
+        "武汉",
+        "成都",
+        "重庆"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "非营利性中小学在线学科教育：1-9年级全学科在线小班直播课程",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://ledupeiyou.com/about",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "南京普利迪橡塑制品有限公司",
+      "city": "南京",
+      "nature": "民企",
+      "industry": "贸易",
+      "scale_tier": "微型",
+      "matched_jobs": [
+        "外贸业务员",
+        "外贸业务",
+        "阿拉伯语翻译"
+      ],
+      "work_cities": [
+        "南京"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "人造草坪、人造草丝及底布的生产与销售（运动型、景观型人造草，出口为主）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://baike.baidu.com/item/%E5%8D%97%E4%BA%AC%E6%99%AE%E5%88%A9%E8%BF%AA%E6%A9%A1%E5%A1%91%E5%88%B6%E5%93%81%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/20888308",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "新华人寿保险股份有限公司浙江分公司",
+      "city": "杭州",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "客户经营岗(J16833)",
+        "银团财富业务拓展岗(J16837)",
+        "管理培训生",
+        "数据分析岗",
+        "财务管理岗",
+        "人力资源岗"
+      ],
+      "work_cities": [
+        "杭州",
+        "湖州",
+        "温州",
+        "绍兴",
+        "金华",
+        "台州",
+        "嘉兴",
+        "丽水",
+        "衢州"
+      ],
+      "industry_rank": {
+        "list": "中国人身险行业原保险保费市场份额（中诚信国际2026年跟踪评级报告）",
+        "year": "2025",
+        "rank": "",
+        "rank_dim": "industry",
+        "rank_tier": "national_leader",
+        "source_url": "https://www.chinamoney.com.cn/dqs/cm-s-notice-query/fileDownLoad.do?contentId=3345895&priority=0&mode=save",
+        "confidence": "medium",
+        "group_scope": "group"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2026财富世界500强",
+          "year": 2026,
+          "rank": 414,
+          "source_url": "https://www.fortunechina.com/fortune500/c/2026-07/28/content_475298.htm",
+          "confidence": "high",
+          "rank_tier": "world500",
+          "rank_dim": "scale",
+          "group_scope": "group"
+        },
+        {
+          "list": "中国人身险行业原保险保费市场份额（中诚信国际2026年跟踪评级报告）",
+          "year": "2025",
+          "rank": "",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://www.chinamoney.com.cn/dqs/cm-s-notice-query/fileDownLoad.do?contentId=3345895&priority=0&mode=save",
+          "confidence": "medium",
+          "group_scope": "group"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "新华网·新华保险2025年业绩报道（年报口径）",
+          "year": "2025",
+          "metric": "归母净利润同比增速",
+          "value": "38.3%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.news.cn/20260328/5c422a7e05ad4486a111342129f70486/c.html",
+          "confidence": "high"
+        },
+        {
+          "report": "新华网·新华保险2025年业绩报道（年报口径）",
+          "year": "2025",
+          "metric": "新业务价值同比增速",
+          "value": "57.4%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.news.cn/20260328/5c422a7e05ad4486a111342129f70486/c.html",
+          "confidence": "high"
+        }
+      ],
+      "segment": "以全方位寿险为核心，向养老、健康领域延伸，涵盖资产管理、养老保险、健康管理、养老服务等",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://www.newchinalife.com/spage/cn/companyProfileAboutXH/index.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州银行股份有限公司南京分行",
+      "city": "南京",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "营销培训生(公司金融方向)",
+        "营销培训生(小微金融方向)",
+        "营销培训生(零售金融方向)",
+        "运营培训生(综合柜员方向)"
+      ],
+      "work_cities": [
+        "南京"
+      ],
+      "industry_rank": {
+        "list": "英国《银行家》2026年全球银行1000强",
+        "year": 2026,
+        "rank": 100,
+        "source_url": "https://zjrb.zjol.com.cn/html/2026-09/26/content_3934069.htm",
+        "confidence": "high",
+        "rank_tier": "global_leader",
+        "rank_dim": "industry",
+        "group_scope": "group"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "global_leader",
+      "rank_hits": [
+        {
+          "list": "英国《银行家》2026年全球银行1000强",
+          "year": 2026,
+          "rank": 100,
+          "source_url": "https://zjrb.zjol.com.cn/html/2026-09/26/content_3934069.htm",
+          "confidence": "high",
+          "rank_tier": "global_leader",
+          "rank_dim": "industry",
+          "group_scope": "group"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "杭州银行2026年半年度报告（集团口径，分行不单独披露）",
+          "year": "2026",
+          "metric": "营业收入同比增速",
+          "value": "4.75%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.cnstock.com/commonDetail/775351",
+          "confidence": "high"
+        }
+      ],
+      "segment": "城市商业银行一级分行：以科技金融为特色，主推“科易贷”“专精特新贷”“银投联贷”“选择权贷款”等科创企业全生命周期信贷产品，服务区域经济与中小微企业",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://economy.jschina.com.cn/cpcx/202004/t20200416_2531316.shtml",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "正泰安能数字能源（浙江）股份有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "能源",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "电力交易员",
+        "营销运营",
+        "HRBP",
+        "技术审核",
+        "供应链管理"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": {
+        "list": "2025全球新能源企业500强",
+        "year": 2025,
+        "rank": 67,
+        "source_url": "https://app.dahecube.com/nweb/news/20250927/248822n4e386db630c.htm",
+        "confidence": "high",
+        "rank_tier": "global_leader",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "global_leader",
+      "rank_hits": [
+        {
+          "list": "2025全球新能源企业500强",
+          "year": 2025,
+          "rank": 67,
+          "source_url": "https://app.dahecube.com/nweb/news/20250927/248822n4e386db630c.htm",
+          "confidence": "high",
+          "rank_tier": "global_leader",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2026全球新能源企业500强",
+          "year": "2026",
+          "rank": "86",
+          "rank_dim": "industry",
+          "rank_tier": "global_leader",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "2024新经济企业TOP500（中国企业评价协会）",
+          "year": "2024",
+          "rank": "272",
+          "rank_dim": "scale",
+          "rank_tier": "china500",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "界面新闻（引正泰电器2026年半年报，正泰安能单体数据）",
+          "year": "2026",
+          "metric": "营业收入同比增速",
+          "value": "52.9%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.jiemian.com/article/15220118.html",
+          "confidence": "high"
+        },
+        {
+          "report": "胡润研究院《2026全球独角兽榜》（国家级独角兽认定）",
+          "year": "2026",
+          "metric": "独角兽估值（上榜）",
+          "value": "48.81亿美元（IT桔子2025估值口径）",
+          "rank": "",
+          "cls": "B",
+          "source_url": "",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "户用分布式光伏与家庭综合能源解决方案：集投资、开发、建设、运管、售电一体化的综合能源服务平台，并拓展智能微电网、虚拟电厂VPP、能源即服务EaaS",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.chintanneng.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "http://mp.weixin.qq.com/s?__biz=MzU1OTk5NTk3MQ==&mid=2247581119&idx=5&sn=422e4a77e1488cda88411782c3b0d0e3&chksm=fd31e0bc484eb3131d21c4b7e470963f462c23ea0aeb560646ea659cfea60cada97b9840bfc6#rd",
+      "growth_note": "2026胡润全球独角兽榜第242位（估值305亿元）；连续多年入选胡润全球独角兽及GEI中国独角兽（2025年第128位，估值440亿元）。",
+      "job_coverage": "full"
+    },
+    {
+      "name": "浙江浙达能源科技有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "能源",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "大模型算法工程师",
+        "科研专职",
+        "解决方案工程师",
+        "综合管理类管培生",
+        "销售工程师"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "智慧能源互联网服务运营：虚拟电厂平台建设与运营、数智电网人工智能平台、能源节碳降碳数字平台，提供源网荷储一体化整体解决方案",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.zdpower.com/about/",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://mp.weixin.qq.com/s/Un074sfg_IVC8IANJzNa2Q",
+      "growth_note": "国家级专精特新「小巨人」（工信部，2025）；2025UP中国隐形独角兽500强第422位（创业伯乐全球独角兽研究院、清华大学新质生产力研究院等）。",
+      "job_coverage": "full"
+    },
+    {
+      "name": "深圳市蓝天教育培训学校",
+      "city": "深圳",
+      "nature": "民办非企业",
+      "industry": "教育",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "数学老师(小初高)",
+        "语文老师(小初高)",
+        "英语老师(小初高)",
+        "理化老师(初高)",
+        "竞赛教练"
+      ],
+      "work_cities": [
+        "深圳",
+        "广州",
+        "厦门",
+        "珠海",
+        "海口",
+        "北京",
+        "天津",
+        "上海",
+        "杭州",
+        "南昌",
+        "威海",
+        "济南",
+        "南京",
+        "青岛",
+        "武汉",
+        "长沙",
+        "西安",
+        "重庆",
+        "成都",
+        "哈尔滨",
+        "长春",
+        "沈阳",
+        "大连"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "面向深圳的K12中小学课外培训（含幼儿英语），课程服务涵盖中小学英语、数学、语文、科学及出国留学托福、SAT、SSAT，覆盖早期教育至出国留学各阶段，采用“小班授课、针对辅导、分层次教学”模式",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://2018hc.skyedu99.com/m-sky/about.html",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "贝斯（无锡）信息系统有限公司",
+      "city": "无锡",
+      "nature": "外企",
+      "industry": "IT",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "软件工程师"
+      ],
+      "work_cities": [
+        "无锡",
+        "东京"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "行业解决方案研发与服务、软件开发、系统运维，聚焦工业互联网（IIoT）、电子商务/零售、数字孪生及对日离岸开发",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://www.basechina.net/aboutUs.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海合合信息科技发展有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "产品体验设计师",
+        "后端开发工程师",
+        "人工智能/算法",
+        "前端开发工程师"
+      ],
+      "work_cities": [
+        "上海",
+        "苏州",
+        "广州"
+      ],
+      "industry_rank": {
+        "list": "2019中国人工智能企业知识产权竞争力百强榜",
+        "year": 2019,
+        "rank": 23,
+        "source_url": "https://hurun.net/index.htm",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2019中国人工智能企业知识产权竞争力百强榜",
+          "year": 2019,
+          "rank": 23,
+          "source_url": "https://hurun.net/index.htm",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "2025信创500强",
+          "year": "2025",
+          "rank": "377",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://mp.weixin.qq.com/s/X33q9pWV6beBtlpGAp9_7g",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "2025中国最具成长性上市公司",
+          "year": "2025",
+          "metric": "成长性排名",
+          "value": "",
+          "rank": "49",
+          "cls": "C",
+          "source_url": "http://www.warton.com.cn/index.php?m=&c=Index&a=show&catid=83&id=274",
+          "confidence": "medium"
+        },
+        {
+          "report": "2020上海软件和信息技术服务业高成长百家",
+          "year": "2020",
+          "metric": "高成长企业排名",
+          "value": "",
+          "rank": "85",
+          "cls": "B",
+          "source_url": "https://sheitc.sh.gov.cn/gg/20201208/272d28e6f03f451a9d6bb6f2ac967506.html",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "智能文字识别与商业大数据双主业：C端“扫描全能王/名片全能王/启信宝”，B端TextIn智能文档处理与启信慧眼商业数据智能产品线，为全球C端用户与近30个行业B端客户提供数字化、智能化产品及服务",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.intsig.com/investor-relation",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海镱镭飞秒激光技术有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "光学研发工程师",
+        "光学工程师",
+        "硬件研发工程师",
+        "机械设计工程师",
+        "区域销售经理"
+      ],
+      "work_cities": [
+        "上海",
+        "北京",
+        "深圳"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "专注于飞秒激光技术研发与生产：工业级飞秒固体激光器、飞秒光学参量放大器、非线性脉宽压缩器",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://yi-laser.cn/about/index.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海鹏扶投资管理有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "金融",
+      "scale_tier": "微型",
+      "matched_jobs": [
+        "量化投研全职",
+        "量化投研实习生"
+      ],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "私募证券投资基金管理：投资管理、资产管理，从事大宗商品、指数、债券、期权量化交易",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.qixin.com/financing/b2a68e10-58ca-4162-911a-740cafbcc6bc",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中建一局集团建设发展有限公司",
+      "city": "北京",
+      "nature": "央企",
+      "industry": "建筑",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "施工管理岗",
+        "技术管理岗",
+        "商务管理岗",
+        "安全管理岗"
+      ],
+      "work_cities": [
+        "北京",
+        "天津",
+        "河北",
+        "山东",
+        "山西",
+        "湖北",
+        "河南",
+        "江苏",
+        "浙江",
+        "上海",
+        "安徽",
+        "江西",
+        "四川",
+        "重庆",
+        "陕西",
+        "甘肃",
+        "新疆",
+        "广东",
+        "广西",
+        "湖南",
+        "福建",
+        "海南"
+      ],
+      "industry_rank": {
+        "list": "2025北京建筑业企业100强",
+        "year": 2025,
+        "rank": 3,
+        "source_url": "https://www.bec.org.cn/article/info/937",
+        "confidence": "high",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2025北京建筑业企业100强",
+          "year": 2025,
+          "rank": 3,
+          "source_url": "https://www.bec.org.cn/article/info/937",
+          "confidence": "high",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "房屋建筑施工总承包：超高层建筑、高科技电子厂房、数据中心、大型公共智能建筑，及EPC工程总承包",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.chinaonebuild.com/gsxx/qyjj/signle-c10.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中建五局土木工程有限公司",
+      "city": "长沙",
+      "nature": "央企",
+      "industry": "建筑",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "土建施工/技术类",
+        "工程技术类",
+        "职能管理类(会计/法学等)"
+      ],
+      "work_cities": [
+        "湖南",
+        "江苏",
+        "广东",
+        "湖北",
+        "陕西",
+        "重庆",
+        "福建",
+        "江西",
+        "浙江",
+        "广西",
+        "云南",
+        "新疆",
+        "河南",
+        "海外"
+      ],
+      "industry_rank": {
+        "list": "2018湖南省建筑强企",
+        "year": 2018,
+        "rank": 6,
+        "source_url": "https://www.hunan.gov.cn/hnszf/hnyw/bmdt/201909/t20190904_10163648.html",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2018湖南省建筑强企",
+          "year": 2018,
+          "rank": 6,
+          "source_url": "https://www.hunan.gov.cn/hnszf/hnyw/bmdt/201909/t20190904_10163648.html",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "基础设施建设：市政公用、轨道交通、公路工程、生态环保（水务环保）、综合管廊及公共建筑",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://5btm.cscec.com/gywm/gsjj/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中建八局华中建设有限公司",
+      "city": "武汉",
+      "nature": "央企",
+      "industry": "建筑",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "工程师(房屋建筑类)",
+        "工程师(基础设施类)",
+        "职能管理类"
+      ],
+      "work_cities": [
+        "武汉",
+        "南昌",
+        "郑州",
+        "长沙",
+        "合肥"
+      ],
+      "industry_rank": {
+        "list": "2024年度湖北省建筑施工企业质量管理评价30强",
+        "year": "2024",
+        "rank": "7",
+        "rank_dim": "industry",
+        "rank_tier": "niche",
+        "source_url": "https://app.xinhuanet.com/news/article.html?articleId=1315ae8c9edf81f0a8bf436b77d81be4",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2023湖北企业100强",
+          "year": 2023,
+          "rank": 76,
+          "source_url": "http://www.hbsql.com/top_100_enterprises/2356.html",
+          "confidence": "high",
+          "rank_tier": "province100",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        },
+        {
+          "list": "2023武汉企业100强",
+          "year": "2023",
+          "rank": "56",
+          "rank_dim": "scale",
+          "rank_tier": "province100",
+          "source_url": "https://www.wuhan.gov.cn/sy/whyw/202309/t20230915_2265021.shtml",
+          "confidence": "high",
+          "group_scope": "self"
+        },
+        {
+          "list": "2024年度湖北省建筑施工企业质量管理评价30强",
+          "year": "2024",
+          "rank": "7",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://app.xinhuanet.com/news/article.html?articleId=1315ae8c9edf81f0a8bf436b77d81be4",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "2024年入库湖北省科创“新物种”企业名单（瞪羚）",
+          "year": "2024",
+          "metric": "瞪羚企业认定",
+          "value": "",
+          "rank": "",
+          "cls": "B",
+          "source_url": "https://www.qcc.com/creport/2517bd7b8adc2806ab8b7292e5c1ba42.html",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "经营机场及附属设施、体育场馆、文教卫生、会议会展、环保工程、城市综合体、超高层、高新产业园、城市更新、基础设施等业务板块，为客户提供咨询、投资、设计、施工、运营等全生命周期成套解决方案的综合建造服务商",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://job.cscec8b.com.cn/recruitment/job/detail/id/2679",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://kjt.hubei.gov.cn/zfxxgk_GK2020/zc2020/qtzdgk/gsgg/202409/P020240902448965203380.doc",
+      "growth_note": "2024年入库湖北省科创「新物种」（瞪羚）企业名单（湖北省科学技术厅公示，第67位）。",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中建四局建设投资有限公司",
+      "city": "上海",
+      "nature": "央企",
+      "industry": "建筑",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "工程技术类(校招岗)",
+        "职能管理类"
+      ],
+      "work_cities": [
+        "上海",
+        "南京",
+        "杭州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "中建四局在长三角的投资、建造、运营一体化投资建设平台，聚焦超高层智慧建造、洁净厂房快速建造等领域",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://baike.baidu.com/item/%E4%B8%AD%E5%BB%BA%E5%9B%9B%E5%B1%80%E5%BB%BA%E8%AE%BE%E6%8A%95%E8%B5%84%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/68889243",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京字跳网络技术有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "龙头特大",
+      "matched_jobs": [
+        "内容质量专家(小说内容研判方向)"
+      ],
+      "work_cities": [
+        "北京",
+        "上海",
+        "杭州",
+        "深圳"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "字节跳动旗下网络技术公司：基于推荐引擎技术的信息分发与内容平台技术开发、软件开发、广告代理与版权贸易（抖音、豆包等产品相关技术主体）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://baike.baidu.com/item/%E5%8C%97%E4%BA%AC%E5%AD%97%E8%B7%B3%E7%BD%91%E7%BB%9C%E6%8A%80%E6%9C%AF%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/24421882",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京当升材料科技股份有限公司",
+      "city": "北京",
+      "nature": "国企",
+      "industry": "制造",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "研发工程师",
+        "工艺工程师",
+        "销售工程师",
+        "自动化工程师",
+        "财务会计",
+        "人资专员",
+        "运营专员",
+        "设备工程师",
+        "质量工程师",
+        "分析测试员/质量员",
+        "现场工程师",
+        "维保工程师",
+        "机械工程师(中鼎)",
+        "电气工程师(中鼎)",
+        "图像售后工程师(中鼎)"
+      ],
+      "work_cities": [
+        "北京",
+        "海门",
+        "常州",
+        "攀枝花",
+        "芬兰"
+      ],
+      "industry_rank": {
+        "list": "2026全球新能源企业500强",
+        "year": 2026,
+        "rank": 237,
+        "source_url": "https://mp.weixin.qq.com/s/m46vikvb4OTlfHH7n-mX0w",
+        "confidence": "medium",
+        "rank_tier": "global_leader",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "global_leader",
+      "rank_hits": [
+        {
+          "list": "2026全球新能源企业500强",
+          "year": 2026,
+          "rank": 237,
+          "source_url": "https://mp.weixin.qq.com/s/m46vikvb4OTlfHH7n-mX0w",
+          "confidence": "medium",
+          "rank_tier": "global_leader",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2026中国上市企业500强",
+          "year": "2026",
+          "rank": "456",
+          "rank_dim": "scale",
+          "rank_tier": "china500",
+          "source_url": "https://mp.weixin.qq.com/s/bxEpyXggEI9QyAtehRJPoQ",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "锂离子电池正极材料（镍钴锰酸锂/磷酸铁锂/磷酸锰铁锂/钴酸锂/固态锂电关键材料/钠离子电池正极材料六大产品系列）研发生产，兼营智能装备（圆刀模切机、品检机）",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.easpring.com.cn/gywm",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京育达东方软件科技有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "高中教师(数学/物理/化学)"
+      ],
+      "work_cities": [
+        "北京",
+        "广州",
+        "深圳",
+        "南京",
+        "苏州",
+        "济南",
+        "合肥",
+        "厦门",
+        "福州",
+        "青岛",
+        "长沙",
+        "天津",
+        "太原",
+        "常州",
+        "东莞",
+        "贵阳",
+        "呼和浩特",
+        "洛阳",
+        "南昌",
+        "南宁",
+        "南通",
+        "泉州",
+        "石家庄",
+        "泰州",
+        "唐山",
+        "襄阳",
+        "许昌",
+        "烟台",
+        "盐城",
+        "扬州",
+        "镇江",
+        "郑州",
+        "珠海",
+        "开封",
+        "淮安",
+        "兰州",
+        "宁波",
+        "绍兴",
+        "保定",
+        "杭州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "应用软件开发（教育/培训类软件与人工智能应用软件），兼营出版物批发零售；国标行业为应用软件开发（I6513）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.qcc.com/firm/4b308b54173d9707dbfcc76d4dbd6d06.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北方爆破科技有限公司",
+      "city": "北京",
+      "nature": "国企",
+      "industry": "建筑",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "技术研发工程师",
+        "采矿工程师",
+        "爆破工程师",
+        "安全专员",
+        "技术员(新疆江阳公司)"
+      ],
+      "work_cities": [
+        "北京",
+        "辽宁",
+        "内蒙古",
+        "陕西",
+        "湖北",
+        "新疆",
+        "西藏"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "现场混装炸药与爆破一体化服务（穿爆一体化服务、矿山工程总承包、销爆拆除），兼民爆器材与智能装备",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://baike.baidu.com/item/北方爆破科技有限公司/19837294",
+      "non_enterprise": false,
+      "growth_evidence_url": "http://www.cseb.org.cn/news_detail/1029.html",
+      "growth_note": "获评北京市2024年第二季度专精特新中小企业、北京市创新型中小企业（认定机构：北京市经济和信息化局）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "匠岭科技(上海)有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "机械设计助理工程师",
+        "电子电路/电气设计岗",
+        "光学设计岗",
+        "智能制造岗",
+        "应用技术支持助理工程师",
+        "运动控制岗",
+        "算法开发岗",
+        "软件开发岗",
+        "质量管理岗"
+      ],
+      "work_cities": [
+        "上海",
+        "苏州",
+        "嘉兴"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "半导体高端光学量测与检测设备，含关键薄膜量测（TFT系列）、光学线宽量测（OM系列）、先进封装 Micro-Bump 3D/2D检测（HIMA系列）、图形化亚纳米缺陷检测（ANDES系列）",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://www.engitist.com/gsgk",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://www.cnstock.com/commonDetail/818117",
+      "growth_note": "入选工业和信息化部第八批国家专精特新“小巨人”企业名单（国家级）；完成数亿元关键轮战略融资（产业龙头领投，金浦智能、熠柏科创等跟投）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "新航道（北京）管理咨询有限公司",
+      "city": "北京",
+      "nature": "外企",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [],
+      "work_cities": [
+        "北京",
+        "上海",
+        "成都",
+        "长沙",
+        "武汉",
+        "深圳",
+        "广州",
+        "南京",
+        "天津",
+        "西安"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "国际教育服务：雅思/托福/SAT/GRE/GMAT等出国考试培训、前程留学申请、考研辅导、国际课程（A-Level）与艺术教育",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.xhd.cn/exam/focusnews/207437.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "曼迪匹艾（北京）科技服务有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "专业服务",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "英文学术期刊助理编辑",
+        "出版专员",
+        "市场助理(期刊推广)",
+        "培训专员",
+        "人事经理",
+        "办公室人才发展经理",
+        "COE模块管培生",
+        "专题助理"
+      ],
+      "work_cities": [
+        "北京",
+        "武汉",
+        "天津",
+        "南京",
+        "大连",
+        "成都",
+        "深圳",
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "开放获取（OA）学术出版服务：MDPI期刊出版、论文润色与作者服务，覆盖生物、化学、医药、机械、能源、环境等学科",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://mdpi.cn/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州银行股份有限公司上海分行",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "金融",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "分行培训生",
+        "营销培训生(公司金融方向)",
+        "营销培训生(小微金融方向)",
+        "营销培训生(零售金融方向)",
+        "运营培训生(综合柜员方向)",
+        "信息技术培训生"
+      ],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": {
+        "list": "2026全球银行1000强",
+        "year": 2026,
+        "rank": 100,
+        "source_url": "http://mp.weixin.qq.com/s?__biz=MzIwMzEwODE2NA==&mid=2652764244&idx=1&sn=ef71a4fd96f797610d63b435724e2b58&chksm=8c408091c42849d1f2bc69237aa1d47ebd9b1cc60aba68f4e555e5e4df67f1f1b82df9d4354a#rd",
+        "confidence": "high",
+        "rank_tier": "global_leader",
+        "rank_dim": "industry",
+        "group_scope": "group"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "global_leader",
+      "rank_hits": [
+        {
+          "list": "2026全球银行1000强",
+          "year": 2026,
+          "rank": 100,
+          "source_url": "http://mp.weixin.qq.com/s?__biz=MzIwMzEwODE2NA==&mid=2652764244&idx=1&sn=ef71a4fd96f797610d63b435724e2b58&chksm=8c408091c42849d1f2bc69237aa1d47ebd9b1cc60aba68f4e555e5e4df67f1f1b82df9d4354a#rd",
+          "confidence": "high",
+          "rank_tier": "global_leader",
+          "rank_dim": "industry",
+          "group_scope": "group"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "杭州银行2026年半年度报告（集团口径，分行不单独披露）",
+          "year": "2026",
+          "metric": "营业收入同比增速",
+          "value": "4.75%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.cnstock.com/commonDetail/775351",
+          "confidence": "high"
+        }
+      ],
+      "segment": "城市商业银行省外一级分行（货币金融服务）：服务区域经济、中小企业和城乡居民，主推“专精特新贷”“科易贷”“银投联贷”“选择权”等科创金融产品",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://stcsm.sh.gov.cn/kcb/kjjr/yhcp/hzyh/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "矩阵时光数字科技有限公司",
+      "city": "南京",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "C++开发工程师"
+      ],
+      "work_cities": [
+        "南京"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "量子安全解决方案与量子安全通信：量子安全芯片与全域量子安全通信架构，天衣系列基础网络产品（量子安全HASH）、夸克系列量子安全终端，及量子CA、一次一密等量子密码协议",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://matrictime.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "苏州思必驰信息科技有限公司",
+      "city": "苏州",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "语音算法工程师",
+        "NLP大模型算法工程师",
+        "信号处理算法工程师",
+        "C++开发工程师",
+        "嵌入式开发工程师",
+        "java开发工程师",
+        "Android开发工程师",
+        "硬件工程师",
+        "结构工程师",
+        "产品经理",
+        "售前解决方案工程师",
+        "项目经理",
+        "销售管培生",
+        "财务管培生",
+        "人力资源管培生"
+      ],
+      "work_cities": [
+        "苏州",
+        "深圳",
+        "北京"
+      ],
+      "industry_rank": {
+        "list": "2026中国最具投资价值公司100强",
+        "year": 2026,
+        "rank": 67,
+        "source_url": "https://www.cet.com.cn/wzsy/kjzx/10394889.shtml",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2026中国最具投资价值公司100强",
+          "year": 2026,
+          "rank": 67,
+          "source_url": "https://www.cet.com.cn/wzsy/kjzx/10394889.shtml",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025人工智能领军企业100强（DBC德本咨询）",
+          "year": "2025",
+          "rank": "62",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "http://www.enet.com.cn/article/2026/0122/A202601221274686.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025全国科技创新企业500强（八月瓜创新研究院）",
+          "year": "2025",
+          "rank": "484",
+          "rank_dim": "scale",
+          "rank_tier": "china500",
+          "source_url": "https://mp.weixin.qq.com/s/ksFandJeiqsDC0hOyhM0Ow",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "工信部第六批国家级专精特新“小巨人”企业",
+          "year": "2024",
+          "metric": "专精特新小巨人认定",
+          "value": "",
+          "rank": "",
+          "cls": "B",
+          "source_url": "http://www.aispeech.com/about/introduction",
+          "confidence": "medium"
+        },
+        {
+          "report": "2026胡润全球独角兽榜",
+          "year": "2026",
+          "metric": "独角兽企业入榜",
+          "value": "",
+          "rank": "",
+          "cls": "B",
+          "source_url": "http://www.aispeech.com/about/introduction",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "全栈对话式AI与端侧智能技术自研，提供智慧出行、智慧办公、智慧物联领域的系统级智能人机对话产品与方案（DFM行业语言大模型、AI办公本、矩阵麦/吸顶麦、车载语音助手）",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://www.aispeech.com/about/introduction",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://www.suzhouai.cn/p/news.show/id-282/282.html",
+      "growth_note": "国家级专精特新“小巨人”企业（工信部，2024第六批）；入选胡润研究院《2025全球独角兽榜》（估值约11亿美元）、江苏省独角兽企业（2025）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海妙文创意科技有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "专业服务",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "商务管培生",
+        "展馆策划",
+        "影视策划",
+        "多媒体互动策划",
+        "平面设计师",
+        "空间设计师",
+        "UI设计师",
+        "深化设计师",
+        "影视后期制作",
+        "Unity3d程序开发工程师",
+        "Python开发工程师",
+        "C++研发工程师",
+        "多媒体系统集成工程师",
+        "人工智能算法工程师",
+        "工程助理",
+        "安全员",
+        "人力专员",
+        "财务助理",
+        "行政专员",
+        "企宣专员",
+        "翻译校对"
+      ],
+      "work_cities": [
+        "上海",
+        "舟山",
+        "青岛",
+        "西安",
+        "长沙"
+      ],
+      "industry_rank": {
+        "list": "中国展陈市场百强",
+        "year": 2025,
+        "rank": null,
+        "source_url": "https://www.qcc.com/creport/52445a048ce59cd3f026543297f8556e.html",
+        "confidence": "low",
+        "rank_tier": "niche",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "中国展陈市场百强",
+          "year": 2025,
+          "rank": null,
+          "source_url": "https://www.qcc.com/creport/52445a048ce59cd3f026543297f8556e.html",
+          "confidence": "low",
+          "rank_tier": "niche",
+          "rank_dim": "industry"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "数智化创意展示——博物馆、科技馆、规划馆、主题馆、企事业展厅的展陈设计施工一体化总包服务，以及全球会展、品牌公关活动的策划/设计/布展/实施/运营一站式服务",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://www.huizhangongsi.com/about.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://www.qcc.com/creport/52445a048ce59cd3f026543297f8556e.html",
+      "growth_note": "获评上海市“专精特新”中小企业（2025，上海市经信委）；国家级高新技术企业（2025）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海宁苑资产管理有限公司",
+      "city": "上海",
+      "nature": "合资",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "交易系统开发工程师",
+        "量化交易研究员",
+        "量化策略研究员"
+      ],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": {
+        "list": "2025年年报上市基金前十大持有人·自然人控股私募ETF持仓份额居首",
+        "year": 2025,
+        "rank": 1,
+        "source_url": "https://www.jiemian.com/article/14198479.html",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2025年年报上市基金前十大持有人·自然人控股私募ETF持仓份额居首",
+          "year": 2025,
+          "rank": 1,
+          "source_url": "https://www.jiemian.com/article/14198479.html",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "二级市场量化投资私募基金管理——策略叠加量化与基本面研究，基于对金融市场微观结构与参与者行为的理解满足市场流动性需求，覆盖股票、ETF、可转债等品种，在管规模超50亿元",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://m.zhipin.com/companys/eed6bbd89b216c751HBz09S9E1U~.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海我们方田科技有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "国际数学竞赛教练",
+        "高中竞赛教练",
+        "新分校骨干",
+        "全职教师",
+        "国际学科教师"
+      ],
+      "work_cities": [
+        "上海",
+        "合肥",
+        "南京",
+        "杭州",
+        "深圳",
+        "成都",
+        "重庆",
+        "芜湖",
+        "安庆",
+        "马鞍山",
+        "新加坡",
+        "中国香港"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "中小学学科与竞赛培训（“方田教育”）——涵盖国际学科教育、素质教育、软件研发、图书出版等板块，分校覆盖合肥、芜湖、南京、上海、杭州、深圳、成都、重庆、新加坡、中国香港等12个城市",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://hfuu.ahbys.com/company.html?cid=434422",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "上海杉泰私募基金管理有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "私募证券投资基金管理服务（含私募证券投资基金、私募证券投资类FOF基金），管理规模区间20~50亿元，核心人物郑晔鑫具Bloomberg/Virtu量化策略研发背景",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://dc.simuwang.com/company/CO00000TAY.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "上海照寰文化传播有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "微型",
+      "matched_jobs": [
+        "视频剪辑师"
+      ],
+      "work_cities": [
+        "上海",
+        "南京"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "教育培训与留学服务——旗下奥孚（华宇）教育集团，覆盖语言培训、教师资格证等职业资格/职称培训、中小学课程与青少年素质教育，并经营51offer留学、青少年研学与定制旅游",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://company.liepin.com/8101451",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "上海芒啾网络科技有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "中小型",
+      "matched_jobs": [],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "网络科技与软件开发服务——技术开发/转让/咨询、信息系统集成、软件开发，兼营市场营销策划、广告设计与制作、图文平面设计（工商登记口径）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://m.liepin.com/company/gs92050354",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "亿嘉和科技股份有限公司",
+      "city": "南京",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "感知规控工程师",
+        "图像算法工程师",
+        "定位导航工程师",
+        "Java开发工程师",
+        "C++开发工程师",
+        "机械结构工程师",
+        "硬件测试工程师",
+        "硬件开发工程师",
+        "系统测试工程师",
+        "采购工程师"
+      ],
+      "work_cities": [
+        "南京"
+      ],
+      "industry_rank": {
+        "list": "国家级制造业单项冠军示范企业（第六批，主导产品：电力智能巡检机器人）",
+        "year": "2021",
+        "rank": "",
+        "rank_dim": "industry",
+        "rank_tier": "niche",
+        "source_url": "https://www.qibook.com/company-wiki-s/yijiahekejigufenyouxiangongsi-00b6cb29.html",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2023江苏民营企业创新100强",
+          "year": 2023,
+          "rank": 62,
+          "source_url": "https://mp.weixin.qq.com/s/U9iP_Mc1NUHHkP1n8qzajA",
+          "confidence": "high",
+          "rank_tier": "province100",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        },
+        {
+          "list": "国家级制造业单项冠军示范企业（第六批，主导产品：电力智能巡检机器人）",
+          "year": "2021",
+          "rank": "",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://www.qibook.com/company-wiki-s/yijiahekejigufenyouxiangongsi-00b6cb29.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "第二批专精特新“小巨人”企业名单（工业和信息化部）",
+          "year": "2020",
+          "metric": "专精特新小巨人认定",
+          "value": "",
+          "rank": "",
+          "cls": "B",
+          "source_url": "https://www.yijiahe.com/news/47.html",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "具身智能人形机器人与特种作业/巡检机器人：智慧电力（电力智能巡检机器人、带电作业机器人）、智慧轨交、智慧能源、智能清洁、低空经济等多行业机器人产品与核心平台",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "high",
+      "segment_source_url": "https://www.yijiahe.com/about",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京世辉（上海）律师事务所",
+      "city": "北京",
+      "nature": "合伙制",
+      "industry": "专业服务",
+      "scale_tier": "",
+      "matched_jobs": [
+        "律师",
+        "法律实习生"
+      ],
+      "work_cities": [
+        "北京",
+        "上海",
+        "深圳",
+        "香港"
+      ],
+      "industry_rank": {
+        "list": "2025年度LEGALBAND中国律所30强(BEST OF THE BEST)",
+        "year": 2025,
+        "rank": null,
+        "source_url": "http://mp.weixin.qq.com/s?__biz=MzI3OTM5MzQwNw==&mid=2247528150&idx=1&sn=348a06763d3077b087925cbb31932308&chksm=eaa81b2e404173e3dbd7836bb5d1881dce51afab2769d598cb1f4a2bf85deb45a0e2323aa7de#rd",
+        "confidence": "medium",
+        "rank_tier": "national_leader",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2025年度LEGALBAND中国律所30强(BEST OF THE BEST)",
+          "year": 2025,
+          "rank": null,
+          "source_url": "http://mp.weixin.qq.com/s?__biz=MzI3OTM5MzQwNw==&mid=2247528150&idx=1&sn=348a06763d3077b087925cbb31932308&chksm=eaa81b2e404173e3dbd7836bb5d1881dce51afab2769d598cb1f4a2bf85deb45a0e2323aa7de#rd",
+          "confidence": "medium",
+          "rank_tier": "national_leader",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "2025年度LEGALBAND中国律所30强（BEST OF THE BEST）",
+          "year": "2025",
+          "rank": "",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "group"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "法律服务：私募股权与风险投资、证券与资本市场、兼并收购、争议解决、知识产权、合规、数据保护、投资基金、反垄断、制裁与出口管制等",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.shihuilaw.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "北京中科腾越科技发展有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "初级测试工程师",
+        "初级硬件工程师",
+        "初级软件工程师",
+        "储备嵌入式软件工程师",
+        "产品经理(偏硬件)"
+      ],
+      "work_cities": [
+        "北京"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "电力行业嵌入式工控设备：通讯管理机、网络报文分析记录仪/故障录波器、特高压直流机、工业以太网交换机，应用于变电站",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://www.techyauld.com/absout.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://zgc.chinagazelle.cn/directory/detail/1272hjzx201603",
+      "growth_note": "连续多年入选国家高新区/中关村瞪羚企业（2010–2021多年度），官方高成长榜（瞪羚）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京外国语大学附属海南外国语学校",
+      "city": "海南",
+      "nature": "民办非企业",
+      "industry": "教育",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "幼儿教师",
+        "小学语文教师",
+        "中学各学科教师",
+        "双语教师",
+        "竞赛教练"
+      ],
+      "work_cities": [
+        "海南"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "十五年一贯制全日制寄宿国际化学校：幼儿园、小学、初中、高中及国际教育（IB PYP/MYP、IGCSE、A-Level、CHP 课程）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.bwhnfx.com/news_xx.php?id=4719",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京平行线根源教育科技有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "数学/物理竞赛教练",
+        "学科主讲教师(数学/物理/化学/英语)"
+      ],
+      "work_cities": [
+        "北京",
+        "上海",
+        "西安",
+        "郑州",
+        "洛阳"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "专注理科培优的K12教育企业，主营线下班课、在线大班/小班、VIP全科培训及高端竞赛培训，并覆盖图书出版、直播、教育软件开发",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://jobcareer.sdu.edu.cn/eweb/jygl/index.so?id=WezW1k5FkxJ7BCyGaaneKE&type=ssoXnzpView",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京汽车国际发展有限公司",
+      "city": "北京",
+      "nature": "国企",
+      "industry": "制造",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "培训生",
+        "全球营销管培生",
+        "供应链岗",
+        "智能制造管理岗"
+      ],
+      "work_cities": [
+        "北京"
+      ],
+      "industry_rank": {
+        "list": "财富世界500强",
+        "year": 2025,
+        "rank": 201,
+        "source_url": "https://www.fortunechina.com/fortune500/c/2025-07/29/content_467206.htm",
+        "confidence": "high",
+        "rank_tier": "world500",
+        "rank_dim": "scale"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "scale",
+      "rank_tier": "world500",
+      "rank_hits": [
+        {
+          "list": "财富世界500强",
+          "year": 2025,
+          "rank": 201,
+          "source_url": "https://www.fortunechina.com/fortune500/c/2025-07/29/content_467206.htm",
+          "confidence": "high",
+          "rank_tier": "world500",
+          "rank_dim": "scale"
+        },
+        {
+          "list": "财富世界500强",
+          "year": "",
+          "rank": "201",
+          "rank_dim": "scale",
+          "rank_tier": "world500",
+          "source_url": "",
+          "confidence": "high",
+          "group_scope": "group"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "北汽集团自主乘用车海外业务统一平台，聚焦『海外制造』与『国际营销』，运营 BAIC、ARCFOX、STELATO 品牌整车出口与海外KD组装",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.baicglobal.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京跃瀚科技有限责任公司",
+      "city": "北京",
+      "nature": "央企",
+      "industry": "金融",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "测试开发工程师",
+        "AI大模型开发工程师",
+        "前端工程师",
+        "后端工程师",
+        "客户成功",
+        "客户运营",
+        "数据分析师",
+        "业务管理专员",
+        "业务产品经理"
+      ],
+      "work_cities": [
+        "北京",
+        "厦门",
+        "天津",
+        "长沙"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "互联网供应链金融信息服务，搭建『供应链+互联网』平台，核心产品含 e信通电子债权凭证开立与流转、融通易链APP",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://baike.baidu.com/item/北京跃瀚科技有限责任公司/67120072",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "南京中医药大学",
+      "city": "南京",
+      "nature": "事业单位",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "青年特聘教授",
+        "公开招聘工作人员(专任教师/科研岗)"
+      ],
+      "work_cities": [
+        "南京",
+        "泰州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "以中医药为主体、中西医结合、多学科为支撑协调发展的国家“双一流”建设高校，主干学科为中医学、中药学",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.njucm.edu.cn/6778/list.htm",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "南京艾尔普再生医学科技股份有限公司",
+      "city": "南京",
+      "nature": "民企",
+      "industry": "医药",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "临床医学岗",
+        "生物研发岗",
+        "BD/政府关系"
+      ],
+      "work_cities": [
+        "南京"
+      ],
+      "industry_rank": {
+        "list": "2021生物医药价值领域榜·细胞及基因治疗TOP10",
+        "year": 2021,
+        "rank": null,
+        "source_url": "https://helpsci.com.cn/focus/?type=detail&id=9",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2021生物医药价值领域榜·细胞及基因治疗TOP10",
+          "year": 2021,
+          "rank": null,
+          "source_url": "https://helpsci.com.cn/focus/?type=detail&id=9",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "2021生物医药价值领域榜·细胞及基因治疗TOP10",
+          "year": "2021",
+          "rank": "",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "2021年江苏省高新技术产业开发区独角兽企业和瞪羚企业名单（江苏省生产力促进中心，苏生力[2021]110号）",
+          "year": "2021",
+          "metric": "瞪羚企业入选（高成长企业评估）",
+          "value": "",
+          "rank": "",
+          "cls": "B",
+          "source_url": "http://mp.weixin.qq.com/s?__biz=MzI3NDM2OTUzMw==&mid=2247485637&idx=1&sn=77cf6052b0345b78ad0c515259f9a498",
+          "confidence": "medium"
+        },
+        {
+          "report": "江苏省潜在独角兽企业（江苏省新质生产力促进中心认定）",
+          "year": "2025",
+          "metric": "潜在独角兽企业认定",
+          "value": "",
+          "rank": "",
+          "cls": "B",
+          "source_url": "https://www.qibook.com/company-wiki-s/nanjingaierpuzaishengyixuekejigufenyouxiangongsi-4f0679a3.html",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "通用现货型iPSC细胞治疗药物（心血管疾病、骨代谢/运动系统疾病、眼科退行性疾病）",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://helpsci.com.cn/about/",
+      "non_enterprise": false,
+      "growth_evidence_url": "http://mp.weixin.qq.com/s?__biz=MzI4OTY4MjgyNw==&mid=2247606922&idx=4&sn=829347a28676bf940abba53f14108f49&chksm=ed6377272bcd73ef31d81c518a83d7be186ef46d3bbd1ba179a501df1096a65681a73605428c#rd",
+      "growth_note": "入选南京市/江宁区培育独角兽企业（江宁发布官方账号）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "南京诺尔曼生物技术股份有限公司",
+      "city": "南京",
+      "nature": "民企",
+      "industry": "医药",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "管培生",
+        "运营产品经理(AI医疗)",
+        "海外销售",
+        "质量/技术岗",
+        "技术支持"
+      ],
+      "work_cities": [
+        "南京"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "体外诊断（IVD）化学发光免疫分析与POCT检测的试剂、仪器及核心原料研发生产",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "high",
+      "segment_source_url": "https://www.nrmchina.com/gsjj.php?id=359",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "南华大学附属第一医院",
+      "city": "衡阳",
+      "nature": "事业单位",
+      "industry": "医药",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "医师",
+        "高层次医学人才/博士/博士后"
+      ],
+      "work_cities": [
+        "衡阳"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "三级甲等综合医院（省域医疗中心，心血管、骨科、肿瘤、急诊与危重症等9大优势学科群）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.nhfyyy.com/dzb/jon/zhu/detail/8664.html",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "国核湛江核电有限公司",
+      "city": "湛江",
+      "nature": "央企",
+      "industry": "能源",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "运行操纵员",
+        "生产计划助理专工",
+        "化学环保助理专工",
+        "维修助理专工",
+        "安全质保助理专工",
+        "设计管理助理专工",
+        "工程助理专工",
+        "综合计划助理专责",
+        "人资助理专责",
+        "财务助理专责",
+        "办公室助理专责"
+      ],
+      "work_cities": [
+        "湛江"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "核电项目开发、投资、建设、运营与管理（重点推进廉江核电项目，CAP系列三代核电技术推广应用）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://snzn.spic.com.cn/gsjs",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "天津中医药大学第一附属医院",
+      "city": "天津",
+      "nature": "事业单位",
+      "industry": "医药",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "口腔科",
+        "麻醉科",
+        "临床"
+      ],
+      "work_cities": [
+        "天津"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "以针灸为特色的三级甲等中医医院（国家中医针灸临床医学研究中心、国家医学中心建设单位）",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.tjtcm.cn/yygkx/yyjj/",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "宁波华茂外国语学校",
+      "city": "宁波",
+      "nature": "民办非企业",
+      "industry": "教育",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "双语数学教师",
+        "高中各学科教师",
+        "中小学各学科教师",
+        "雅思/托福教师"
+      ],
+      "work_cities": [
+        "宁波"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "十二年一贯制民办双语学校：双语A班（五四制）与双语B班（六三制）两大课程体系，义务教育九年一贯制、不限户籍、全寄宿制、小班化教学",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://huawai.net/about.html",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "宁波市博坤生物科技有限公司",
+      "city": "宁波",
+      "nature": "民企",
+      "industry": "医药",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "高分子材料研发岗",
+        "生物研发",
+        "机械设计工程师",
+        "嵌入式软件工程师"
+      ],
+      "work_cities": [
+        "宁波"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "生物样本采集卡、生物分离纯化试剂盒、实验耗材生产，科学实验设备及配件制造（面向基因检测、分子诊断与法医DNA样本处理）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://aiqicha.baidu.com/company_detail_26814288332584",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "宁波美鹰家居集团有限公司",
+      "city": "宁波",
+      "nature": "民企",
+      "industry": "消费",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "集团管培生"
+      ],
+      "work_cities": [
+        "宁波",
+        "杭州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "家居产品设计研发与跨境电商销售：室内家居（沙发床、餐桌椅、梳妆台）、户外家居、宠物用品、健身器材、电器等泛家居品类",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.meiyingjiaju.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "安徽国元信托有限责任公司",
+      "city": "合肥",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "信托投资业务",
+        "综合管理",
+        "统计核算",
+        "家族信托",
+        "机构业务"
+      ],
+      "work_cities": [
+        "合肥"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "信托业务：资产管理信托、资产服务信托、公益慈善信托，与固有业务「双轮驱动」",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.gyxt.com.cn/articles/355.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "宏胜饮料集团有限公司",
+      "city": "杭州",
+      "nature": "外企",
+      "industry": "消费",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "乳饮研发工程师",
+        "茶饮研发工程师",
+        "人力精英管培生",
+        "提取研究工程师"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": {
+        "list": "2022杭州市制造业企业100强",
+        "year": 2022,
+        "rank": 42,
+        "source_url": "https://mp.weixin.qq.com/s/m7lbbOwpDiOoxffHUFZgJQ",
+        "confidence": "high",
+        "rank_tier": "niche",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2022杭州市制造业企业100强",
+          "year": 2022,
+          "rank": 42,
+          "source_url": "https://mp.weixin.qq.com/s/m7lbbOwpDiOoxffHUFZgJQ",
+          "confidence": "high",
+          "rank_tier": "niche",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "2022杭州市制造业企业100强（杭州市企业联合会、企业家协会、工业经济联合会）",
+          "year": "2022",
+          "rank": "42",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://mp.weixin.qq.com/s/m7lbbOwpDiOoxffHUFZgJQ",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "2022浙商全国500强（《浙商》杂志）",
+          "year": "2022",
+          "rank": "165",
+          "rank_dim": "scale",
+          "rank_tier": "province100",
+          "source_url": "https://mp.weixin.qq.com/s/m8yGPHR-oEEgmeu9rpzGEA",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "中国轻工业综合实力百强企业（中国轻工业联合会）",
+          "year": "",
+          "rank": "",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://www.h-shgroup.com/news/newsshow-9954.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "饮料全产业链：果蔬饮料、瓶装饮用纯净水、矿物质水、茶饮料、含乳饮料生产，并向食源配料、高端装备制造、印刷包装、品牌营销、物流仓储延伸",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.h-shgroup.com/aboutus/aboutus.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "广州美保科技有限公司",
+      "city": "广州",
+      "nature": "民企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "人身保险理赔专员",
+        "产品助理",
+        "查勘专员",
+        "大区助理"
+      ],
+      "work_cities": [
+        "广州",
+        "佛山",
+        "郑州",
+        "南京"
+      ],
+      "industry_rank": {
+        "list": "毕马威中国金融科技企业双50榜单",
+        "year": "2023",
+        "rank": "",
+        "rank_dim": "industry",
+        "rank_tier": "niche",
+        "source_url": "https://meibaokeji.com/introduce.html",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "毕马威中国金融科技企业双50榜单",
+          "year": "2023",
+          "rank": "",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://meibaokeji.com/introduce.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "AI驱动的「保险+安全」科技服务：面向保险机构的数字化保险运营与事故预防解决方案、安全生产数字化管理及培训云平台，及旗下持牌经纪的普惠保险平台「美保®」（雇主责任险、团体意外险、安责险）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://meibaokeji.com/introduce.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://kpmg.com/cn/zh/campaigns/2024/01/re-china-fintech-50-2023.html",
+      "growth_note": "毕马威2023中国金融科技企业双50（保险科技赛道，排名不分先后·入选）；获广东省“专精特新”中小企业认定(2023)。",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州小事做好教育科技有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "小初高理科老师",
+        "小初高英语老师",
+        "中学理科竞赛老师",
+        "理科竞赛教师"
+      ],
+      "work_cities": [
+        "杭州",
+        "湖州",
+        "南京",
+        "深圳",
+        "广州",
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "面向3-18岁学生的线上线下教学产品服务：6-12岁素养课程（创新思维、人文创作、自拼阅读、科学探究、少儿棋类）与12-18岁学习空间、阅读解决方案",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://scc.pku.edu.cn/frontpage/pku/html/recruitmentinfoForm.html?positionDetailId=6369e46e39ed4fbeac731b5cf823f141",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州德创电子股份有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "软件工程师",
+        "电气工程师",
+        "机械设计工程师",
+        "嵌入式硬件开发工程师"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": {
+        "list": "工业和信息化部第六批专精特新“小巨人”企业名单",
+        "year": "2024",
+        "rank": "",
+        "rank_dim": "industry",
+        "rank_tier": "niche",
+        "source_url": "https://new.qq.com/rain/a/20241127A074A600",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "浙江省创新企业百强",
+          "year": null,
+          "rank": null,
+          "source_url": "http://mp.weixin.qq.com/s?__biz=MjM5ODA3MjEzNQ==&mid=2257484421&idx=1&sn=1fdbe1392c27464e454525c38ac6b90e&chksm=a495eee429d8c1cacfc0a1ca3e148fcdf5a8df156012800ce7d1a93f342f2ffa30de4c16222a#rd",
+          "confidence": "medium",
+          "rank_tier": "province100",
+          "rank_dim": "scale"
+        },
+        {
+          "list": "浙江省创新企业百强",
+          "year": "",
+          "rank": "",
+          "rank_dim": "scale",
+          "rank_tier": "province100",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "工业和信息化部第六批专精特新“小巨人”企业名单",
+          "year": "2024",
+          "rank": "",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://new.qq.com/rain/a/20241127A074A600",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "工业和信息化部第六批专精特新“小巨人”企业名单（浙江省经信厅公布）",
+          "year": "2024",
+          "metric": "资质认定",
+          "value": "国家级专精特新小巨人",
+          "rank": "",
+          "cls": "B",
+          "source_url": "https://new.qq.com/rain/a/20241127A074A600",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "电力计量检测自动化与智能制造：电能表自动化检定/检测流水线、采集终端、电测装置与工业软件，兼及装配老化测试数字化工厂方案",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "http://hzdec.cn:28881/qygk",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州未来校教育科技有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "辅导老师",
+        "研发工程师(java、Android、IOS、前端、测试)",
+        "人力资源专员",
+        "销售精英/市场BD"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "K12教育信息化服务：面向教育局、学校、教师、学生、家长提供教学与德育发展内容及一体化管理（未来校App，教师端/学生端）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://apps.apple.com/cn/app/%E6%9C%AA%E6%9D%A5%E6%A0%A1/id1532187664",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州联合农村商业银行股份有限公司",
+      "city": "杭州",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "分支行菁英培训生",
+        "总行管理培训生",
+        "总行金融科技培训生"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": {
+        "list": "2026世界银行1000强中国银行排行榜",
+        "year": 2026,
+        "rank": 264,
+        "source_url": "https://mp.weixin.qq.com/s/ZooT23LQrh93r9KAcFquzg",
+        "confidence": "high",
+        "rank_tier": "global_leader",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "global_leader",
+      "rank_hits": [
+        {
+          "list": "2026世界银行1000强中国银行排行榜",
+          "year": 2026,
+          "rank": 264,
+          "source_url": "https://mp.weixin.qq.com/s/ZooT23LQrh93r9KAcFquzg",
+          "confidence": "high",
+          "rank_tier": "global_leader",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025年中国银行业100强（中国银行业协会）",
+          "year": "2025",
+          "rank": "52",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://www.urcb.com/urcb/gyyl1/gsgk/index.shtml",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "地方性中小商业银行（社区银行战略）：聚焦零售业务、公司业务、金融资管业务三大板块，服务市民、小微企业与地方社会经济发展",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.urcb.com/urcb/gyyl1/gsgk/index.shtml",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "江苏乔木教育科技有限公司",
+      "city": "南京",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "市场营销",
+        "英语学科研究员",
+        "图书直播与短视频出镜专员"
+      ],
+      "work_cities": [
+        "南京"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "教育图书出版策划：以高考研究统领教育图书研发，构建学习模型、开发高端提优产品，并开展大阅读课程研发与中高考英语专项研发",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://sdwz.91job.org.cn/recruitment/jobDetails?dwid=726320&zpgwid=1000000000749392",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "浙江超级灵魂人工智能研究院有限公司",
+      "city": "湖州",
+      "nature": "民企",
+      "industry": "科研服务",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "人工智能研发人员",
+        "控制算法工程师",
+        "营销管培生",
+        "电气工程师"
+      ],
+      "work_cities": [
+        "湖州",
+        "上海",
+        "广州",
+        "北京",
+        "深圳",
+        "海口",
+        "杭州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "医学人工智能软件开发与系统集成：以模拟人脑思维逻辑的类脑仿生算法为核心，产品应用于仿生决策、仿生视觉、仿生感知、仿生执行器、AI医生与仿生机器人",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.career.zju.edu.cn/jyxt/sczp/zpztgl/ckZpgwXq.zf?zpxxbh=59DAC9001F3B945EE0653A68DD0E9B18",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "浙银理财有限责任公司",
+      "city": "杭州",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "浙银理财综合培养岗"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": {
+        "list": "金牛资产管理研究中心2026年一季度理财公司“纯固收”投资能力综合排名（股份制银行理财子公司）",
+        "year": 2026,
+        "rank": 3,
+        "source_url": "http://mp.weixin.qq.com/s?__biz=Mzk1NzkyMzUxNA==&mid=2247488260&idx=1&sn=b8422e03d5b28b198ad153f280fa143e&chksm=c2356e749a0acf0c7a20fe866bc43551a1da7cab6bfa4133e7b8716248c236aad6f6c87d6dd3#rd",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "金牛资产管理研究中心2026年一季度理财公司“纯固收”投资能力综合排名（股份制银行理财子公司）",
+          "year": 2026,
+          "rank": 3,
+          "source_url": "http://mp.weixin.qq.com/s?__biz=Mzk1NzkyMzUxNA==&mid=2247488260&idx=1&sn=b8422e03d5b28b198ad153f280fa143e&chksm=c2356e749a0acf0c7a20fe866bc43551a1da7cab6bfa4133e7b8716248c236aad6f6c87d6dd3#rd",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "中国银行业理财市场半年报告（2026年上）·管理规模较年初增速（中国经济网/中证网报道）",
+          "year": "2026",
+          "metric": "管理规模较年初增速",
+          "value": "1.24%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "http://m.ce.cn/cj/gd/202608/t20260802_3123116.shtml",
+          "confidence": "high"
+        },
+        {
+          "report": "2026年上半年理财公司半年报·混合类产品存续规模增幅（中证网）",
+          "year": "2026",
+          "metric": "混合类产品规模增幅",
+          "value": "346.1%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://jnzstatic.cs.com.cn/zzb/htmlInfo/029ce8d62d2c9247c72bdae2cb19f49e.html",
+          "confidence": "high"
+        }
+      ],
+      "segment": "由浙商银行全资发起设立的理财子公司，面向不特定社会公众及合格投资者发行理财产品并提供理财顾问和咨询服务，形成覆盖现金管理类（琮善）、固收策略类（琮简）、固收增强类（琮融）、混合类（琮心）、权益类（琮长）、商品及金融衍生品类（琮乐）的全谱系产品系列",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.czbank-wm.com/wm/disclosure/announce1/announce3/202604/P020260428420357874891.pdf",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "海亮教育科技服务集团有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "龙头特大",
+      "matched_jobs": [
+        "算法工程师",
+        "教育管理精英(未来校长)",
+        "竞赛教练(数学、物理)",
+        "商务管培生",
+        "在线教师(双师课堂)"
+      ],
+      "work_cities": [
+        "杭州",
+        "诸暨",
+        "绍兴",
+        "宁波",
+        "温州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "学校教育与科技服务双轮驱动：运营“海亮教育（实体办学）”“海亮科服（科技服务）”两大板块，业务覆盖学校K12教育、学前教育、特殊教育、学校综合管理服务、教育科技、生涯科技、智慧后勤、师训干训、课后服务、艺术服务等领域",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.hailiangedu.com/news-detail.html?id=601",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://zj.people.com.cn/BIG5/n2/2026/0423/c186327-41561375.html",
+      "growth_note": "入选2026浙江独角兽企业榜单（民建浙江省委会/浙江省商会/中国投资发展促进会·万物生长大会发布），为全国首家专注赋能学校的教育科技独角兽、浙江首家教育科技领域独角兽。",
+      "job_coverage": "full"
+    },
+    {
+      "name": "清华大学附属中学",
+      "city": "北京",
+      "nature": "事业单位",
+      "industry": "教育",
+      "scale_tier": "",
+      "matched_jobs": [
+        "初、高中专任教师(数学、物理、化学、生物)",
+        "物理实验员(职员)"
+      ],
+      "work_cities": [
+        "北京"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "教育部直属高校附中、北京市首批示范性普通高中，构建集学科竞赛、科技教育、体教融合、艺术培养于一体的拔尖创新人才贯通衔接培养体系",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.qhfz.edu.cn/xxgk.htm",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "珠海金山办公软件有限公司",
+      "city": "珠海",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "产品经理(AI应用专项)",
+        "精英C++开发工程师(全栈发展)",
+        "精英算法研发工程师(全栈发展)",
+        "运营专员(AI应用专项)",
+        "管培生(产品/运营/政企营销方向)"
+      ],
+      "work_cities": [
+        "北京",
+        "珠海",
+        "广州",
+        "武汉",
+        "合肥",
+        "上海",
+        "西安",
+        "成都",
+        "深圳"
+      ],
+      "industry_rank": {
+        "list": "IDC 2026年第一季度中国办公套件市场跟踪报告（终端用户授权数份额，国内第1，32.1%）",
+        "year": "2026",
+        "rank": "1",
+        "rank_dim": "industry",
+        "rank_tier": "national_leader",
+        "source_url": "https://www.whb.cn/zhuzhan/syst/20261027/547487.html",
+        "confidence": "medium",
+        "group_scope": "group"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2023珠海企业100强",
+          "year": 2023,
+          "rank": 61,
+          "source_url": "https://mp.weixin.qq.com/s/81sr5NkAZ-5LgYQfwD-cKw",
+          "confidence": "high",
+          "rank_tier": "province100",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        },
+        {
+          "list": "IDC 2026年第一季度中国办公套件市场跟踪报告（终端用户授权数份额，国内第1，32.1%）",
+          "year": "2026",
+          "rank": "1",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://www.whb.cn/zhuzhan/syst/20261027/547487.html",
+          "confidence": "medium",
+          "group_scope": "group"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "金山办公2026年三季报（南方+报道）",
+          "year": "2026",
+          "metric": "营业收入同比增速",
+          "value": "21.57%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.nfnews.com/content/xovKE5QdyJ.html",
+          "confidence": "high"
+        }
+      ],
+      "segment": "WPS Office、金山文档、稻壳儿、金山词霸等办公软件产品和服务（办公套件 + 云协作 + AI 办公），为党政、金融、能源、航空、医疗、教育等行业提供定制化办公产品与服务",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://ep.wps.cn/about/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "知有无界（深圳）智能科技有限公司",
+      "city": "深圳",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "世界模型算法工程师",
+        "具身智能算法工程师",
+        "机械结构工程师",
+        "嵌入式软件工程师",
+        "安卓软件工程师(上位机方向)"
+      ],
+      "work_cities": [
+        "深圳"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "工业具身智能（工业具身大脑）：以搬运、喷涂两大基础技能切入，为船舶修造、航运物流、汽车喷漆等场景提供智能机器人标准产品（愚公物流装卸机器人、马良具身智能喷涂机器人）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://aiz.chat/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "石河子大学第一附属医院",
+      "city": "石河子",
+      "nature": "事业单位",
+      "industry": "医药",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "临床医疗岗",
+        "事业编制工作人员(详见岗位计划表)"
+      ],
+      "work_cities": [
+        "石河子"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "集医疗、教学、科研、预防、保健、康复、急救为一体的综合性三级甲等医院（兵团系统内最大），拥有儿科、重症医学、临床病理、普通外科等8个国家临床重点专科",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.sdyfy.com.cn/contents/4/1540.html",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "立时飞讯信息科技（上海）有限公司",
+      "city": "上海",
+      "nature": "外企",
+      "industry": "IT",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "软件测试开发工程师"
+      ],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "企业内容管理（ECM）与业务流程自动化软件（Laserfiche 在上海的研发中心），提供文档管理、电子表格与业务流程自动化解决方案",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.laserfiche.com/about-us/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "绍兴市上虞区杭州湾集成电路设计工程中心",
+      "city": "绍兴",
+      "nature": "民办非企业",
+      "industry": "制造",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "数字电路设计工程师",
+        "模拟电路设计工程师",
+        "数字验证工程师",
+        "版图设计工程师"
+      ],
+      "work_cities": [
+        "绍兴"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "集成电路IP研发、测试、认证与托管：打造国内首个可信工艺可靠IP研发、评估与认证平台，具备特种工艺与极端环境可靠性研发及一站式流片产业化能力（哈尔滨工业大学与绍兴市上虞区政府联合共建）",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://mp.weixin.qq.com/s?__biz=Mzg4OTc3NTk1Ng==&mid=2247563929&idx=1&sn=89d1421d0e2c667a21566cc382a2643a&chksm=ce0989b15aa721967372a08bf5ae0bbb7d9c53c430e4d43aa4a960e3bf6d1b007d6f9b72cf4b#rd",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "联检（江苏）科技股份有限公司",
+      "city": "常州",
+      "nature": "民企",
+      "industry": "科研服务",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "业务销售管培生",
+        "技术管培生",
+        "职能管培生",
+        "海外管培生"
+      ],
+      "work_cities": [
+        "北京",
+        "上海",
+        "深圳",
+        "杭州",
+        "重庆",
+        "苏州",
+        "常州",
+        "烟台",
+        "广州"
+      ],
+      "industry_rank": {
+        "list": "2026全国科技创新企业500强",
+        "year": 2026,
+        "rank": 262,
+        "source_url": "https://mp.weixin.qq.com/s/_efq2Iy-c1r2iLXHygVQ4A",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2026全国科技创新企业500强",
+          "year": 2026,
+          "rank": 262,
+          "source_url": "https://mp.weixin.qq.com/s/_efq2Iy-c1r2iLXHygVQ4A",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "以检验检测标准认证为核心主业，协同发展新技术、新材料、物联传感数智化等质量科技服务；业务涵盖工程服务、新能源与汽车、生命科学与消费品、工业与先进制造，具备CMA、CNAS、CATL资质",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.czjky.com/about.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "苏州东山精密制造股份有限公司",
+      "city": "苏州",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "龙头特大",
+      "matched_jobs": [
+        "产品工程师",
+        "硬件研发工程师",
+        "工艺工程师",
+        "AI工程师",
+        "质量工程师"
+      ],
+      "work_cities": [
+        "苏州",
+        "盐城"
+      ],
+      "industry_rank": {
+        "list": "2026中国制造业民营企业500强",
+        "year": "2026",
+        "rank": "236",
+        "rank_dim": "industry",
+        "rank_tier": "national_leader",
+        "source_url": "https://mp.weixin.qq.com/s/Idtx6nlHEjegL8D19CjWuw",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2026财富中国500强",
+          "year": 2026,
+          "rank": 371,
+          "source_url": "https://www.fortunechina.com/fortune500/c/2026-07/21/content_475181.htm",
+          "confidence": "high",
+          "rank_tier": "china500",
+          "rank_dim": "scale",
+          "group_scope": "self"
+        },
+        {
+          "list": "2026中国制造业民营企业500强",
+          "year": "2026",
+          "rank": "236",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://mp.weixin.qq.com/s/Idtx6nlHEjegL8D19CjWuw",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025中国机械500强（中国机械工业企业管理协会）",
+          "year": "2025",
+          "rank": "77",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://mp.weixin.qq.com/s/Up1x6G1OkgpuFuxBJX4tfw",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "东山精密2026年半年度报告（营收/净利同比）",
+          "year": "2026",
+          "metric": "同比增速",
+          "value": "营业收入+63.95%；归母净利润+290.09%",
+          "rank": "",
+          "cls": "A",
+          "source_url": "https://www.zhengguannews.cn/zghnews/427161.html",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "电子电路（PCB/FPC）、光模块（含光芯片）、精密组件、光电显示模组四大核心业务板块，为全球第二大FPC供应商、全球前三大PCB供应商",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://cn.dsbj.com/cn/index/pageview/catid/22.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "苏州青河科技有限公司",
+      "city": "苏州",
+      "nature": "外企",
+      "industry": "IT",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "程序员(JAVA软件开发)",
+        "项目管理",
+        "数据库管理(DBA)",
+        "网页设计(HTML)"
+      ],
+      "work_cities": [
+        "苏州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "以SaaS模式为基础的广告媒体分析软件提供商，为美国电视网络与媒体服务代理商提供收视受众分析、媒体策划与广告投放决策系统（TacticVision、MediaContact、LocalVision）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://qinghetech.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "诸暨荣怀学校",
+      "city": "诸暨",
+      "nature": "民办非企业",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "高中教师",
+        "初中教师",
+        "五大学科竞赛教练",
+        "教育管理储备干部"
+      ],
+      "work_cities": [
+        "诸暨"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "诸暨市教育局直属全寄宿制民办K12学校（幼儿园至高中），含国际教育（留学生院）、艺术教育、复读培训等多元体系",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://www.ronghuai.com/about_2.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "镇江市新东方教育培训有限公司",
+      "city": "镇江",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "数学教师",
+        "英语教师",
+        "高中教师(数学、英语、物理、化学)",
+        "市场专员"
+      ],
+      "work_cities": [
+        "镇江"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "中小学学科培训，及语言能力、艺术、体育、科技类营利性民办培训、教育咨询、研学与留学中介服务（新东方教育科技集团第42所直属分校）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://zj.xdf.cn/huodong/202104/128616192.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中共黔西南州委组织部",
+      "city": "黔西南州(兴义)",
+      "nature": "党政机关",
+      "industry": "未知",
+      "scale_tier": "未知",
+      "matched_jobs": [],
+      "work_cities": [
+        "黔西南州(兴义)"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "地方党委组织工作：干部管理、基层党建、党员教育与人才工作",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://www.qxnzzb.gov.cn",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "图灵私募基金管理（海南）有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "量化研究员(中低频方向)",
+        "量化研究员(高频方向)",
+        "量化开发(C++高频)",
+        "Web前端开发工程师"
+      ],
+      "work_cities": [
+        "上海",
+        "深圳",
+        "海口"
+      ],
+      "industry_rank": {
+        "list": "海南私募基金公司排名前十强",
+        "year": 2025,
+        "rank": null,
+        "source_url": "https://www.simuwang.com/tag/70255",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "海南私募基金公司排名前十强",
+          "year": 2025,
+          "rank": null,
+          "source_url": "https://www.simuwang.com/tag/70255",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "海南私募基金公司排名前十强",
+          "year": "",
+          "rank": "",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "私募排排网公司页/证券时报报道（2025年百亿私募阵营变动）",
+          "year": "2025",
+          "metric": "管理规模同比增速",
+          "value": "由2024年末约100亿元增至2025年末超200亿元（约+100%）",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://dc.simuwang.com/company/CO00003KTN",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "量化私募证券投资基金管理（指数增强、量化CTA、市场中性，机构资金占比超九成）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://dc.simuwang.com/company/CO00003KTN",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "天津南大通用数据技术股份有限公司",
+      "city": "天津",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "数据库内核开发工程师"
+      ],
+      "work_cities": [
+        "天津",
+        "南京",
+        "西安",
+        "济南",
+        "长沙"
+      ],
+      "industry_rank": {
+        "list": "赛迪顾问《2025-2026中国平台软件市场研究年度报告》—分析型数据库国产厂商份额",
+        "year": "2025",
+        "rank": "国产厂商第1（金融行业云数据仓库份额第1、金融行业用户渗透率第1）",
+        "rank_dim": "industry",
+        "rank_tier": "national_leader",
+        "source_url": "https://www.gbase.cn/en/news/4116",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "天津民营企业科技创新100强",
+          "year": 2024,
+          "rank": 2,
+          "source_url": "https://mp.weixin.qq.com/s/l1Ahn8TV0NzH9dc1dACOGQ",
+          "confidence": "high",
+          "rank_tier": "province100",
+          "rank_dim": "scale"
+        },
+        {
+          "list": "2024天津民营企业科技创新100强",
+          "year": "2024",
+          "rank": "2",
+          "rank_dim": "scale",
+          "rank_tier": "province100",
+          "source_url": "https://mp.weixin.qq.com/s/l1Ahn8TV0NzH9dc1dACOGQ",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "赛迪顾问《2025-2026中国平台软件市场研究年度报告》—分析型数据库国产厂商份额",
+          "year": "2025",
+          "rank": "国产厂商第1（金融行业云数据仓库份额第1、金融行业用户渗透率第1）",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://www.gbase.cn/en/news/4116",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025信创500强（DBC德本咨询）",
+          "year": "2025",
+          "rank": "106",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://mp.weixin.qq.com/s/X33q9pWV6beBtlpGAp9_7g",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "国产数据库产品研发：分析型数据库GBase 8a、交易型数据库GBase 8s、多模多态分布式数据库GBase 8c及云原生数据仓库（覆盖金融、电信、党政、能源等行业）",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://www.gbase.cn/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州原子矩阵计算有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "科研服务",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "量子测控系统工程师",
+        "量子软件开发工程师",
+        "量子架构与编译器工程师",
+        "容错量子计算研究员"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "中性原子量子计算全栈解决方案：全栈式集成化大规模中性原子量子计算机整机（最高2310物理比特无缺陷阵列）与MatriQ量子云平台",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://matriqcomputing.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "高途教育科技集团有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "学习顾问",
+        "主讲老师",
+        "算法工程师",
+        "后端开发",
+        "内容运营",
+        "产品经理"
+      ],
+      "work_cities": [
+        "北京",
+        "郑州",
+        "武汉",
+        "成都",
+        "西安",
+        "太原",
+        "上海",
+        "深圳",
+        "广州",
+        "苏州",
+        "杭州",
+        "重庆",
+        "南京",
+        "天津",
+        "石家庄",
+        "东莞",
+        "佛山",
+        "长沙",
+        "合肥",
+        "济南",
+        "温州",
+        "沈阳",
+        "徐州",
+        "南昌"
+      ],
+      "industry_rank": {
+        "list": "六大数字教育上市公司营收榜",
+        "year": 2025,
+        "rank": 1,
+        "source_url": "https://www.163.com/dy/article/KRKBSH7A05524XBF.html",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "六大数字教育上市公司营收榜",
+          "year": 2025,
+          "rank": 1,
+          "source_url": "https://www.163.com/dy/article/KRKBSH7A05524XBF.html",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "六大数字教育上市公司营收榜",
+          "year": "",
+          "rank": "1",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "高途集团（NYSE:GOTU）2025财年年度报告",
+          "year": "2025",
+          "metric": "同比增速",
+          "value": "营业收入61.5亿元，同比+35.0%；现金收入69.0亿元，同比+23.0%",
+          "rank": "",
+          "cls": "A",
+          "source_url": "https://qiye.chinadaily.com.cn/a/202603/09/WS69ae5bc6a310942cc49a2207.html",
+          "confidence": "high"
+        }
+      ],
+      "segment": "科技教育公司，业务涵盖面向中小学生、大学生与成人的在线直播大班课与线下辅导，以及出国留学咨询、直播电商（高途佳品）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://job.gaotu.cn",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "苏州萘思尔科技有限公司",
+      "city": "苏州",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "数学学科教师（万人名师计划）",
+        "物理学科教师（万人名师计划）",
+        "化学学科教师（万人名师计划）",
+        "英语学科教师（万人名师计划）"
+      ],
+      "work_cities": [
+        "苏州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "面向中小学生的校外托管服务，及智能机器人销售与研发、人工智能应用软件开发、教学用模型及教具销售、非学科类培训与教育咨询",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.qibook.com/company-wiki-s/suzhounaisierkejiyouxiangongsi-0b3581a3.html?s=t",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中国铝业郑州有色金属研究院有限公司",
+      "city": "郑州",
+      "nature": "央企",
+      "industry": "科研服务",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "科技研发岗",
+        "工程技术岗",
+        "生产技术岗",
+        "管理岗位",
+        "分析检测"
+      ],
+      "work_cities": [
+        "郑州",
+        "焦作",
+        "淄博",
+        "宁波"
+      ],
+      "industry_rank": {
+        "list": "2022年度郑州市高新技术企业百强",
+        "year": 2022,
+        "rank": null,
+        "source_url": "http://www.hnnm.cn/index/view-18783.html",
+        "confidence": "medium",
+        "rank_tier": "province100",
+        "rank_dim": "scale"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "scale",
+      "rank_tier": "province100",
+      "rank_hits": [
+        {
+          "list": "2022年度郑州市高新技术企业百强",
+          "year": 2022,
+          "rank": null,
+          "source_url": "http://www.hnnm.cn/index/view-18783.html",
+          "confidence": "medium",
+          "rank_tier": "province100",
+          "rank_dim": "scale"
+        },
+        {
+          "list": "2022年度郑州市高新技术企业百强",
+          "year": "2022",
+          "rank": "",
+          "rank_dim": "scale",
+          "rank_tier": "province100",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "铝工业科研与成果转化：铝土矿综合利用、氧化铝、电解铝、铝用炭素及轻金属材料的研发与产业化（含精细氧化铝、电工填料氧化铝等产品）",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://zzyjy.chinalco.com.cn/gywm/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京思跃教育科技集团有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "教育",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "教学管培生"
+      ],
+      "work_cities": [
+        "北京",
+        "济南",
+        "苏州",
+        "南京",
+        "广州",
+        "佛山",
+        "中山",
+        "惠州",
+        "珠海",
+        "东莞"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "综合性K12教育集团，旗下『思跃培优』专注初高中学科培训与高考志愿填报，『思跃素养』专注编程、机器人、科学实验、思维等素质课程",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://baike.baidu.com/item/北京思跃教育科技有限公司/23376078",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "江苏箸境智能科技有限公司",
+      "city": "南京",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "VLA机器人算法工程师",
+        "具身智能软件工程师",
+        "强化学习算法工程师"
+      ],
+      "work_cities": [
+        "南京"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "人形机器人整机研发与销售、具身智能数据产品与服务：已形成H1“小箸”与S1两大系列，采取“本体研发+数据模型飞轮”双线并行模式",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://mp.weixin.qq.com/s?__biz=MzYyMTQ2MDYzOA==&mid=2247485328&idx=1&sn=c1cb20624de06d25c6a8dcc653065fe1&chksm=fe6a1b829687e97fb23b1371c3f5c2980074f95a0c54dd7bd278c06aa0a4035dc8e954389923#rd",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "济南二机床集团有限公司",
+      "city": "济南",
+      "nature": "国企",
+      "industry": "制造",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "机械设计研发岗",
+        "电气设计研发岗",
+        "电气调试岗",
+        "工艺技术岗",
+        "IT技术岗"
+      ],
+      "work_cities": [
+        "济南"
+      ],
+      "industry_rank": {
+        "list": "中国机械工业百强",
+        "year": 2022,
+        "rank": 76,
+        "source_url": "http://top100.mei.net.cn/mqzs_qy.asp?bs=a54&lb=1&xnf=2021",
+        "confidence": "medium",
+        "rank_tier": "national_leader",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "中国机械工业百强",
+          "year": 2022,
+          "rank": 76,
+          "source_url": "http://top100.mei.net.cn/mqzs_qy.asp?bs=a54&lb=1&xnf=2021",
+          "confidence": "medium",
+          "rank_tier": "national_leader",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "中国机械工业百强",
+          "year": "",
+          "rank": "76",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "济南时报（引济南市国资委）：济南市属企业向科创型企业转型",
+          "year": "2025",
+          "metric": "经营收入同比增速",
+          "value": "5.52%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://www.jinantimes.com.cn/news-39-5139850.html",
+          "confidence": "high"
+        },
+        {
+          "report": "济南日报：济南二机床党委获评全国先进基层党组织纪实",
+          "year": "2026",
+          "metric": "主营业务收入年均增速",
+          "value": "10.5%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "http://jnrb.e23.cn/jnrb/html/2026/20260705/20260705_002/jnrb_20260705_00000_002_2073479119758766102.html",
+          "confidence": "high"
+        }
+      ],
+      "segment": "锻压设备与大重型金属切削机床制造：主要生产锻压设备、数控金切机床、自动化设备、铸造机械、数控切割设备，服务汽车、轨道交通、能源、冶金、模具、工程机械等行业",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "high",
+      "segment_source_url": "https://www.jiermt.com/column/1",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "国元证券股份有限公司",
+      "city": "合肥",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "管培生（综合方向）",
+        "管培生（投资方向）",
+        "管培生（分支机构）",
+        "投资顾问岗",
+        "IT岗"
+      ],
+      "work_cities": [
+        "合肥",
+        "上海"
+      ],
+      "industry_rank": {
+        "list": "2025中国上市公司500强",
+        "year": 2025,
+        "rank": 301,
+        "source_url": "http://www.warton.com.cn/index.php?m=&c=Index&a=show&catid=83&id=274",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2025中国上市公司500强",
+          "year": 2025,
+          "rank": 301,
+          "source_url": "http://www.warton.com.cn/index.php?m=&c=Index&a=show&catid=83&id=274",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "中证网/中证智能财讯（2025年年报数据，证券Ⅲ行业34家已披露公司口径）",
+          "year": "2025",
+          "metric": "三年营业总收入复合增长率排名",
+          "value": "5.37%",
+          "rank": "18/34",
+          "cls": "C",
+          "source_url": "https://newzzbcx.cs.com.cn/cxnews.html?name=new20260421093912odsypnuh",
+          "confidence": "high"
+        },
+        {
+          "report": "中证网/中证智能财讯（2025年年报数据，证券Ⅲ行业34家已披露公司口径）",
+          "year": "2025",
+          "metric": "三年净利润复合增长率排名",
+          "value": "11.86%",
+          "rank": "28/34",
+          "cls": "C",
+          "source_url": "https://newzzbcx.cs.com.cn/cxnews.html?name=new20260421093912odsypnuh",
+          "confidence": "high"
+        }
+      ],
+      "segment": "综合类证券公司（证券经纪、投资银行、资产管理、财富信用、自营/FICC、期货等业务）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.gyzq.com.cn/main/enterGY/company_profile/company_abstract/index.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州兆华电子股份有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "售前方案解决工程师",
+        "储备项目经理",
+        "算法工程师",
+        "硬件测试工程师",
+        "软件开发工程师",
+        "电子工程师"
+      ],
+      "work_cities": [
+        "杭州",
+        "东莞"
+      ],
+      "industry_rank": {
+        "list": "2025浙江高新技术企业创新能力500强",
+        "year": 2025,
+        "rank": 478,
+        "source_url": "https://mp.weixin.qq.com/s?__biz=MzU5MDc0NjU4Mg==&mid=2247590316&idx=2&sn=52f2da11995f701c104cd633a4074781&chksm=fffe794ca1b946454183b837729f127ae295fa1b334e39ea62298841bd4ba52b3240479d114f&scene=27",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2025浙江高新技术企业创新能力500强",
+          "year": 2025,
+          "rank": 478,
+          "source_url": "https://mp.weixin.qq.com/s?__biz=MzU5MDc0NjU4Mg==&mid=2247590316&idx=2&sn=52f2da11995f701c104cd633a4074781&chksm=fffe794ca1b946454183b837729f127ae295fa1b334e39ea62298841bd4ba52b3240479d114f&scene=27",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "工业和信息化部专精特新“小巨人”企业名单（复核通过）",
+          "year": "2025",
+          "rank": "",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://www.qibook.com/company-wiki-s/hangzhouzhaohuadianzigufenyouxiangongsi-bab87ac3.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "工业和信息化部专精特新“小巨人”企业名单（2025年复核，认定机构：工业和信息化部）",
+          "year": "2025",
+          "metric": "资质认定",
+          "value": "国家级专精特新小巨人",
+          "rank": "",
+          "cls": "B",
+          "source_url": "https://www.qibook.com/company-wiki-s/hangzhouzhaohuadianzigufenyouxiangongsi-bab87ac3.html",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "声学测试仪器与声学传感器：测量传声器/仿真耳嘴、电声分析系统、工业声学成像仪、声级计与环境噪声监测系统",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://cn.crysound.com/about.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://www.crysound.com.cn",
+      "growth_note": "国家级专精特新“小巨人”企业（2025年复核通过，工信部）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州老板电器股份有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "制造",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "算法工程师",
+        "软件开发工程师",
+        "结构开发工程师",
+        "海外销售",
+        "软件测试工程师",
+        "管培生"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": {
+        "list": "2026中国上市企业500强",
+        "year": 2026,
+        "rank": 152,
+        "source_url": "https://mp.weixin.qq.com/s/bxEpyXggEI9QyAtehRJPoQ",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2026中国上市企业500强",
+          "year": 2026,
+          "rank": 152,
+          "source_url": "https://mp.weixin.qq.com/s/bxEpyXggEI9QyAtehRJPoQ",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "奥维云网（AVC）线下零售市场监测——吸油烟机零售额市场份额",
+          "year": "2025",
+          "rank": "第1",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://www.robam.com/upload/2026/07/05/17832417039065nqluh.pdf",
+          "confidence": "high",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "厨房电器研发生产销售：吸油烟机、燃气灶、洗碗机、蒸烤一体机、燃气热水器、净水器等，定位'烹饪全链路整体解决方案提供商'",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "medium",
+      "segment_source_url": "https://igw.robam.com/about/innovate.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "世坤咨询（北京）有限公司",
+      "city": "北京",
+      "nature": "外企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "量化研究员",
+        "数据科学家",
+        "量化研究实习生",
+        "数据科学实习生"
+      ],
+      "work_cities": [
+        "北京",
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "商务咨询、经济信息咨询与计算机软件技术开发（母公司WorldQuant的量化投资研究与交易业务）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.worldquant.com",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "中汽研汽车试验场股份有限公司",
+      "city": "盐城",
+      "nature": "央企",
+      "industry": "科研服务",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "市场营销岗",
+        "人力资源岗"
+      ],
+      "work_cities": [
+        "盐城",
+        "长春"
+      ],
+      "industry_rank": {
+        "list": "全国研究和试验发展100强企业",
+        "year": 2025,
+        "rank": 65,
+        "source_url": "https://www.sina.cn/news/detail/5136388749788155.html",
+        "confidence": "medium",
+        "rank_tier": "national_leader",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "全国研究和试验发展100强企业",
+          "year": 2025,
+          "rank": 65,
+          "source_url": "https://www.sina.cn/news/detail/5136388749788155.html",
+          "confidence": "medium",
+          "rank_tier": "national_leader",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "全国研究和试验发展100强企业",
+          "year": "",
+          "rank": "65",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "第七批国家级专精特新“小巨人”企业公示名单（工业和信息化部）",
+          "year": "2025",
+          "metric": "专精特新小巨人认定",
+          "value": "",
+          "rank": "",
+          "cls": "B",
+          "source_url": "https://www.capg.com.cn/news/989.html",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "第三方汽车试验场场地试验技术服务：构建汽车测试场地和试验场景，为整车企业、汽车检测机构、底盘零部件系统企业及轮胎企业提供场地试验技术服务，覆盖传统汽车、新能源汽车、智能网联汽车一站式验证",
+      "segment_leader": "third_party_top",
+      "segment_leader_confidence": "high",
+      "segment_source_url": "https://www.capg.com.cn/gsgk/",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://www.qibook.com/company-wiki-s/zhongqiyanqicheshiyanchanggufenyouxiangongsi-db49ae84.html?s=t",
+      "growth_note": "国家级专精特新“小巨人”企业（2025年，工信部）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京海量数据技术股份有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "数据库内核开发工程师（C/C++）",
+        "测试工程师",
+        "项目型销售",
+        "产品工程师",
+        "C++开发工程师"
+      ],
+      "work_cities": [
+        "北京",
+        "上海",
+        "广州",
+        "深圳",
+        "杭州"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "rising_star",
+      "growth_hits": [],
+      "segment": "国产企业级关系型数据库产品（海量数据库Vastbase系列、Vastcube数据库一体机、Datalink大数据系列），国内首家以数据库为主营业务的主板上市企业",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://vastdata.zhuangbei.cn/introduce/",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://m.sme-gov.cn/shaanxi/news/82230.html",
+      "growth_note": "入选工业和信息化部第七批专精特新『小巨人』企业（2025年认定，位列名单第180位）。",
+      "job_coverage": "full"
+    },
+    {
+      "name": "北京贝瑞和康生物技术有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "医药",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "智能数据产品经理",
+        "算法工程师",
+        "项目经理",
+        "科研合作经理",
+        "生信研发工程师",
+        "售后服务工程师",
+        "临床注册专员",
+        "运营专员",
+        "法务专员"
+      ],
+      "work_cities": [
+        "北京"
+      ],
+      "industry_rank": {
+        "list": "2020年度中国医疗器械（含IVD）企业TOP20排行榜",
+        "year": 2020,
+        "rank": 14,
+        "source_url": "https://qiye.qizhidao.com/develop/1b6c46c4f5b12b3c7b95becdfd6d1215.html",
+        "confidence": "medium",
+        "rank_tier": "national_leader",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "national_leader",
+      "rank_hits": [
+        {
+          "list": "2020年度中国医疗器械（含IVD）企业TOP20排行榜",
+          "year": 2020,
+          "rank": 14,
+          "source_url": "https://qiye.qizhidao.com/develop/1b6c46c4f5b12b3c7b95becdfd6d1215.html",
+          "confidence": "medium",
+          "rank_tier": "national_leader",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "临床基因检测与高通量测序应用（生育健康/无创DNA产前检测、遗传病检测、肿瘤检测）及测序设备试剂、大数据服务",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.berrygenomics.com/",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "国电投广西核电有限公司",
+      "city": "防城港",
+      "nature": "央企",
+      "industry": "能源",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "燃料管理岗",
+        "核岛设计管理岗",
+        "常规岛施工岗",
+        "常规岛及BOP系统设计管理岗",
+        "土建设计管理岗",
+        "电气设计岗",
+        "化学分析岗",
+        "振动诊断岗",
+        "消防管理岗",
+        "经管培优",
+        "科技培优(工程类)"
+      ],
+      "work_cities": [
+        "防城港"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "核电项目前期准备、建设、运营与管理（白龙核电项目，CAP1000与“国和一号”机组）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.spicgxnp.com",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "天津泰达建设集团有限公司",
+      "city": "天津",
+      "nature": "国企",
+      "industry": "建筑",
+      "scale_tier": "中型",
+      "matched_jobs": [
+        "董事会办公室岗",
+        "投资者关系岗",
+        "资本运作岗",
+        "投资拓展经理",
+        "土建工程岗",
+        "电气工程岗",
+        "建筑设计岗",
+        "景观设计岗",
+        "室内设计岗",
+        "法务管理岗",
+        "人力资源管理岗",
+        "信息化工程师岗",
+        "运营管理岗",
+        "财务管理岗",
+        "策划管理岗",
+        "新媒体运营岗"
+      ],
+      "work_cities": [
+        "天津"
+      ],
+      "industry_rank": {
+        "list": "2025中国房地产开发企业综合实力TOP500",
+        "year": 2025,
+        "rank": 162,
+        "source_url": "https://mp.weixin.qq.com/s/ZMgKVxNa6fq4Ji9QXDEYbw",
+        "confidence": "high",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2025中国房地产开发企业综合实力TOP500",
+          "year": 2025,
+          "rank": 162,
+          "source_url": "https://mp.weixin.qq.com/s/ZMgKVxNa6fq4Ji9QXDEYbw",
+          "confidence": "high",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "区域开发建设与房地产开发：商品住宅、商业综合体、工业厂房、公寓，持住房和城乡建设部房地产开发一级资质",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://www.tedacg.com/about/about.php",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "山西省人民医院",
+      "city": "太原",
+      "nature": "事业单位",
+      "industry": "医药",
+      "scale_tier": "大型",
+      "matched_jobs": [],
+      "work_cities": [
+        "太原"
+      ],
+      "industry_rank": {
+        "list": "全国三级公立医院绩效考核（国家卫生健康委）",
+        "year": "2018",
+        "rank": "98",
+        "rank_dim": "industry",
+        "rank_tier": "niche",
+        "source_url": "https://www.sxsrmyy.com/yyjs/index.asp",
+        "confidence": "medium",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "全国三级公立医院绩效考核（国家卫生健康委）",
+          "year": "2018",
+          "rank": "98",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "https://www.sxsrmyy.com/yyjs/index.asp",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "综合型三级甲等医院（医疗、教学、科研、预防、康复、保健、急救），设北院区、南院区、和平院区，编制床位2850张",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.sxsrmyy.com/yyjs/index.asp",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "partial"
+    },
+    {
+      "name": "巨人移动科技有限公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "游戏角色原画设计师",
+        "游戏角色原画师"
+      ],
+      "work_cities": [
+        "上海"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "上海市瞪羚企业认定（经工商资质信息平台归集）",
+          "year": "",
+          "metric": "瞪羚企业认定",
+          "value": "",
+          "rank": "",
+          "cls": "B",
+          "source_url": "https://www.qibook.com/company-wiki-s/jurenyidongkejiyouxiangongsi-ab57ba73.html?s=t",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "手机游戏研发与发行（RPG、卡牌、塔防等多品类手游，上海巨人网络旗下手游研发发行主体，产品含《征途口袋版》《武极天下》《黑猫警长2》等）",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "http://www.mztgame.com/html/news/2014-05-28/003-1401-00007-266506.shtml",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://baike.baidu.com/item/%E5%B7%A8%E4%BA%BA%E7%A7%BB%E5%8A%A8%E7%A7%91%E6%8A%80%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/13977090",
+      "growth_note": "上海市专精特新中小企业（2025年，上海市经济和信息化委员会）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "摩尔线程智能科技（北京）股份有限公司",
+      "city": "北京",
+      "nature": "民企",
+      "industry": "IT",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "中端实现/DFX工程师",
+        "硅后验证工程师",
+        "PDK开发工程师(校招)",
+        "AI应用推理引擎研发工程师"
+      ],
+      "work_cities": [
+        "北京",
+        "深圳",
+        "无锡",
+        "杭州",
+        "武汉",
+        "西安",
+        "成都",
+        "南京"
+      ],
+      "industry_rank": {
+        "list": "2025胡润中国500强",
+        "year": 2025,
+        "rank": 37,
+        "source_url": "https://hurun.net/zh-CN/Rank/HsRankDetails?pagetype=ctop500",
+        "confidence": "high",
+        "rank_tier": "niche",
+        "rank_dim": "industry"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2025胡润中国500强",
+          "year": 2025,
+          "rank": 37,
+          "source_url": "https://hurun.net/zh-CN/Rank/HsRankDetails?pagetype=ctop500",
+          "confidence": "high",
+          "rank_tier": "niche",
+          "rank_dim": "industry"
+        },
+        {
+          "list": "2025胡润中国500强（胡润研究院）",
+          "year": "2025",
+          "rank": "37",
+          "rank_dim": "scale",
+          "rank_tier": "china500",
+          "source_url": "https://hurun.net/zh-CN/Rank/HsRankDetails?pagetype=ctop500",
+          "confidence": "medium",
+          "group_scope": "self"
+        },
+        {
+          "list": "2025人工智能领军（DBC德本咨询）",
+          "year": "2025",
+          "rank": "21",
+          "rank_dim": "industry",
+          "rank_tier": "niche",
+          "source_url": "http://www.enet.com.cn/article/2026/0122/A202601221274686.html",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "rising_star",
+      "growth_hits": [
+        {
+          "report": "工业和信息化部第六批专精特新「小巨人」企业名单",
+          "year": "2024",
+          "metric": "专精特新小巨人认定",
+          "value": "",
+          "rank": "",
+          "cls": "B",
+          "source_url": "https://www.qibook.com/company-wiki-s/moerxianchengzhinengkejibeijinggufenyouxiangongsi-3f5ad7fb.html?s=t",
+          "confidence": "medium"
+        }
+      ],
+      "segment": "全功能GPU芯片及加速计算产品：GPU芯片（MUSA架构）、游戏/专业显卡与智算加速卡、夸娥（KUAE）智算集群及基础软件栈",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.mthreads.com/aboutus",
+      "non_enterprise": false,
+      "growth_evidence_url": "https://www.mthreads.com/about",
+      "growth_note": "国家级专精特新“小巨人”企业（2024年，工信部）；胡润研究院/IT桔子独角兽企业（2025年）",
+      "job_coverage": "full"
+    },
+    {
+      "name": "新城控股集团股份有限公司上海分公司",
+      "city": "上海",
+      "nature": "民企",
+      "industry": "建筑",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "招商管理【管培生】",
+        "营运管理【管培生】",
+        "企划管理【管培生】",
+        "法务管理【管培生】",
+        "企业管理【管培生】",
+        "人力资源管理【管培生】"
+      ],
+      "work_cities": [
+        "上海",
+        "天津",
+        "重庆",
+        "南京",
+        "长沙",
+        "长春",
+        "西安"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "普通公司",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "业务涵盖商业管理和地产开发双轮驱动（吾悦广场商业综合体运营管理+房地产开发销售），并向资管转型的综合性地产集团",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://seazen.com.cn/about/intro.html",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "杭州龙旗科技有限公司",
+      "city": "杭州",
+      "nature": "民企",
+      "industry": "金融",
+      "scale_tier": "中小型",
+      "matched_jobs": [
+        "AI研究员",
+        "量化研究员",
+        "算法研究员",
+        "AI Infra工程师",
+        "策略技术支持",
+        "后端开发工程师",
+        "海外IR",
+        "法务合规负责人"
+      ],
+      "work_cities": [
+        "杭州"
+      ],
+      "industry_rank": {
+        "list": "2025浙江高新技术企业创新能力500强",
+        "year": 2025,
+        "rank": 453,
+        "source_url": "https://mp.weixin.qq.com/s?__biz=MzU5MDc0NjU4Mg==&mid=2247590316&idx=2&sn=52f2da11995f701c104cd633a4074781&chksm=fffe794ca1b946454183b837729f127ae295fa1b334e39ea62298841bd4ba52b3240479d114f&scene=27",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2025浙江高新技术企业创新能力500强",
+          "year": 2025,
+          "rank": 453,
+          "source_url": "https://mp.weixin.qq.com/s?__biz=MzU5MDc0NjU4Mg==&mid=2247590316&idx=2&sn=52f2da11995f701c104cd633a4074781&chksm=fffe794ca1b946454183b837729f127ae295fa1b334e39ea62298841bd4ba52b3240479d114f&scene=27",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "私募证券投资基金管理（量化对冲）：专注股票量化策略，提供指数增强、市场中性、量化多头等策略产品，并开展美元基金/离岸专户业务",
+      "segment_leader": "self_claim",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.sci-inv.com/website/w/h?cc=3752238&mc=80674067&mt=1",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "浙商证券股份有限公司",
+      "city": "杭州",
+      "nature": "国企",
+      "industry": "金融",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "研究投顾",
+        "产业研究",
+        "机构销售",
+        "行业研究"
+      ],
+      "work_cities": [
+        "杭州",
+        "上海",
+        "北京",
+        "深圳"
+      ],
+      "industry_rank": {
+        "list": "2026浙商全国500强",
+        "year": 2026,
+        "rank": 185,
+        "source_url": "https://mp.weixin.qq.com/s/if82w0ixtNT05T120XXZ-A",
+        "confidence": "medium",
+        "rank_tier": "niche",
+        "rank_dim": "industry",
+        "group_scope": "self"
+      },
+      "industry_rank_label": "榜单在列",
+      "rank_dim": "industry",
+      "rank_tier": "niche",
+      "rank_hits": [
+        {
+          "list": "2026浙商全国500强",
+          "year": 2026,
+          "rank": 185,
+          "source_url": "https://mp.weixin.qq.com/s/if82w0ixtNT05T120XXZ-A",
+          "confidence": "medium",
+          "rank_tier": "niche",
+          "rank_dim": "industry",
+          "group_scope": "self"
+        },
+        {
+          "list": "2026上半年证券公司债券承销规模行业排名",
+          "year": "2026",
+          "rank": "8",
+          "rank_dim": "industry",
+          "rank_tier": "national_leader",
+          "source_url": "https://m.cnstock.com/commonDetail/775621",
+          "confidence": "medium",
+          "group_scope": "self"
+        }
+      ],
+      "growth_tier": "note_only",
+      "growth_hits": [
+        {
+          "report": "上海证券报·中国证券网：浙商证券2026年半年度报告",
+          "year": "2026",
+          "metric": "营业收入同比增速",
+          "value": "49.33%",
+          "rank": "",
+          "cls": "C",
+          "source_url": "https://m.cnstock.com/commonDetail/775621",
+          "confidence": "high"
+        }
+      ],
+      "segment": "综合性证券公司：证券经纪、投资银行、资产管理、证券自营、期货、融资融券、研究业务，并表国都证券后形成全国性财富管理网络",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.stocke.com.cn/main/zjzs/gsgk/gsjj/index.shtml",
+      "non_enterprise": false,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    },
+    {
+      "name": "贵州师范大学",
+      "city": "贵阳",
+      "nature": "事业单位",
+      "industry": "教育",
+      "scale_tier": "大型",
+      "matched_jobs": [
+        "教学科研岗",
+        "教学科研岗位"
+      ],
+      "work_cities": [
+        "贵阳"
+      ],
+      "industry_rank": null,
+      "industry_rank_label": "不适用（非企业主体）",
+      "rank_dim": "",
+      "rank_tier": "",
+      "rank_hits": [],
+      "growth_tier": "none",
+      "growth_hits": [],
+      "segment": "贵州省属重点师范大学（教育部与贵州省共建），以教师教育为特色，涵盖哲学、文学、教育学、工学、理学等12个学科门类的本科—硕士—博士培养",
+      "segment_leader": "none",
+      "segment_leader_confidence": "",
+      "segment_source_url": "https://www.gznu.edu.cn/xxgk/xxjj.htm",
+      "non_enterprise": true,
+      "growth_evidence_url": "",
+      "growth_note": "",
+      "job_coverage": "full"
+    }
+  ]
+}

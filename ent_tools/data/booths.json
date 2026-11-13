@@ -1,0 +1,592 @@
+[
+  {
+    "booth": "001",
+    "name": "郑州宇通集团有限公司",
+    "headcount": 75
+  },
+  {
+    "booth": "002",
+    "name": "苏州东山精密制造股份有限公司",
+    "headcount": 26
+  },
+  {
+    "booth": "003",
+    "name": "北京汽车国际发展有限公司",
+    "headcount": 55
+  },
+  {
+    "booth": "004",
+    "name": "杭州老板电器股份有限公司",
+    "headcount": 35
+  },
+  {
+    "booth": "005",
+    "name": "东方电气集团东方电机有限公司",
+    "headcount": 7
+  },
+  {
+    "booth": "006",
+    "name": "济南二机床集团有限公司",
+    "headcount": 16
+  },
+  {
+    "booth": "007",
+    "name": "无锡奥特维科技股份有限公司",
+    "headcount": 29
+  },
+  {
+    "booth": "008",
+    "name": "亿嘉和科技股份有限公司",
+    "headcount": 149
+  },
+  {
+    "booth": "009",
+    "name": "杭州德创电子股份有限公司",
+    "headcount": 1
+  },
+  {
+    "booth": "010",
+    "name": "杭州兆华电子股份有限公司",
+    "headcount": 35
+  },
+  {
+    "booth": "011",
+    "name": "北京中科腾越科技发展有限公司",
+    "headcount": 6
+  },
+  {
+    "booth": "012",
+    "name": "上海镱镭飞秒激光技术有限公司",
+    "headcount": 14
+  },
+  {
+    "booth": "013",
+    "name": "江苏箸境智能科技有限公司",
+    "headcount": 1
+  },
+  {
+    "booth": "014",
+    "name": "华为技术有限公司",
+    "headcount": 100
+  },
+  {
+    "booth": "016",
+    "name": "京东方科技集团股份有限公司",
+    "headcount": 2000
+  },
+  {
+    "booth": "017",
+    "name": "北京北方华创微电子装备有限公司",
+    "headcount": 1600
+  },
+  {
+    "booth": "018",
+    "name": "摩尔线程智能科技（北京）股份有限公司",
+    "headcount": 80
+  },
+  {
+    "booth": "019",
+    "name": "上海精测半导体技术有限公司",
+    "headcount": 179
+  },
+  {
+    "booth": "020",
+    "name": "苏州思必驰信息科技有限公司",
+    "headcount": 42
+  },
+  {
+    "booth": "021",
+    "name": "上海合合信息科技发展有限公司",
+    "headcount": 80
+  },
+  {
+    "booth": "022",
+    "name": "矩阵时光数字科技有限公司",
+    "headcount": 13
+  },
+  {
+    "booth": "023",
+    "name": "无锡卓海科技股份有限公司",
+    "headcount": "若干"
+  },
+  {
+    "booth": "024",
+    "name": "匠岭科技(上海)有限公司",
+    "headcount": 49
+  },
+  {
+    "booth": "025",
+    "name": "绍兴市上虞区杭州湾集成电路设计工程中心",
+    "headcount": 31
+  },
+  {
+    "booth": "026",
+    "name": "上海矩量光启计算技术有限公司",
+    "headcount": 17
+  },
+  {
+    "booth": "027",
+    "name": "杭州原子矩阵计算有限公司",
+    "headcount": 52
+  },
+  {
+    "booth": "028",
+    "name": "浙江超级灵魂人工智能研究院有限公司",
+    "headcount": 48
+  },
+  {
+    "booth": "029",
+    "name": "北京当升材料科技股份有限公司",
+    "headcount": 40
+  },
+  {
+    "booth": "030",
+    "name": "中国铝业郑州有色金属研究院有限公司",
+    "headcount": 23
+  },
+  {
+    "booth": "031",
+    "name": "正泰安能数字能源（浙江）股份有限公司",
+    "headcount": 40
+  },
+  {
+    "booth": "032",
+    "name": "浙江浙达能源科技有限公司",
+    "headcount": 25
+  },
+  {
+    "booth": "033",
+    "name": "大参林医药集团股份有限公司",
+    "headcount": 50
+  },
+  {
+    "booth": "034",
+    "name": "中国科学技术大学附属第一医院 （安徽省立医院）",
+    "headcount": 100
+  },
+  {
+    "booth": "035",
+    "name": "天津中医药大学第一附属医院",
+    "headcount": 1
+  },
+  {
+    "booth": "036",
+    "name": "石河子大学第一附属医院",
+    "headcount": 50
+  },
+  {
+    "booth": "037",
+    "name": "山西省人民医院",
+    "headcount": 50
+  },
+  {
+    "booth": "038",
+    "name": "南华大学附属第一医院",
+    "headcount": 30
+  },
+  {
+    "booth": "039",
+    "name": "北京贝瑞和康生物技术有限公司",
+    "headcount": 2
+  },
+  {
+    "booth": "040",
+    "name": "南京艾尔普再生医学科技股份有限公司",
+    "headcount": 15
+  },
+  {
+    "booth": "041",
+    "name": "宁波市博坤生物科技有限公司",
+    "headcount": 16
+  },
+  {
+    "booth": "042",
+    "name": "南京诺尔曼生物技术股份有限公司",
+    "headcount": 9
+  },
+  {
+    "booth": "043",
+    "name": "国电投广西核电有限公司",
+    "headcount": 10
+  },
+  {
+    "booth": "044",
+    "name": "中建八局第一建设有限公司",
+    "headcount": 10
+  },
+  {
+    "booth": "045",
+    "name": "中建一局集团建设发展有限公司",
+    "headcount": 19
+  },
+  {
+    "booth": "046",
+    "name": "中建八局华中建设有限公司",
+    "headcount": 50
+  },
+  {
+    "booth": "047",
+    "name": "中建四局建设投资有限公司",
+    "headcount": 15
+  },
+  {
+    "booth": "048",
+    "name": "中建五局土木工程有限公司",
+    "headcount": "若干"
+  },
+  {
+    "booth": "049",
+    "name": "北方爆破科技有限公司",
+    "headcount": 3
+  },
+  {
+    "booth": "050",
+    "name": "天津泰达建设集团有限公司",
+    "headcount": 50
+  },
+  {
+    "booth": "051",
+    "name": "中共黔西南州委组织部",
+    "headcount": 1
+  },
+  {
+    "booth": "052",
+    "name": "腾讯科技（上海）有限公司",
+    "headcount": 4000
+  },
+  {
+    "booth": "053",
+    "name": "北京字跳网络技术有限公司",
+    "headcount": 500
+  },
+  {
+    "booth": "054",
+    "name": "新华人寿保险股份有限公司浙江分公司",
+    "headcount": 57
+  },
+  {
+    "booth": "055",
+    "name": "中国民生银行股份有限公司南京分行",
+    "headcount": 90
+  },
+  {
+    "booth": "056",
+    "name": "招商证券股份有限公司",
+    "headcount": 200
+  },
+  {
+    "booth": "057",
+    "name": "东方财富信息股份有限公司",
+    "headcount": 20
+  },
+  {
+    "booth": "058",
+    "name": "浙商证券股份有限公司",
+    "headcount": "若干"
+  },
+  {
+    "booth": "059",
+    "name": "国元证券股份有限公司",
+    "headcount": 150
+  },
+  {
+    "booth": "060",
+    "name": "珠海金山办公软件有限公司",
+    "headcount": 180
+  },
+  {
+    "booth": "061",
+    "name": "杭州银行股份有限公司上海分行",
+    "headcount": 45
+  },
+  {
+    "booth": "062",
+    "name": "杭州银行股份有限公司南京分行",
+    "headcount": 25
+  },
+  {
+    "booth": "063",
+    "name": "中粮期货有限公司",
+    "headcount": 27
+  },
+  {
+    "booth": "064",
+    "name": "浙银理财有限责任公司",
+    "headcount": 10
+  },
+  {
+    "booth": "065",
+    "name": "安徽国元信托有限责任公司",
+    "headcount": 9
+  },
+  {
+    "booth": "066",
+    "name": "厦门国际信托有限公司",
+    "headcount": 30
+  },
+  {
+    "booth": "067",
+    "name": "杭州联合农村商业银行股份有限公司",
+    "headcount": 20
+  },
+  {
+    "booth": "068",
+    "name": "世坤咨询（北京）有限公司",
+    "headcount": 30
+  },
+  {
+    "booth": "069",
+    "name": "北京跃瀚科技有限责任公司",
+    "headcount": 20
+  },
+  {
+    "booth": "070",
+    "name": "新城控股集团股份有限公司上海分公司",
+    "headcount": 66
+  },
+  {
+    "booth": "071",
+    "name": "中汽研汽车试验场股份有限公司",
+    "headcount": 7
+  },
+  {
+    "booth": "072",
+    "name": "联检（江苏）科技股份有限公司",
+    "headcount": 38
+  },
+  {
+    "booth": "073",
+    "name": "上海千象资产管理有限公司",
+    "headcount": 14
+  },
+  {
+    "booth": "074",
+    "name": "杭州龙旗科技有限公司",
+    "headcount": 12
+  },
+  {
+    "booth": "075",
+    "name": "图灵私募基金管理（海南）有限公司",
+    "headcount": 9
+  },
+  {
+    "booth": "076",
+    "name": "上海宁苑资产管理有限公司",
+    "headcount": 70
+  },
+  {
+    "booth": "077",
+    "name": "上海鹏扶投资管理有限公司",
+    "headcount": 5
+  },
+  {
+    "booth": "078",
+    "name": "贝斯（无锡）信息系统有限公司",
+    "headcount": 30
+  },
+  {
+    "booth": "079",
+    "name": "北京海量数据技术股份有限公司",
+    "headcount": 2
+  },
+  {
+    "booth": "080",
+    "name": "天津南大通用数据技术股份有限公司",
+    "headcount": 20
+  },
+  {
+    "booth": "081",
+    "name": "广州美保科技有限公司",
+    "headcount": 25
+  },
+  {
+    "booth": "082",
+    "name": "北京世辉（上海）律师事务所",
+    "headcount": 2
+  },
+  {
+    "booth": "083",
+    "name": "宁波美鹰家居集团有限公司",
+    "headcount": 20
+  },
+  {
+    "booth": "084",
+    "name": "立时飞讯信息科技（上海）有限公司",
+    "headcount": 15
+  },
+  {
+    "booth": "085",
+    "name": "南京普利迪橡塑制品有限公司",
+    "headcount": 1
+  },
+  {
+    "booth": "086",
+    "name": "苏州青河科技有限公司",
+    "headcount": 5
+  },
+  {
+    "booth": "087",
+    "name": "上海杉泰私募基金管理有限公司",
+    "headcount": 10
+  },
+  {
+    "booth": "088",
+    "name": "南京中医药大学",
+    "headcount": 180
+  },
+  {
+    "booth": "089",
+    "name": "贵州师范大学",
+    "headcount": "若干"
+  },
+  {
+    "booth": "090",
+    "name": "清华大学附属中学",
+    "headcount": 20
+  },
+  {
+    "booth": "091",
+    "name": "诸暨荣怀学校",
+    "headcount": 1
+  },
+  {
+    "booth": "092",
+    "name": "北京外国语大学附属海南外国语学校",
+    "headcount": 18
+  },
+  {
+    "booth": "093",
+    "name": "国核湛江核电有限公司",
+    "headcount": "若干"
+  },
+  {
+    "booth": "094",
+    "name": "宁波华茂外国语学校",
+    "headcount": 4
+  },
+  {
+    "booth": "095",
+    "name": "上海市滴水湖学校",
+    "headcount": 34
+  },
+  {
+    "booth": "096",
+    "name": "北京学而思教育科技有限公司",
+    "headcount": 170
+  },
+  {
+    "booth": "097",
+    "name": "北京育达东方软件科技有限公司",
+    "headcount": 100
+  },
+  {
+    "booth": "098",
+    "name": "镇江市新东方教育培训有限公司",
+    "headcount": 20
+  },
+  {
+    "booth": "099",
+    "name": "高途教育科技集团有限公司",
+    "headcount": 642
+  },
+  {
+    "booth": "100",
+    "name": "海亮教育科技服务集团有限公司",
+    "headcount": 162
+  },
+  {
+    "booth": "101",
+    "name": "新航道（北京）管理咨询有限公司",
+    "headcount": 3
+  },
+  {
+    "booth": "102",
+    "name": "深圳市蓝天教育培训学校",
+    "headcount": 50
+  },
+  {
+    "booth": "103",
+    "name": "北京思跃教育科技集团有限公司",
+    "headcount": 50
+  },
+  {
+    "booth": "104",
+    "name": "上海新舟投资管理有限公司",
+    "headcount": 70
+  },
+  {
+    "booth": "105",
+    "name": "上海长宁区乐读线上教育培训学校",
+    "headcount": 55
+  },
+  {
+    "booth": "106",
+    "name": "上海我们方田科技有限公司",
+    "headcount": 40
+  },
+  {
+    "booth": "107",
+    "name": "北京平行线根源教育科技有限公司",
+    "headcount": 85
+  },
+  {
+    "booth": "108",
+    "name": "杭州小事做好教育科技有限公司",
+    "headcount": 50
+  },
+  {
+    "booth": "109",
+    "name": "杭州未来校教育科技有限公司",
+    "headcount": 30
+  },
+  {
+    "booth": "110",
+    "name": "上海照寰文化传播有限公司",
+    "headcount": 2
+  },
+  {
+    "booth": "111",
+    "name": "江苏乔木教育科技有限公司",
+    "headcount": 2
+  },
+  {
+    "booth": "112",
+    "name": "曼迪匹艾（北京）科技服务有限公司",
+    "headcount": 80
+  },
+  {
+    "booth": "113",
+    "name": "知有无界（深圳）智能科技有限公司",
+    "headcount": "若干"
+  },
+  {
+    "booth": "114",
+    "name": "巨人移动科技有限公司",
+    "headcount": 15
+  },
+  {
+    "booth": "115",
+    "name": "上海芒啾网络科技有限公司",
+    "headcount": 34
+  },
+  {
+    "booth": "116",
+    "name": "上海妙文创意科技有限公司",
+    "headcount": 67
+  },
+  {
+    "booth": "117",
+    "name": "宏胜饮料集团有限公司",
+    "headcount": 258
+  },
+  {
+    "booth": "118",
+    "name": "江苏共创人造草坪股份有限公司",
+    "headcount": 51
+  },
+  {
+    "booth": "119",
+    "name": "苏州萘思尔科技有限公司",
+    "headcount": 10
+  }
+]

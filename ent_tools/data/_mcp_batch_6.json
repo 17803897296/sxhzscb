@@ -1,0 +1,89 @@
+[
+  {
+    "company": "杭州银行股份有限公司上海分行",
+    "city": "南京",
+    "total": 4,
+    "jobSource": "校招公告",
+    "source": "https://www.gaodun.com/jr/1755450.html",
+    "note": "规则抽取，未用大模型",
+    "jobs": [
+      {
+        "title": "分支机构产品经理",
+        "requirements": "职责：分支机构产品经理；工作地点：南京；招聘阶段：校招；要求：学历专业见原文",
+        "headcount": "未知",
+        "urgency": "未知",
+        "group": "未知",
+        "salary": "未知"
+      },
+      {
+        "title": "客户经理",
+        "requirements": "职责：客户经理；工作地点：南京；招聘阶段：校招；要求：未知",
+        "headcount": "未知",
+        "urgency": "未知",
+        "group": "未知",
+        "salary": "未知"
+      },
+      {
+        "title": "客服经理",
+        "requirements": "职责：客服经理；工作地点：南京；招聘阶段：校招；要求：未知",
+        "headcount": "未知",
+        "urgency": "未知",
+        "group": "未知",
+        "salary": "未知"
+      },
+      {
+        "title": "社会招聘和实习生",
+        "requirements": "职责：社会招聘和实习生；工作地点：南京；招聘阶段：校招；要求：未知",
+        "headcount": "未知",
+        "urgency": "未知",
+        "group": "未知",
+        "salary": "未知"
+      }
+    ]
+  },
+  {
+    "company": "浙银理财有限责任公司",
+    "city": "未知",
+    "total": 0,
+    "jobSource": "未知",
+    "source": "未知",
+    "note": "没抓到页面",
+    "jobs": []
+  },
+  {
+    "company": "厦门国际信托有限公司",
+    "city": "未知",
+    "total": 0,
+    "jobSource": "未知",
+    "source": "未知",
+    "note": "没抓到页面",
+    "jobs": []
+  },
+  {
+    "company": "北京跃瀚科技有限责任公司",
+    "city": "未知",
+    "total": 0,
+    "jobSource": "未知",
+    "source": "未知",
+    "note": "没抓到页面",
+    "jobs": []
+  },
+  {
+    "company": "上海千象资产管理有限公司",
+    "city": "未知",
+    "total": 0,
+    "jobSource": "未知",
+    "source": "未知",
+    "note": "没抓到页面",
+    "jobs": []
+  },
+  {
+    "company": "天津南大通用数据技术股份有限公司",
+    "city": "天津",
+    "total": 0,
+    "jobSource": "校招公告",
+    "source": "https://www.gbase.cn/about-us/jobs",
+    "note": "规则抽取，未用大模型",
+    "jobs": []
+  }
+]

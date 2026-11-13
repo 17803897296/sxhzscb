@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="668" viewBox="0 0 1160 668" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b93a3"/>
+    </marker>
+    <style>
+      .t{font-size:16px;font-weight:700;fill:#16181d}
+      .b{font-size:13px;font-weight:700;fill:#16181d}
+      .m{font-size:11.5px;fill:#6b7280}
+      .o{font-size:11px;font-weight:600}
+      .n{font-size:10.5px;fill:#a9afba}
+      .fl{font-size:11px;font-family:ui-monospace,Consolas,Menlo,monospace;fill:#3f4653}
+      .fl2{font-size:10.5px;font-family:ui-monospace,Consolas,Menlo,monospace;fill:#7a8290}
+      .lk{stroke:#8b93a3;stroke-width:1.6;fill:none}
+      .chip{fill:#fff;stroke:#e2e5eb;stroke-width:1}
+    </style>
+  </defs>
+
+  <rect width="1160" height="668" fill="#ffffff"/>
+
+  <!-- 标题 -->
+  <text x="48" y="42" font-size="19" font-weight="700" fill="#16181d">双选会助手 · 数据流</text>
+  <text x="48" y="64" class="m">四个端，四个交接文件</text>
+
+  <!-- 企业名单（外部输入） -->
+  <rect x="330" y="26" width="180" height="58" rx="12" fill="#f7f8fa" stroke="#d7dbe3" stroke-dasharray="4 3"/>
+  <text x="420" y="49" text-anchor="middle" class="b">企业名单</text>
+  <text x="420" y="67" text-anchor="middle" class="m">xlsx / 粘贴文本</text>
+
+  <!-- 学生 -->
+  <rect x="48" y="246" width="152" height="92" rx="14" fill="#f2f4f7" stroke="#c8cdd6"/>
+  <text x="124" y="286" text-anchor="middle" class="t">学生</text>
+  <text x="124" y="308" text-anchor="middle" class="m">应届生</text>
+
+  <!-- ① 用户端 -->
+  <rect x="278" y="178" width="204" height="132" rx="16" fill="#eef3fe" stroke="#2f5bd3" stroke-width="1.5"/>
+  <text x="380" y="212" text-anchor="middle" class="t" style="fill:#1e3f9e">① 用户端</text>
+  <text x="380" y="238" text-anchor="middle" class="m">学生答 7 题</text>
+  <text x="380" y="256" text-anchor="middle" class="m">上传企业名单</text>
+  <text x="380" y="283" text-anchor="middle" class="o" style="fill:#2f5bd3">输出 profile.json</text>
+  <text x="380" y="299" text-anchor="middle" class="o" style="fill:#2f5bd3">+ companies.csv</text>
+
+  <!-- ② 企业端 -->
+  <rect x="278" y="438" width="204" height="132" rx="16" fill="#e9f6f1" stroke="#0f8a6a" stroke-width="1.5"/>
+  <text x="380" y="472" text-anchor="middle" class="t" style="fill:#0b6b52">② 企业端</text>
+  <text x="380" y="498" text-anchor="middle" class="m">名单 + 专业</text>
+  <text x="380" y="516" text-anchor="middle" class="m">搜公开信息，推岗位</text>
+  <text x="380" y="543" text-anchor="middle" class="o" style="fill:#0f8a6a">输出 companies.json</text>
+  <text x="380" y="559" text-anchor="middle" class="n">（另存一份 xlsx 给人看）</text>
+
+  <!-- ③ 匹配端 -->
+  <rect x="598" y="298" width="204" height="132" rx="16" fill="#f0ecfd" stroke="#6b46c1" stroke-width="1.5"/>
+  <text x="700" y="332" text-anchor="middle" class="t" style="fill:#54329e">③ 匹配端</text>
+  <text x="700" y="358" text-anchor="middle" class="m">用户画像 + 企业画像</text>
+  <text x="700" y="376" text-anchor="middle" class="m">打分 · 分档 · 理由</text>
+  <text x="700" y="403" text-anchor="middle" class="o" style="fill:#6b46c1">输出 results.json</text>
+
+  <!-- ④ 合并 -->
+  <rect x="898" y="298" width="184" height="132" rx="16" fill="#fdf1e4" stroke="#c2711a" stroke-width="1.5"/>
+  <text x="990" y="332" text-anchor="middle" class="t" style="fill:#9a570f">④ 合并 / 展示</text>
+  <text x="990" y="358" text-anchor="middle" class="m">三个 JSON 内联</text>
+  <text x="990" y="376" text-anchor="middle" class="m">串成四屏页面</text>
+  <text x="990" y="403" text-anchor="middle" class="o" style="fill:#c2711a">输出能点的 Demo</text>
+
+  <!-- 箭头 -->
+  <path class="lk" d="M420,84 L420,172" marker-end="url(#ar)"/>
+  <path class="lk" d="M200,282 L272,262" marker-end="url(#ar)"/>
+  <path class="lk" d="M380,310 L380,432" marker-end="url(#ar)"/>
+  <path class="lk" d="M482,250 L594,326" marker-end="url(#ar)"/>
+  <path class="lk" d="M482,494 L594,404" marker-end="url(#ar)"/>
+  <path class="lk" d="M802,364 L894,364" marker-end="url(#ar)"/>
+  <path class="lk" d="M990,430 L990,600 Q990,618 972,618 L142,618 Q124,618 124,600 L124,344" marker-end="url(#ar)"/>
+
+  <!-- 箭头标签 -->
+  <text x="236" y="248" text-anchor="middle" class="m" font-size="10.5">答 7 题</text>
+
+  <rect class="chip" x="300" y="356" width="160" height="42" rx="7"/>
+  <text x="380" y="373" text-anchor="middle" class="fl">companies.csv</text>
+  <text x="380" y="389" text-anchor="middle" class="fl2">+ profile.major（可选）</text>
+
+  <rect class="chip" x="486" y="276" width="104" height="25" rx="6"/>
+  <text x="538" y="293" text-anchor="middle" class="fl">profile.json</text>
+
+  <rect class="chip" x="476" y="437" width="122" height="25" rx="6"/>
+  <text x="537" y="454" text-anchor="middle" class="fl">companies.json</text>
+
+  <rect class="chip" x="800" y="352" width="96" height="25" rx="6"/>
+  <text x="848" y="369" text-anchor="middle" class="fl">results.json</text>
+
+  <text x="560" y="610" text-anchor="middle" class="m">四屏页面 · 一页纸作战卡</text>
+
+  <!-- 底部说明 -->
+  <text x="48" y="650" class="n">箭头上的文件 = 交接物；字段名照契约，不许改名。名单只支持 xlsx / 粘贴，不做网址抓取。</text>
+</svg>

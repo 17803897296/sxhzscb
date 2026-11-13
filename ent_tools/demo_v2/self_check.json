@@ -1,0 +1,32 @@
+{
+ "companies": 118,
+ "jobs": 277,
+ "distinct_titles": 259,
+ "family_distribution": {
+  "ANY": 13,
+  "FUNC": 45,
+  "TECH": 107,
+  "MFG": 23,
+  "SALES": 37,
+  "PROF": 13,
+  "FIN": 39
+ },
+ "top_family_share": 0.386,
+ "unmapped_titles": [],
+ "validation_issues": {
+  "illegal_family": 0,
+  "hallucinated_term": 0,
+  "conflict": 0,
+  "low_confidence": 0
+ },
+ "city_available": 56,
+ "company_type_available": 31,
+ "dimension_availability": {
+  "city": 56,
+  "company_type": 31,
+  "industry": 95,
+  "scale": 118
+ },
+ "label_only_dimensions": [],
+ "rules_version": "v2.0-demo-2026-11-10"
+}

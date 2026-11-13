@@ -1,0 +1,201 @@
+[
+  {
+    "id": "Cb85a88194d2901b5",
+    "name": "江苏银行股份有限公司",
+    "nature": "国企",
+    "city": "南京",
+    "industry": "金融",
+    "jobs": [
+      {
+        "title": "客户经理",
+        "requirements": "本科及以上，经济金融类相关专业",
+        "headcount": 30,
+        "urgency": "中",
+        "group": "零售金融部",
+        "salary": "8-12K·13薪"
+      },
+      {
+        "title": "金融科技岗",
+        "requirements": "本科及以上，计算机类相关专业",
+        "headcount": 15,
+        "urgency": "高",
+        "group": "科技部",
+        "salary": "12-18K·14薪"
+      }
+    ],
+    "jobSource": "校招公告",
+    "jobEvidence": "江苏银行股份有限公司2026届校园招聘公告：本次招聘客户经理30人、金融科技岗15人，工作地点为南京、盐城、徐州。",
+    "source": "https://example.com/jsyh/campus2026",
+    "date": "2026-10-28"
+  },
+  {
+    "id": "Cab1770b9a5426554",
+    "name": "南京南瑞继保电气有限公司",
+    "nature": "国企",
+    "city": "南京",
+    "industry": "制造",
+    "jobs": [
+      {
+        "title": "电力电子工程师",
+        "requirements": "硕士及以上，电气工程类",
+        "headcount": 20,
+        "urgency": "高",
+        "group": "研发中心",
+        "salary": "14-20K·14薪"
+      },
+      {
+        "title": "软件工程师",
+        "requirements": "本科及以上，计算机类",
+        "headcount": 25,
+        "urgency": "中",
+        "group": "研发中心",
+        "salary": "12-18K"
+      }
+    ],
+    "jobSource": "校招公告",
+    "jobEvidence": "南京南瑞继保电气有限公司2026届校招启动，招聘电力电子工程师20人、软件工程师25人，均为研发中心岗位。",
+    "source": "https://example.com/nari/campus2026",
+    "date": "2026-10-27"
+  },
+  {
+    "id": "C05ead6c099fd6b5a",
+    "name": "华泰证券股份有限公司",
+    "nature": "民企",
+    "city": "南京",
+    "industry": "金融",
+    "jobs": [
+      {
+        "title": "投行项目助理",
+        "requirements": "硕士及以上，金融或法律相关专业",
+        "headcount": 10,
+        "urgency": "中",
+        "group": "投资银行部",
+        "salary": "15-22K"
+      },
+      {
+        "title": "财富管理顾问",
+        "requirements": "本科及以上",
+        "headcount": "未知",
+        "urgency": "未知",
+        "group": "财富管理部",
+        "salary": "7-10K + 提成"
+      }
+    ],
+    "jobSource": "社招信息",
+    "jobEvidence": "华泰证券股份有限公司公开招聘：投资银行部招聘投行项目助理10人，要求硕士及以上学历，金融、法律相关专业；",
+    "source": "https://example.com/htsc/social",
+    "date": "2026-10-27"
+  },
+  {
+    "id": "Ce81e0f4d7528d563",
+    "name": "中国建筑第八工程局有限公司",
+    "nature": "央企",
+    "city": "上海",
+    "industry": "建筑",
+    "jobs": [
+      {
+        "title": "施工管理",
+        "requirements": "本科及以上，土木工程类",
+        "headcount": 60,
+        "urgency": "未知",
+        "group": "工程管理部",
+        "salary": "7-9K"
+      },
+      {
+        "title": "造价工程师",
+        "requirements": "本科及以上，工程造价类",
+        "headcount": 20,
+        "urgency": "中",
+        "group": "商务合约部",
+        "salary": "7-9K"
+      }
+    ],
+    "jobSource": "校招公告",
+    "jobEvidence": "中国建筑第八工程局有限公司2026届校园招聘：施工管理岗招聘60人，土木工程类专业，本科及以上；",
+    "source": "https://example.com/cscec8/campus2026",
+    "date": "2026-10-26"
+  },
+  {
+    "id": "Cda8f8986a52feca5",
+    "name": "江苏鱼跃医疗设备股份有限公司",
+    "nature": "民企",
+    "city": "镇江",
+    "industry": "医药",
+    "jobs": [
+      {
+        "title": "结构工程师",
+        "requirements": "本科，机械类",
+        "headcount": 8,
+        "urgency": "中",
+        "group": "研发中心",
+        "salary": "10-15K"
+      }
+    ],
+    "jobSource": "主营业务推测",
+    "jobEvidence": "江苏鱼跃医疗设备股份有限公司主营家用医疗器械及制氧设备的研发、生产与销售，产品覆盖血压计、血糖仪、制氧机等。",
+    "source": "https://example.com/yuwell/about",
+    "date": "2026-10-26"
+  },
+  {
+    "id": "C8a69156b08633408",
+    "name": "中兴通讯股份有限公司",
+    "nature": "民企",
+    "city": "深圳",
+    "industry": "IT",
+    "jobs": [
+      {
+        "title": "软件开发",
+        "requirements": "本科及以上，计算机相关专业",
+        "headcount": 200,
+        "urgency": "高",
+        "group": "无线研发",
+        "salary": "15-25K"
+      },
+      {
+        "title": "算法工程师",
+        "requirements": "硕士及以上，计算机或数学类",
+        "headcount": 50,
+        "urgency": "高",
+        "group": "研究院",
+        "salary": "20-30K"
+      }
+    ],
+    "jobSource": "校招公告",
+    "jobEvidence": "中兴通讯股份有限公司2026届校园招聘面向全国高校，无线研发团队招聘软件开发工程师200人，研究院招聘算法工程师50人。",
+    "source": "https://example.com/zte/campus2026",
+    "date": "2026-10-25"
+  },
+  {
+    "id": "C8fe592b03b06cca9",
+    "name": "苏州科沃斯机器人股份有限公司",
+    "nature": "民企",
+    "city": "苏州",
+    "industry": "消费",
+    "jobs": [
+      {
+        "title": "结构工程师",
+        "requirements": "本科，机械类",
+        "headcount": 12,
+        "urgency": "中",
+        "group": "产品研发",
+        "salary": "11-16K"
+      }
+    ],
+    "jobSource": "社招信息",
+    "jobEvidence": "苏州科沃斯机器人股份有限公司专注于服务机器人研发与制造，产品包括扫地机器人等家用清洁设备。",
+    "source": "https://example.com/ecovacs/jobs",
+    "date": "2026-10-25"
+  },
+  {
+    "id": "Cd32c3d0af27186f5",
+    "name": "顺丰速运有限公司",
+    "nature": "民企",
+    "city": "深圳",
+    "industry": "物流",
+    "jobs": [],
+    "jobSource": "未知",
+    "jobEvidence": "未知",
+    "source": "未知",
+    "date": "2026-10-25"
+  }
+]

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CareerSafari · 双选会画像采集</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/fair.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark">C</span>CareerSafari<span class="fair-tag">双选会</span></div>
+    <a class="toplink" href="/">完整版 →</a>
+    <div id="status"><span class="dot"></span><span id="status-t">加载中…</span></div>
+  </div>
+</div>
+
+<div class="wrap chat-wrap">
+
+  <header class="chat-head">
+    <h1>聊两句，生成你的双选会画像</h1>
+    <p class="muted small">点下面的选项，或者直接打字。只问 4 个问题，一分钟左右，最后给你一份可以下载的 JSON。</p>
+    <div class="chat-tools">
+      <button type="button" id="btn-back" class="btn btn-g btn-s" disabled>↩ 上一步</button>
+      <button type="button" id="btn-restart" class="btn btn-g btn-s">重新开始</button>
+      <span class="muted small" id="progress"></span>
+    </div>
+  </header>
+
+  <div id="chat" class="chat" aria-live="polite"></div>
+
+  <div id="composer" class="composer">
+    <div class="quick" id="quick"></div>
+    <div class="inputrow">
+      <input id="msg" type="text" autocomplete="off" maxlength="500"
+             placeholder="直接打字也可以，Enter 发送…">
+      <button type="button" id="send" class="btn btn-p">发送</button>
+    </div>
+    <div class="composer-hint muted small" id="hint">点选项最快；不确定的问题可以点「跳过」，系统会记成未知而不是替你猜。</div>
+  </div>
+
+  <div class="footer">
+    <span>CareerSafari · 双选会采集端 · 只采集与导出画像，不做岗位推荐</span>
+    <span class="mono" id="ver"></span>
+  </div>
+</div>
+
+<script src="/static/fair.js"></script>
+</body>
+</html>

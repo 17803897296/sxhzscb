@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      color: #202b42;
+      background: #f8faff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    button, textarea { font: inherit; }
+    .app {
+      width: min(820px, calc(100% - 32px));
+      min-height: 100dvh;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: none;
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: #4268ee;
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .topbar strong { font-size: 17px; letter-spacing: .01em; }
+    .conversation {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 18px 2px 30px;
+    }
+    .message {
+      max-width: min(680px, 92%);
+      padding: 13px 17px;
+      border-radius: 18px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-size: 15px;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: #e9efff;
+      border-bottom-right-radius: 6px;
+    }
+    .message.assistant {
+      align-self: flex-start;
+      background: #fff;
+      border: 1px solid #e7ebf3;
+      border-bottom-left-radius: 6px;
+      box-shadow: 0 3px 14px rgba(37, 56, 101, .04);
+    }
+    .message.error { color: #b42318; }
+    .dock {
+      position: sticky;
+      bottom: 0;
+      flex: none;
+      padding: 14px 0 20px;
+      background: linear-gradient(transparent, #f8faff 24%);
+    }
+    .composer {
+      background: #fff;
+      border: 1px solid #dbe2f0;
+      border-radius: 25px;
+      box-shadow: 0 12px 38px rgba(30, 48, 97, .09);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .composer:focus-within {
+      border-color: #5d7dfa;
+      box-shadow: 0 12px 38px rgba(30, 48, 97, .09), 0 0 0 3px rgba(93, 125, 250, .12);
+    }
+    .editor { position: relative; }
+    .url-icon {
+      display: none;
+      position: absolute;
+      z-index: 2;
+      top: 22px;
+      left: 20px;
+      width: 21px;
+      height: 21px;
+      color: #2759d9;
+      pointer-events: none;
+    }
+    .url-icon svg { display: block; width: 100%; height: 100%; }
+    .composer.has-leading-url .url-icon { display: block; }
+    .composer.has-leading-url .highlight,
+    .composer.has-leading-url textarea { padding-left: 55px; }
+    .highlight, textarea {
+      display: block;
+      width: 100%;
+      height: 112px;
+      min-height: 112px;
+      max-height: 260px;
+      margin: 0;
+      padding: 19px 21px 8px;
+      border: 0;
+      border-radius: 25px 25px 0 0;
+      font-size: 16px;
+      line-height: 1.65;
+      font-weight: 400;
+      letter-spacing: normal;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      tab-size: 4;
+    }
+    .highlight {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      color: #202b42;
+    }
+    .highlight .url {
+      color: #2759d9;
+    }
+    textarea {
+      position: relative;
+      z-index: 1;
+      resize: none;
+      outline: none;
+      overflow-y: auto;
+      background: transparent;
+      color: #202b42;
+      caret-color: #202b42;
+      scrollbar-width: none;
+    }
+    textarea::-webkit-scrollbar { display: none; }
+    body.highlight-ready textarea { color: transparent; }
+    textarea::placeholder { color: #9ba8c0; opacity: 1; }
+    textarea::selection { background: rgba(72, 107, 241, .23); }
+    .attachments[hidden] { display: none; }
+    .attachments {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 1px 18px 10px;
+    }
+    .attachment {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      max-width: 100%;
+      padding: 7px 9px 7px 11px;
+      border: 1px solid #dfe6f5;
+      border-radius: 10px;
+      background: #f4f7fd;
+      color: #40516f;
+      font-size: 13px;
+    }
+    .attachment span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .attachment button {
+      border: 0;
+      padding: 0 2px;
+      background: none;
+      color: #7887a2;
+      font-size: 17px;
+      cursor: pointer;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 13px 12px;
+    }
+    .add-button, .send-button {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background .15s, transform .15s;
+    }
+    .add-button {
+      background: #f0f3fa;
+      color: #42516b;
+      font-size: 26px;
+      line-height: 1;
+    }
+    .send-button {
+      background: #3f65ea;
+      color: white;
+    }
+    .add-button:hover, .send-button:hover:not(:disabled) { transform: translateY(-1px); }
+    .add-button:hover { background: #e6ebf6; }
+    .send-button:hover:not(:disabled) { background: #2e54da; }
+    .send-button:disabled { background: #ccd5eb; cursor: default; }
+    .send-button svg { width: 19px; height: 19px; }
+    button:focus-visible { outline: 3px solid #aabaff; outline-offset: 2px; }
+    .hint { margin-left: 10px; color: #98a3b6; font-size: 12px; }
+    .footnote { margin: 10px 0 0; text-align: center; color: #9aa5ba; font-size: 12px; }
+    @media (max-width: 600px) {
+      .topbar { height: 62px; }
+      .hint { display: none; }
+      .dock { padding-bottom: 10px; }
+      .footnote { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+    <main class="app">
+    <header class="topbar">
+        <div class="brand-mark" aria-hidden="true">企</div>
+        <strong>企业名称提取</strong>
+    </header>
+
+    <section id="conversation" class="conversation" role="log" aria-live="polite"></section>
+
+    <div class="dock">
+        <form id="form" class="composer">
+        <div class="editor">
+          <span class="url-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.5-3.8 9s1.3 6.5 3.8 9"></path>
+            </svg>
+          </span>
+            <div id="highlight" class="highlight" aria-hidden="true"></div>
+            <textarea
+            id="text"
+            aria-label="输入企业名单或网页链接"
+            placeholder="请输入您想了解的企业"
+            rows="3"
+            ></textarea>
+        </div>
+
+        <div id="attachments" class="attachments" hidden></div>
+
+        <div class="controls">
+            <div>
+            <button
+                id="add"
+                class="add-button"
+                type="button"
+                aria-label="添加图片或文件"
+                title="添加图片或文件"
+            >+</button>
+            </div>
+            <button
+            id="send"
+            class="send-button"
+            type="submit"
+            aria-label="发送并下载 CSV"
+            title="发送并下载 CSV"
+            disabled
+            >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 19V5M6 11l6-6 6 6"/>
+            </svg>
+            </button>
+        </div>
+        </form>
+
+        <input
+        id="files"
+        type="file"
+        multiple
+        hidden
+        accept=".pdf,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp"
+        >
+    </div>
+    </main>
+
+  <script>
+    const form = document.querySelector("#form");
+    const textarea = document.querySelector("#text");
+    const highlight = document.querySelector("#highlight");
+    const attachments = document.querySelector("#attachments");
+    const filesInput = document.querySelector("#files");
+    const addButton = document.querySelector("#add");
+    const sendButton = document.querySelector("#send");
+    const conversation = document.querySelector("#conversation");
+    const selectedFiles = [];
+    let sending = false;
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"]/g, character => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"
+      })[character]);
+    }
+
+    function findUrls(value) {
+      const matches = [];
+      for (const match of value.matchAll(/https?:\/\/[^\s<>"']+/gi)) {
+        const url = match[0].replace(/[),.;!?，。；！？）]+$/g, "");
+        try {
+          if (new URL(url).hostname) {
+            matches.push({ start: match.index, end: match.index + url.length, value: url });
+          }
+        } catch {
+          // A URL being typed is not complete yet.
+        }
+      }
+      return matches;
+    }
+
+    function updateInput() {
+      textarea.style.height = "112px";
+      const height = Math.min(Math.max(textarea.scrollHeight, 112), 260);
+      textarea.style.height = height + "px";
+      highlight.style.height = height + "px";
+
+      const value = textarea.value;
+      const urls = findUrls(value);
+      form.classList.toggle("has-leading-url", urls.some(url => url.start === 0));
+      let html = "";
+      let cursor = 0;
+      for (const url of urls) {
+        html += escapeHtml(value.slice(cursor, url.start));
+        html += '<span class="url">' + escapeHtml(url.value) + "</span>";
+        cursor = url.end;
+      }
+      highlight.innerHTML = html + escapeHtml(value.slice(cursor)) + "\u200b";
+      highlight.scrollTop = textarea.scrollTop;
+      highlight.scrollLeft = textarea.scrollLeft;
+
+      sendButton.disabled = sending || (!value.trim() && selectedFiles.length === 0);
+    }
+
+    function renderFiles() {
+      attachments.replaceChildren();
+      attachments.hidden = selectedFiles.length === 0;
+      selectedFiles.forEach((file, index) => {
+        const chip = document.createElement("div");
+        chip.className = "attachment";
+        const label = document.createElement("span");
+        label.textContent = file.name;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.setAttribute("aria-label", "移除 " + file.name);
+        remove.textContent = "×";
+        remove.addEventListener("click", () => {
+          selectedFiles.splice(index, 1);
+          renderFiles();
+          updateInput();
+        });
+        chip.append(label, remove);
+        attachments.appendChild(chip);
+      });
+      updateInput();
+    }
+
+    function addMessage(kind, value) {
+      const message = document.createElement("div");
+      message.className = "message " + kind;
+      message.textContent = value;
+      conversation.appendChild(message);
+      conversation.scrollTop = conversation.scrollHeight;
+      return message;
+    }
+
+    textarea.addEventListener("input", updateInput);
+    textarea.addEventListener("scroll", () => {
+      highlight.scrollTop = textarea.scrollTop;
+      highlight.scrollLeft = textarea.scrollLeft;
+    });
+    textarea.addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+    addButton.addEventListener("click", () => filesInput.click());
+    filesInput.addEventListener("change", () => {
+      selectedFiles.push(...filesInput.files);
+      filesInput.value = "";
+      renderFiles();
+    });
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (sending) return;
+
+      const input = textarea.value.trim();
+      const urls = findUrls(input);
+      if (urls.length > 1) {
+        addMessage("assistant error", "一次请发送一个网页链接。");
+        return;
+      }
+
+      const url = urls[0]?.value || "";
+      const text = url
+        ? (input.slice(0, urls[0].start) + input.slice(urls[0].end)).trim()
+        : input;
+      if (!text && !url && selectedFiles.length === 0) return;
+
+      const filesToSend = [...selectedFiles];
+      const summary = [input, filesToSend.length
+        ? "附件：" + filesToSend.map(file => file.name).join("、")
+        : ""].filter(Boolean).join("\n");
+      addMessage("user", summary.length > 450 ? summary.slice(0, 450) + "…" : summary);
+      const reply = addMessage("assistant", "正在提取企业名称…");
+
+      const data = new FormData();
+      data.append("text", text);
+      data.append("url", url);
+      filesToSend.forEach(file => data.append("files", file));
+      sending = true;
+      updateInput();
+
+      try {
+        const response = await fetch("/api/company-csv", { method: "POST", body: data });
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(typeof error.detail === "string" ? error.detail : "提取失败，请重试。");
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = "company.csv";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+        const count = response.headers.get("X-Company-Count");
+        reply.textContent = count === null
+          ? "整理完成，company.csv 已自动下载。"
+          : "整理完成，共提取 " + count + " 家企业，company.csv 已自动下载。";
+        textarea.value = "";
+        selectedFiles.length = 0;
+        renderFiles();
+      } catch (error) {
+        reply.classList.add("error");
+        reply.textContent = error.message || "提取失败，请重试。";
+      } finally {
+        sending = false;
+        updateInput();
+        conversation.scrollTop = conversation.scrollHeight;
+      }
+    });
+
+    if (location.protocol === "file:") {
+      addMessage("assistant", "请从 http://127.0.0.1:8000/ 打开页面，才能连接后端并下载 CSV。");
+    }
+    updateInput();
+    document.body.classList.add("highlight-ready");
+  </script>
+
+<script>
+/* ── 离线垫片：把 /api/company-csv 换成本地规则，不需要后端和模型 ───────── */
+const DEMO_NAMES = ["郑州宇通集团有限公司", "苏州东山精密制造股份有限公司", "北京汽车国际发展有限公司", "杭州老板电器股份有限公司", "东方电气集团东方电机有限公司", "济南二机床集团有限公司", "无锡奥特维科技股份有限公司", "亿嘉和科技股份有限公司", "杭州德创电子股份有限公司", "杭州兆华电子股份有限公司", "北京中科腾越科技发展有限公司", "上海镱镭飞秒激光技术有限公司", "江苏箸境智能科技有限公司", "华为技术有限公司", "京东方科技集团股份有限公司", "北京北方华创微电子装备有限公司", "摩尔线程智能科技（北京）股份有限公司", "上海精测半导体技术有限公司", "苏州思必驰信息科技有限公司", "上海合合信息科技发展有限公司", "矩阵时光数字科技有限公司", "无锡卓海科技股份有限公司", "匠岭科技(上海)有限公司", "绍兴市上虞区杭州湾集成电路设计工程中心", "上海矩量光启计算技术有限公司", "杭州原子矩阵计算有限公司", "浙江超级灵魂人工智能研究院有限公司", "北京当升材料科技股份有限公司", "中国铝业郑州有色金属研究院有限公司", "正泰安能数字能源（浙江）股份有限公司", "浙江浙达能源科技有限公司", "大参林医药集团股份有限公司", "中国科学技术大学附属第一医院 （安徽省立医院）", "天津中医药大学第一附属医院", "石河子大学第一附属医院", "山西省人民医院", "南华大学附属第一医院", "北京贝瑞和康生物技术有限公司", "南京艾尔普再生医学科技股份有限公司", "宁波市博坤生物科技有限公司", "南京诺尔曼生物技术股份有限公司", "国电投广西核电有限公司", "中建八局第一建设有限公司", "中建一局集团建设发展有限公司", "中建八局华中建设有限公司", "中建四局建设投资有限公司", "中建五局土木工程有限公司", "北方爆破科技有限公司", "天津泰达建设集团有限公司", "中共黔西南州委组织部", "腾讯科技（上海）有限公司", "北京字跳网络技术有限公司", "新华人寿保险股份有限公司浙江分公司", "中国民生银行股份有限公司南京分行", "招商证券股份有限公司", "东方财富信息股份有限公司", "浙商证券股份有限公司", "国元证券股份有限公司", "珠海金山办公软件有限公司", "杭州银行股份有限公司上海分行", "杭州银行股份有限公司南京分行", "中粮期货有限公司", "浙银理财有限责任公司", "安徽国元信托有限责任公司", "厦门国际信托有限公司", "杭州联合农村商业银行股份有限公司", "世坤咨询（北京）有限公司", "北京跃瀚科技有限责任公司", "新城控股集团股份有限公司上海分公司", "中汽研汽车试验场股份有限公司", "联检（江苏）科技股份有限公司", "上海千象资产管理有限公司", "杭州龙旗科技有限公司", "图灵私募基金管理（海南）有限公司", "上海宁苑资产管理有限公司", "上海鹏扶投资管理有限公司", "贝斯（无锡）信息系统有限公司", "北京海量数据技术股份有限公司", "天津南大通用数据技术股份有限公司", "广州美保科技有限公司", "北京世辉（上海）律师事务所", "宁波美鹰家居集团有限公司", "立时飞讯信息科技（上海）有限公司", "南京普利迪橡塑制品有限公司", "苏州青河科技有限公司", "上海杉泰私募基金管理有限公司", "南京中医药大学", "贵州师范大学", "清华大学附属中学", "诸暨荣怀学校", "北京外国语大学附属海南外国语学校", "国核湛江核电有限公司", "宁波华茂外国语学校", "上海市滴水湖学校", "北京学而思教育科技有限公司", "北京育达东方软件科技有限公司", "镇江市新东方教育培训有限公司", "高途教育科技集团有限公司", "海亮教育科技服务集团有限公司", "新航道（北京）管理咨询有限公司", "深圳市蓝天教育培训学校", "北京思跃教育科技集团有限公司", "上海新舟投资管理有限公司", "上海长宁区乐读线上教育培训学校", "上海我们方田科技有限公司", "北京平行线根源教育科技有限公司", "杭州小事做好教育科技有限公司", "杭州未来校教育科技有限公司", "上海照寰文化传播有限公司", "江苏乔木教育科技有限公司", "曼迪匹艾（北京）科技服务有限公司", "知有无界（深圳）智能科技有限公司", "巨人移动科技有限公司", "上海芒啾网络科技有限公司", "上海妙文创意科技有限公司", "宏胜饮料集团有限公司", "江苏共创人造草坪股份有限公司", "苏州萘思尔科技有限公司"];
+
+function _csvBytes(list) {
+  const rows = ["company_name"].concat(list);
+  return new TextEncoder().encode(rows.join("\r\n") + "\r\n");
+}
+
+function _extractFromText(text) {
+  return String(text || "")
+    .split(/[、，,;\n\r\t]+/)
+    .map(s => s.trim())
+    .filter(s => s && s.length >= 2 && s.length <= 60);
+}
+
+const _realFetch = window.fetch;
+window.fetch = function (url, opts) {
+  if (String(url).indexOf("/api/company-csv") < 0) {
+    return _realFetch.apply(this, arguments);
+  }
+  const body = (opts && opts.body) || new FormData();
+  let typed = "";
+  try { typed = body.get("text") || ""; } catch (e) { typed = ""; }
+
+  let list = _extractFromText(typed);
+  if (!list.length) list = DEMO_NAMES.slice();
+
+  const seen = new Set();
+  list = list.filter(n => (seen.has(n) ? false : (seen.add(n), true)));
+
+  const bytes = _csvBytes(list);
+  try { localStorage.setItem("company_names", JSON.stringify(list)); } catch (e) {}
+  return Promise.resolve({
+    ok: true,
+    status: 200,
+    headers: { get: k => (String(k).toLowerCase() === "x-company-count" ? String(list.length) : null) },
+    blob: async () => new Blob([bytes], { type: "text/csv;charset=utf-8" }),
+    json: async () => ({ count: list.length }),
+    text: async () => new TextDecoder().decode(bytes)
+  });
+};
+</script>
+
+
+<div id="dsh-nav" style="position:fixed;left:0;right:0;bottom:0;z-index:9999;
+ background:rgba(255,255,255,.96);border-top:1px solid #e6e8ec;
+ backdrop-filter:blur(8px);font:13px/1 -apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;">
+ <div style="max-width:520px;margin:0 auto;display:flex;padding:9px 12px 11px;gap:6px;">
+  <a href="start.html" style="flex:1;text-align:center;padding:8px 0;border-radius:9px;color:#6b7280;text-decoration:none;">入口</a>
+  <a href="fair.html" style="flex:1;text-align:center;padding:8px 0;border-radius:9px;color:#2f5bd3;font-weight:600;text-decoration:none;">采集 + 匹配</a>
+  <a href="index.html" style="flex:1;text-align:center;padding:8px 0;border-radius:9px;color:#6b7280;text-decoration:none;">详细视图</a>
+ </div>
+</div>
+<style>body{padding-bottom:56px}</style>
+
+</body>
+</html>

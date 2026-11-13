@@ -1,0 +1,148 @@
+/* ============================================================
+   CareerSafari · 双选会采集端（对话式）
+   复用 style.css 的令牌与基础组件，只补聊天相关的布局。
+   移动端优先：多数学生在手机上打开。
+   ============================================================ */
+
+.chat-wrap{max-width:780px}
+.fair-tag{margin-left:2px;font-size:11px;font-weight:700;letter-spacing:.04em;
+  color:var(--accent-ink);background:var(--accent-soft);border:1px solid #c3cff5;
+  border-radius:20px;padding:2px 8px}
+.toplink{margin-left:auto;margin-right:14px;font-size:12.5px;color:var(--muted)}
+.toplink:hover{color:var(--accent)}
+.small{font-size:12.5px}
+
+/* ---------- 顶部 ---------- */
+.chat-head{padding:4px 0 14px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.chat-head h1{font-size:22px;line-height:1.35;margin-bottom:6px}
+.chat-head p{max-width:60ch}
+.chat-tools{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+.chat-tools .btn{padding:5px 10px;font-size:12.5px}
+.chat-tools #progress{margin-left:auto;font-variant-numeric:tabular-nums}
+
+/* ---------- 对话区 ---------- */
+.chat{display:flex;flex-direction:column;gap:12px;padding-bottom:8px}
+.msg{display:flex;gap:9px;align-items:flex-start;animation:msgIn .18s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.msg.user{flex-direction:row-reverse}
+.avatar{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:11.5px;font-weight:700;background:var(--accent);color:#fff;margin-top:2px;
+  box-shadow:0 1px 2px rgba(20,22,28,.12)}
+.msg.user .avatar{background:var(--ink)}
+.bubble{max-width:80%;background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;border-top-left-radius:4px;padding:10px 13px;font-size:14px;
+  line-height:1.65;box-shadow:var(--shadow);word-break:break-word}
+.msg.user .bubble{background:var(--accent);border-color:var(--accent);color:#fff;
+  border-radius:12px;border-top-right-radius:4px;max-width:74%}
+.msg.bot.wide .bubble{max-width:100%;width:100%;padding:14px 16px;border-radius:12px}
+.msg.bot.wide .bubble .chat-card{max-width:none}
+.msg.resolved .bubble{opacity:.72}
+
+/* 正在输入 */
+.bubble.typing{display:flex;gap:4px;align-items:center;padding:13px 14px}
+.bubble.typing i{width:6px;height:6px;border-radius:50%;background:var(--faint);
+  animation:blink 1s infinite ease-in-out}
+.bubble.typing i:nth-child(2){animation-delay:.15s}
+.bubble.typing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}
+
+/* ---------- 输入区 ---------- */
+.composer{position:sticky;bottom:0;z-index:20;margin-top:16px;padding:12px 0 14px;
+  background:var(--bg);border-top:1px solid var(--line);
+  box-shadow:0 -14px 22px -18px rgba(20,22,28,.18)}
+.composer.done{display:none}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+.quick:empty{display:none}
+.chip{font:inherit;font-size:13px;padding:6px 12px;border-radius:20px;cursor:pointer;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);transition:.14s}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:550}
+.chip.chip-done{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+.chip.chip-skip{color:var(--muted);border-style:dashed}
+.chip.resume{border-style:dashed;border-color:#a8dcc0;background:var(--ok-soft);color:#14603a}
+.inputrow{display:flex;gap:8px}
+.inputrow input{flex:1;font-size:14px;background:var(--surface)}
+.inputrow .btn{flex:none;padding:9px 18px}
+.composer-hint{margin-top:7px;font-size:11.5px}
+.composer-hint:empty{display:none}
+
+/* ---------- 对话里的卡片 ---------- */
+.chat-card .cc-title{font-weight:650;font-size:15px;margin-bottom:3px}
+.chat-card .cc-sub{color:var(--muted);font-size:12.5px;line-height:1.6;margin:4px 0 9px}
+.chat-card .cc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.chat-card .grid{margin-top:4px}
+.chat-card .f>label{font-size:12px}
+.chat-card .sec-t{margin:16px 0 7px}
+.chat-card .kv.two{grid-template-columns:96px 1fr auto;gap:8px}
+.chat-card .chips{gap:6px}
+.chat-card .chips .chip{font-size:12.5px;padding:5px 11px}
+.chat-card .sk{display:block;padding:9px 11px}
+.sk-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sk-line .nm{flex:1;font-size:13px;min-width:110px}
+.sk .ev{display:none}
+.sk.open .ev{display:grid;grid-template-columns:104px 1fr 1.4fr;gap:6px;margin-top:8px}
+.sk .ev input,.sk .ev select{font-size:12.5px;padding:6px 8px}
+.tag.tiny{font-size:10.5px;padding:1px 6px}
+.explist{margin:4px 0 0;padding-left:18px;font-size:12.8px;line-height:1.75;color:var(--ink-2)}
+.explist li{margin-bottom:2px}
+label.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.6;
+  color:var(--ink-2);padding:9px 0;cursor:pointer}
+label.check input{flex:none;margin-top:4px;width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+label.check.slim{padding:8px 0;font-size:12.5px;border-top:1px dashed var(--line);margin-top:8px}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+
+/* 旗舰经历点选 */
+.pick-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.pick{text-align:left;font:inherit;font-size:13px;line-height:1.6;padding:9px 11px;
+  border:1px solid var(--line-2);background:var(--surface);border-radius:8px;cursor:pointer;
+  color:var(--ink-2);transition:.14s}
+.pick:hover{border-color:var(--accent);color:var(--ink)}
+.pick.on{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.explist li.flag{background:var(--ok-soft);border-radius:6px;padding:2px 6px;margin-left:-6px}
+
+/* ---------- 结果卡 ---------- */
+.result-card{margin:0}
+.result-card .rc-head{padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.result-card .rc-head h2{font-size:18px;line-height:1.45;margin-bottom:4px}
+.result-card .rc-body{padding-top:2px}
+.prog{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.prog .bar{flex:1;min-width:120px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.prog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#6d8bf5);
+  border-radius:4px;transition:width .5s}
+.prog span{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.prog b{color:var(--ink);font-size:15px}
+.traitlist{margin:0;padding-left:18px;font-size:13.5px;line-height:1.8}
+.traitlist li::marker{color:var(--accent)}
+.misslist{margin:0;padding-left:18px;font-size:13px;line-height:1.75}
+.json-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:20px;
+  padding-top:16px;border-top:1px solid var(--line)}
+#json-out{max-height:480px}
+
+/* ---------- 移动端 ---------- */
+@media(max-width:640px){
+  .topbar-in{padding:10px 14px;gap:9px}
+  .brand{font-size:14px;white-space:nowrap}
+  .fair-tag{font-size:10px;padding:1px 6px;white-space:nowrap;margin-left:0}
+  .toplink{margin-right:0;font-size:12px;white-space:nowrap}
+  #status{font-size:11px;gap:4px;min-width:0}
+  #status-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92px}
+  .wrap.chat-wrap{padding:18px 14px 40px}
+  .chat-head h1{font-size:19px}
+  .bubble{max-width:86%;font-size:13.8px}
+  .msg.bot.wide .bubble{padding:12px 13px}
+  .inputrow .btn{padding:9px 14px}
+  .chat-tools #progress{flex-basis:100%;margin-left:0}
+  .result-card .rc-head h2{font-size:16.5px}
+  .json-actions .btn{flex:1}
+}
+
+/* 偏好权重卡 */
+.pref-weights{margin:8px 0 2px}
+.pref-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.pref-label{width:86px;flex:none;font-size:12px;color:var(--ink-2)}
+.pref-row input[type=range]{flex:1;accent-color:var(--accent)}
+.pref-val{width:26px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.pref-sum{font-size:12px;color:var(--ink-3);margin-top:6px}
+#pref-dims .chip.on,#pref-emp .chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}

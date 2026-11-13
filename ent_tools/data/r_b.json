@@ -1,0 +1,100 @@
+[
+  {
+    "id": "Ce81e0f4d7528d563",
+    "name": "中国建筑第八工程局有限公司",
+    "score": 85.2,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cab1770b9a5426554",
+    "name": "南京南瑞继保电气有限公司",
+    "score": 43.5,
+    "reasons": [
+      "命中企业类型偏好"
+    ],
+    "gaps": [],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C8a69156b08633408",
+    "name": "中兴通讯股份有限公司",
+    "score": 37.1,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cd32c3d0af27186f5",
+    "name": "顺丰速运有限公司",
+    "score": 30.4,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cb85a88194d2901b5",
+    "name": "江苏银行股份有限公司",
+    "score": 28.1,
+    "reasons": [
+      "命中企业类型偏好"
+    ],
+    "gaps": [],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C05ead6c099fd6b5a",
+    "name": "华泰证券股份有限公司",
+    "score": 22.3,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cda8f8986a52feca5",
+    "name": "江苏鱼跃医疗设备股份有限公司",
+    "score": 22.3,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C8fe592b03b06cca9",
+    "name": "苏州科沃斯机器人股份有限公司",
+    "score": 22.3,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  }
+]

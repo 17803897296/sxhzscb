@@ -1,0 +1,164 @@
+{
+  "backed_up_at": "2026-11-13 11:52:15",
+  "note": "保留副本：当前激活画像与其指针。随时回调只需把 fair_active.fair_id 指回该 fair_id。",
+  "active_pointer": {
+    "id": "current",
+    "fair_id": "FAIR-DEMO-20261113",
+    "updated_at": "2026-11-13 11:51:59"
+  },
+  "profile_document": {
+    "document_type": "fair_profile",
+    "document_version": "1.1.0",
+    "schema_version": "0.3.0",
+    "generated_at": "2026-11-13 11:51:59",
+    "fair_id": "FAIR-DEMO-20261113",
+    "collector": "demo-script",
+    "privacy": {
+      "contact_masked": false,
+      "storage": "sqlite:fair_profiles"
+    },
+    "consent": {
+      "store_locally": true,
+      "send_resume_to_model": false
+    },
+    "identity": {
+      "name": "演示-管科",
+      "major": "管理科学与工程",
+      "school": "演示高校"
+    },
+    "fair": {
+      "event_date": "2026-11-13",
+      "target_stage": "校招",
+      "stage_detail": "秋招校招",
+      "flagship_experience": "",
+      "target_company_types": [
+        "央企",
+        "国企",
+        "民企"
+      ],
+      "home_city": "南京"
+    },
+    "profile": {
+      "skills": [],
+      "values": {
+        "salary": 0,
+        "stability": 0,
+        "growth": 0,
+        "autonomy": 0,
+        "impact": 0,
+        "balance": 0,
+        "city": 34,
+        "home": 33,
+        "scale": 33
+      },
+      "major": "管理科学与工程",
+      "home_city": "南京",
+      "region": "南京",
+      "experiences": [
+        "某电商平台供应链实习：用 SQL 做库存周转分析，把补货周期从 14 天压到 9 天"
+      ]
+    },
+    "answers": {
+      "intended_jobs": [
+        "供应链计划",
+        "数据分析师",
+        "商业分析",
+        "运营支持专员"
+      ],
+      "tri_weights": {
+        "city": 25,
+        "home": 25,
+        "company_type": 20,
+        "industry": 15,
+        "scale": 15
+      },
+      "direction_interest": "",
+      "region": "南京",
+      "timeline": "",
+      "major_fit": "不限专业，都看看",
+      "values": {
+        "salary": 0,
+        "stability": 0,
+        "growth": 0,
+        "autonomy": 0,
+        "impact": 0,
+        "balance": 0,
+        "city": 25,
+        "home": 25,
+        "company_type": 20,
+        "industry": 15,
+        "scale": 15
+      },
+      "skills": [],
+      "city_rank": {
+        "一线": 1,
+        "新一线": 2,
+        "其他省会": 3,
+        "经济发达": 4,
+        "交通发达": 5,
+        "生态友好": 6,
+        "其他": 7
+      },
+      "company_type_rank": {
+        "国央企": 1,
+        "民企": 2,
+        "外企": 3
+      },
+      "industry_rank": {
+        "IT": 1,
+        "金融": 2,
+        "制造": 3,
+        "建筑": 4,
+        "医药": 5,
+        "能源": 6,
+        "教育": 7,
+        "消费": 8,
+        "未知": 9
+      }
+    },
+    "resume": {
+      "uploaded": true,
+      "extraction": {
+        "name": "演示-管科",
+        "major": "管理科学与工程",
+        "experiences": [
+          "某电商平台供应链实习：用 SQL 做库存周转分析，把补货周期从 14 天压到 9 天"
+        ],
+        "skills": [
+          "SQL",
+          "数据分析",
+          "供应链计划",
+          "Excel"
+        ]
+      }
+    },
+    "quality": {
+      "score": 10,
+      "level": "信息偏少",
+      "missing": [
+        {
+          "why": "没填实习经历"
+        }
+      ],
+      "warnings": [
+        "同源服务模式：画像会写入 careersafari.db，匹配端报告按最新画像重建"
+      ]
+    },
+    "summary": {
+      "headline": "未填完整",
+      "traits": [
+        "意向岗位：运营支持专员",
+        "批次：秋招校招（研三 / 大四，按校招）",
+        "偏好权重（排序用）：城市条件（一线 / 新一线 / 省会 / 其他）34、离家近33、规模与体制地位33",
+        "企业类型偏好（软）：央企、国企",
+        "家乡城市：山东枣庄"
+      ]
+    },
+    "notes": [
+      "同源服务模式：/api/fair/* 由 fair_server.py 提供，画像真实落库"
+    ],
+    "downstream": {
+      "match_ready": false
+    }
+  }
+}

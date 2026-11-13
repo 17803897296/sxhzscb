@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 本地环境变量（大模型 key 等，绝不入库）
+.env
+*.env.local
+
+# SQLite 运行时副产物
+*.db-shm
+*.db-wal
+
+# 演示时浏览器/脚本产生的临时文件
+_lp.json
+_p.json
+live_payload_tmp.json
+*.log
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini

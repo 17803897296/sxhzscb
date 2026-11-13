@@ -1,0 +1,26 @@
+{
+  "fair_id": "FAIR-3F7A21C9",
+  "event_date": "2026-11-01",
+  "target_stage": "校招",
+  "stage_detail": "秋招校招",
+  "region": [
+    "江苏",
+    "上海"
+  ],
+  "home_city": "盐城",
+  "direction_interest": "财务/法务",
+  "target_company_types": [
+    "国企"
+  ],
+  "values": {
+    "salary": 0,
+    "stability": 10,
+    "growth": 90,
+    "autonomy": 0,
+    "impact": 0,
+    "balance": 0
+  },
+  "timeline": "毕业前一年",
+  "major": "管理学",
+  "degree": "本科"
+}

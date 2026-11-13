@@ -1,0 +1,2336 @@
+{
+ "version": "v2.0-demo-2026-11-10",
+ "entries": [
+  {
+   "title": "管培生",
+   "family": "ANY",
+   "form": "管培生",
+   "hit_term": "",
+   "confidence": 0.6,
+   "source": "无方向管培生/专项计划",
+   "need_review": false
+  },
+  {
+   "title": "财经管培生",
+   "family": "FUNC",
+   "form": "管培生",
+   "hit_term": "财经",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "人力管培生",
+   "family": "FUNC",
+   "form": "管培生",
+   "hit_term": "人力",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "研发管培生",
+   "family": "TECH",
+   "form": "管培生",
+   "hit_term": "研发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "生产管理管培生",
+   "family": "MFG",
+   "form": "管培生",
+   "hit_term": "生产",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "供应链管培生",
+   "family": "MFG",
+   "form": "管培生",
+   "hit_term": "供应链",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "国内营销管培生(销售方向)",
+   "family": "SALES",
+   "form": "管培生",
+   "hit_term": "销售",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "国内营销管培生(售后方向)",
+   "family": "SALES",
+   "form": "管培生",
+   "hit_term": "营销",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "海外营销管培生(销售方向)",
+   "family": "SALES",
+   "form": "管培生",
+   "hit_term": "销售",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "海外营销管培生(售后方向)",
+   "family": "SALES",
+   "form": "管培生",
+   "hit_term": "营销",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "AI工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "AI",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "财务专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "财务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "采购专员",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "采购",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "人力资源专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "人力",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "自动化工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "自动化",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "工业工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "工业工程",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "工艺工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "工艺",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "供应链专员",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "供应链",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "项目专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "项目专员",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "研发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "研发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "质量工程师",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "质量工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "总经理助理",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "总经理助理",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "国际会计",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "国际会计",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "海外销售专员",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "销售",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "涉外法务",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "涉外法务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "外联专员",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "外联",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "专业技术人员",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "机械设计研发岗",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "设计研发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "电气设计研发岗",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "设计研发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "电气调试岗",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "电气",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "工艺技术岗",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "工艺",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "研发类岗位",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "运营类岗位",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "产销类岗位",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "职能类岗位",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "机械结构工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "机械",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "硬件测试工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "硬件",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "硬件开发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "开发工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "开发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "开发工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "定位导航工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "定位导航",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "图像算法工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "算法",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "感知规控工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "规控",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "运动规控工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "声学算法开发工程师（杭州）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "开发工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "电子工程师（杭州）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "电子",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "软件开发工程师（杭州）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "开发工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "结构工程师（杭州）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "结构",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "硬件测试工程师（杭州、东莞）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "硬件",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "售前解决方案工程师（杭州、东莞）",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "解决方案",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "产品工程师（杭州）",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "产品工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "项目工程师（杭州、东莞）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "软件开发",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "软件开发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "系统设计",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "系统设计",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "网络工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "网络工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "云计算工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "云计算",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "数据分析师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "数据分析师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "智慧病房销售经理",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "销售",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "方案经理",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "方案经理",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "物业项目经理",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "物业",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "过程品质工程师",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "过程品质",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "硬件工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "硬件",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "AI、软件、芯片及其他类别岗位",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "AI",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "系统工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "产品工程师",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "产品工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "结构工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "结构",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "应用工程师",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "应用工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "算法工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "算法",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "系统测试工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "测试",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "C++工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "C++",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "光学工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "光学",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "Python工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "Python",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "FAE现场应用工程师",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "FAE现场",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "集成工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "电子光学工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "电子",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "电气工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "电气",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "光学测试工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "光学",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "C#开发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "开发工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "软件测试工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "测试",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "激光器工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "激光器",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "光学系统工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "系统工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "AI算法工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "算法",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "软件工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "FPGA工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "FPGA",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "机械工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "机械",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "设备工程师",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "设备工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "售后工程师",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "售后",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "售前工程师",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "售前",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "销售工程师",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "销售",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "销售助理工程师",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "销售",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子硬件工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "硬件",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子光学测试工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "光学",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子光学工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "光学",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "电气工程师 – 定制电子与控制系统",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "控制系统",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "冷原子物理工程师（镱原子）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "物理工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子启发算法工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "算法",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "生物信息研究员",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "生物信息",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子机器学习平台工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "机器学习",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "数学与计算方向研究员",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "数学与计算",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "容错量子计算研究员",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "研究员",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子自动化控制系统工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "系统工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子架构与编译器工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "编译器",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子算法设计与应用 研究员",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "研究员",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子软件开发（SDK方向）工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "软件开发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量子计算测量-控制系统工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "测量-控制",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "机械工程师 – 硬件集成",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "硬件",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "生物研发实验人员",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "生物研发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "总经办管培生",
+   "family": "FUNC",
+   "form": "管培生",
+   "hit_term": "总经办",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "控制算法工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "算法",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "电气研发工程师（浙江/上海）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "电气",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "营销管培生",
+   "family": "SALES",
+   "form": "管培生",
+   "hit_term": "营销",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "营销管培生（北上广深浙）",
+   "family": "SALES",
+   "form": "管培生",
+   "hit_term": "营销",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "人工智能与数学研究人员",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "人工智能",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "电子材料工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "电子",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "人工智能研究人员",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "人工智能",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "机械研发工程师（浙江/上海）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "机械",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "BD大客户经理",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "大客户",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "独立储能项目经理（广东）",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "独立储能",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "校招生岗位",
+   "family": "ANY",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "销售BD（综合能源业务）",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "综合能源",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "电力市场专家（政策研究-海口）",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "市场",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "电力交易员（眉山）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "交易",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "MT-集团管培生 营运类",
+   "family": "ANY",
+   "form": "管培生",
+   "hit_term": "",
+   "confidence": 0.6,
+   "source": "无方向管培生/专项计划",
+   "need_review": false
+  },
+  {
+   "title": "MT-集团管培生 商品类",
+   "family": "ANY",
+   "form": "管培生",
+   "hit_term": "",
+   "confidence": 0.6,
+   "source": "无方向管培生/专项计划",
+   "need_review": false
+  },
+  {
+   "title": "MT-集团管培生 新零售类",
+   "family": "ANY",
+   "form": "管培生",
+   "hit_term": "",
+   "confidence": 0.6,
+   "source": "无方向管培生/专项计划",
+   "need_review": false
+  },
+  {
+   "title": "MT-集团管培生 人力类",
+   "family": "FUNC",
+   "form": "管培生",
+   "hit_term": "人力",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "MT-集团管培生 财务类",
+   "family": "FUNC",
+   "form": "管培生",
+   "hit_term": "财务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "科研助理",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "科研",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "互联网医院院长",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "院长",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "区域销售经理（IVD业务 广东）",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "销售",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "嵌入式软件工程师（心电贴片）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "软件工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "医疗合规经理",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "合规",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "嵌入式硬件开发（医疗可穿戴）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "嵌入式",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "C 端 APP 负责人（院后患者服务）",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "患者服务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "核电项目前期准备",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "核电项目",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "核电项目建设",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "核电项目",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "核电项目运营",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "核电项目",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "核电项目管理工作",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "核电项目",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "管理储备人才",
+   "family": "ANY",
+   "form": "管培生",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "产品经理",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "产品经理",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "全栈工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "全栈",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "投资运营分析师",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "“扬帆”计划",
+   "family": "ANY",
+   "form": "专项",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "“启航”计划",
+   "family": "ANY",
+   "form": "专项",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "投行项目承做岗（股权、并购业务方向）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "投行项目承做",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "投行项目承做岗（债券及 ABS业务方向）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "投行项目承做",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "研究助理岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "研究助理岗",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "衍生品做市交易岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "衍生品",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量化交易岗（CTA方向）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "CTA",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "基金研究岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "基金研究",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "衍生品做市策略岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "衍生品",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量化交易岗（碳排放方向）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "量化",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "场外衍生品交易岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "衍生品",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "证券做市岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "做市",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "产品岗",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "产品岗",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "交易岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "交易",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "金融科技岗（深圳）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "金融科技",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "金融科技岗（武汉）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "金融科技",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "财富顾问岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "财富",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "机构及企业客户经理岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "客户经理岗",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "公募保险客户经理岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "客户经理岗",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "财务管理岗",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "财务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "研究岗（量化方向）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "研究岗",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "研究岗（行业研究）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "行业研究",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "业务运营（代销方向）-27届秋招 (MJ003064)",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "业务支持岗（实习生）",
+   "family": "PROF",
+   "form": "实习",
+   "hit_term": "业务支持",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "证券服务经理-上海 (MJ002502)",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "证券服务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "算法实习生-大模型/Agent方向 (MJ002986)",
+   "family": "TECH",
+   "form": "实习",
+   "hit_term": "Agent",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "会计核算岗(收入成本核算)",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "会计核算岗",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "业务支持实习生",
+   "family": "PROF",
+   "form": "实习",
+   "hit_term": "业务支持",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "质检合规岗（上海）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "质检合规",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "项目经理岗-大宗交易服务专员",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "“闪耀之星”校园大使 (MJ002182)",
+   "family": "ANY",
+   "form": "管培生",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "业务运营岗（代销方向）-27届秋招",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "VIP理财师（天天基金）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "VIP",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "HR实习生-研究所",
+   "family": "FUNC",
+   "form": "实习",
+   "hit_term": "HR",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "监察稽核",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "稽核",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "VIP理财经理",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "VIP",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "VIP理财经理（无需拓客）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "VIP",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "招聘岗位",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "招聘",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "财富管理管培生",
+   "family": "FIN",
+   "form": "管培生",
+   "hit_term": "财富",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "战略管理岗",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "战略",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "研究分析岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "研究分析岗",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "交易执行岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "交易",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "市场开发岗",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "市场",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "综合管理岗",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "综合管理",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "合规法务岗",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "法务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "系统运维岗",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "系统运维",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "结算风控岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "结算风控",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "财务资金岗",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "财务资金",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "地产开发",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "地产",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "商业运营",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "商业运营",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "代建业务",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "代建",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "多元业务",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "技术研发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "投后管理专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "投后",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "法务专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "法务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "检测认证工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "检测认证",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "职能岗",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "技术岗",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "检测认证岗",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "检测认证",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "业务岗",
+   "family": "PROF",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "AI研究员",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "研究员",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "量化研究员",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "高频算法研究员",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "AI Infra工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "Infra",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "策略技术支持",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "策略",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "后端开发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "开发工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "海外IR（投资者关系）",
+   "family": "FIN",
+   "form": "常规",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "法务合规负责人",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "法务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "博士高层次人才",
+   "family": "ANY",
+   "form": "专项",
+   "hit_term": "SPECIAL",
+   "confidence": 0.99,
+   "source": "名单例外表",
+   "need_review": false
+  },
+  {
+   "title": "运行操纵员",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "运行操纵",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "生产计划助理专工",
+   "family": "MFG",
+   "form": "专项",
+   "hit_term": "助理专工",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "化学环保助理专工",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "化学环保",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "维修助理专工",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "助理专工",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "安全防护助理专工",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "安全防护",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "设计管理助理专工",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "助理专工",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "工程助理专工",
+   "family": "MFG",
+   "form": "常规",
+   "hit_term": "助理专工",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "人资助理专责",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "助理专责",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "财务助理专责",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "助理专责",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "办公室助理专责",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "助理专责",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "英文学术期刊助理编辑",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "学术期刊",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "出版专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "出版",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "编辑助理",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "编辑",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "学术期刊图像助理设计师",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "助理设计师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "公共服务助理",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "公共服务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "市场助理",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "市场",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "会议论文集助理",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "论文集",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "博士会议论文集专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "论文集",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "博士市场专员",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "市场",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "公共关系专员",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "公共关系",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "学术关系经理",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "学术关系",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "会议策划/宣传专员",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "宣传",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "PHP开发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "开发工程师",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "财务助理",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "财务",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "行政助理",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "行政",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "培训助理",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "培训",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "人事助理",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "人事",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "乳饮研发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "研发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "菌种工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "菌种",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "茶饮研发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "研发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "产品研发工程师（碳酸、运动、功能饮料）",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "研发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "工艺创新研发工程师",
+   "family": "TECH",
+   "form": "常规",
+   "hit_term": "工艺",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "人力精英管培生",
+   "family": "FUNC",
+   "form": "管培生",
+   "hit_term": "人力",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "生产精英管培生",
+   "family": "MFG",
+   "form": "管培生",
+   "hit_term": "生产",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "媒体公关",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "公关",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "政府公关",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "公关",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "文化宣传专员",
+   "family": "SALES",
+   "form": "常规",
+   "hit_term": "宣传",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "管理审计",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "管理审计",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "劳动关系专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "劳动关系",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "组织绩效专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "组织绩效",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "招聘专员",
+   "family": "FUNC",
+   "form": "常规",
+   "hit_term": "招聘",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "国际业务管培生",
+   "family": "ANY",
+   "form": "管培生",
+   "hit_term": "",
+   "confidence": 0.6,
+   "source": "无方向管培生/专项计划",
+   "need_review": false
+  },
+  {
+   "title": "销售管理管培生",
+   "family": "SALES",
+   "form": "管培生",
+   "hit_term": "销售",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "产品管理管培生",
+   "family": "SALES",
+   "form": "管培生",
+   "hit_term": "产品管理",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "计划管理管培生",
+   "family": "ANY",
+   "form": "管培生",
+   "hit_term": "",
+   "confidence": 0.6,
+   "source": "无方向管培生/专项计划",
+   "need_review": false
+  },
+  {
+   "title": "关务物流管培生",
+   "family": "MFG",
+   "form": "管培生",
+   "hit_term": "物流",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "采购开发管培生",
+   "family": "MFG",
+   "form": "管培生",
+   "hit_term": "采购",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "高分子材料研发管培生",
+   "family": "TECH",
+   "form": "管培生",
+   "hit_term": "材料研发",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  },
+  {
+   "title": "制造管理管培生",
+   "family": "MFG",
+   "form": "管培生",
+   "hit_term": "制造",
+   "confidence": 0.9,
+   "source": "关键词命中",
+   "need_review": false
+  }
+ ]
+}

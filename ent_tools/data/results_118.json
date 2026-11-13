@@ -1,0 +1,1654 @@
+[
+  {
+    "id": "Cab81f7fb73724bd8",
+    "name": "上海市滴水湖学校",
+    "score": 96.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C589d324c4f66ae0c",
+    "name": "上海合合信息科技发展有限公司",
+    "score": 90.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C4a7396ee5407268a",
+    "name": "杭州银行股份有限公司南京分行",
+    "score": 90.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cf46829870dc025e2",
+    "name": "上海宁苑资产管理有限公司",
+    "score": 90.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C8ceb829a95c826ba",
+    "name": "上海杉泰私募基金管理有限公司",
+    "score": 90.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C11d25d6ee2bb0a18",
+    "name": "上海新舟投资管理有限公司",
+    "score": 90.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ce52444b8c7baed59",
+    "name": "上海我们方田科技有限公司",
+    "score": 90.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C3d53e215b0872504",
+    "name": "上海照寰文化传播有限公司",
+    "score": 90.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C893feb3b8dea308a",
+    "name": "上海芒啾网络科技有限公司",
+    "score": 90.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cfdb8d77a7a215481",
+    "name": "上海妙文创意科技有限公司",
+    "score": 90.8,
+    "reasons": [
+      "在期望城市"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ca256b0922f75dd62",
+    "name": "东方电气集团东方电机有限公司",
+    "score": 37.4,
+    "reasons": [
+      "命中企业类型偏好"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C54dfaf37e23cc7c4",
+    "name": "绍兴市上虞区杭州湾集成电路设计工程中心",
+    "score": 37.4,
+    "reasons": [
+      "命中企业类型偏好"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C4c8817642b4bdf48",
+    "name": "中建一局集团建设发展有限公司",
+    "score": 37.4,
+    "reasons": [
+      "命中企业类型偏好"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C36a5d1ef36831278",
+    "name": "中建四局建设投资有限公司",
+    "score": 37.4,
+    "reasons": [
+      "命中企业类型偏好"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ca776592df20da30e",
+    "name": "浙商证券股份有限公司",
+    "score": 37.4,
+    "reasons": [
+      "命中企业类型偏好"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C2ec61a76356448ea",
+    "name": "北京跃瀚科技有限责任公司",
+    "score": 37.4,
+    "reasons": [
+      "命中企业类型偏好"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C08c2238f66bad519",
+    "name": "北京当升材料科技股份有限公司",
+    "score": 32.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ca642761fe386843c",
+    "name": "郑州宇通集团有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cd90916a4eca34a24",
+    "name": "苏州东山精密制造股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C3b17edbba019eb8b",
+    "name": "北京汽车国际发展有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C26021bc8ef6e5e82",
+    "name": "杭州老板电器股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ccfc9aa0c69aae410",
+    "name": "济南二机床集团有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C3548cf6d42893e67",
+    "name": "无锡奥特维科技股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ccb6b483023160e04",
+    "name": "亿嘉和科技股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C0f46c9f6a3cfdd71",
+    "name": "杭州德创电子股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C4ad65092f70bbf41",
+    "name": "杭州兆华电子股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C86cf7425892cdd9d",
+    "name": "北京中科腾越科技发展有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C8b1e332d4790384f",
+    "name": "上海镱镭飞秒激光技术有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cc730b524b4032ebd",
+    "name": "江苏箸境智能科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C4ef9ef9358b4a2e0",
+    "name": "华为技术有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C5de808e6054b5364",
+    "name": "京东方科技集团股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cdb6c0de98e633324",
+    "name": "北京北方华创微电子装备有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cce0165bfad9d0af7",
+    "name": "摩尔线程智能科技（北京）股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cc154add3190e5f8f",
+    "name": "上海精测半导体技术有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cd82dd6d1be8be89f",
+    "name": "苏州思必驰信息科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "优先去",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C3c3a9c5c7ab52878",
+    "name": "矩阵时光数字科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C1388c04037a7c178",
+    "name": "无锡卓海科技股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C8ea643283892bd2a",
+    "name": "匠岭科技(上海)有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cef9c769e17ef1c7f",
+    "name": "上海矩量光启计算技术有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cb4e4946004cebf1d",
+    "name": "杭州原子矩阵计算有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cbfa9c4db79b518b9",
+    "name": "浙江超级灵魂人工智能研究院有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cee398fc9578da7cd",
+    "name": "中国铝业郑州有色金属研究院有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C8c598eb31a7bf692",
+    "name": "正泰安能数字能源（浙江）股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cdc8d8d094ce9c885",
+    "name": "浙江浙达能源科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C66b2c6b91913c809",
+    "name": "大参林医药集团股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C3900749fb3d723be",
+    "name": "中国科学技术大学附属第一医院 （安徽省立医院）",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cdd3cef0f4ae80bcb",
+    "name": "天津中医药大学第一附属医院",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C6e216fe27bd79ca8",
+    "name": "石河子大学第一附属医院",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C34bb7458a111079e",
+    "name": "山西省人民医院",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C20782242fa86502e",
+    "name": "南华大学附属第一医院",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C246e1256f7bd015d",
+    "name": "北京贝瑞和康生物技术有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C44bb1a926dc82c6c",
+    "name": "南京艾尔普再生医学科技股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ca889fa6a4b1d278c",
+    "name": "宁波市博坤生物科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ca6d6ad54210d84cc",
+    "name": "南京诺尔曼生物技术股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cc204209e97a41380",
+    "name": "国电投广西核电有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C32386d562093f21e",
+    "name": "中建八局第一建设有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C7b562215e00ae138",
+    "name": "中建八局华中建设有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C5bc0df7b4b7f5f5c",
+    "name": "中建五局土木工程有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ce3f5708f1c7a484d",
+    "name": "北方爆破科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C3dfe8a29a03ac8bd",
+    "name": "天津泰达建设集团有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C078650d2a2117adf",
+    "name": "中共黔西南州委组织部",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C6bff9382eca54c36",
+    "name": "腾讯科技（上海）有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cdcc3339eabe770d7",
+    "name": "北京字跳网络技术有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cb65889f02994995c",
+    "name": "新华人寿保险股份有限公司浙江分公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C4ec6449b3d91fdcf",
+    "name": "中国民生银行股份有限公司南京分行",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C0a4e197d0ad75028",
+    "name": "招商证券股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cda7e707aea366368",
+    "name": "东方财富信息股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cc3d00c1e5c5afb22",
+    "name": "国元证券股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C2a3d558ccaf17972",
+    "name": "珠海金山办公软件有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C9a3d4d3f3f3270f9",
+    "name": "杭州银行股份有限公司上海分行",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C3a5564723fc47a3f",
+    "name": "中粮期货有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C94d26f182c65b027",
+    "name": "浙银理财有限责任公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C5e96878d83140f10",
+    "name": "安徽国元信托有限责任公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C675f3be2afd3b8ce",
+    "name": "厦门国际信托有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ca4a44c8dfee24ff7",
+    "name": "杭州联合农村商业银行股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cc014265389c64c53",
+    "name": "世坤咨询（北京）有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C16636858c21da930",
+    "name": "新城控股集团股份有限公司上海分公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C901b11d3f0d61f52",
+    "name": "中汽研汽车试验场股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C16591b3cda721450",
+    "name": "联检（江苏）科技股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C4e2bc826c06739fc",
+    "name": "上海千象资产管理有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cec6ff98035e373c1",
+    "name": "杭州龙旗科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C91751a8ceeb52752",
+    "name": "图灵私募基金管理（海南）有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "可以看",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ceb0687dd558561de",
+    "name": "上海鹏扶投资管理有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ca793f514d7cbf474",
+    "name": "贝斯（无锡）信息系统有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cbc4e101d0372dd11",
+    "name": "北京海量数据技术股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C2e7db894079e0e9a",
+    "name": "天津南大通用数据技术股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cfd8f1ae5551299bd",
+    "name": "广州美保科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C0f0a359073fa0c05",
+    "name": "北京世辉（上海）律师事务所",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C52c9ab6a21f5c52c",
+    "name": "宁波美鹰家居集团有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C528a52e87425af0a",
+    "name": "立时飞讯信息科技（上海）有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C458f592792e9eb8a",
+    "name": "南京普利迪橡塑制品有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cda8f94895ab28857",
+    "name": "苏州青河科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C727f8800e582b839",
+    "name": "南京中医药大学",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ccff374e2c43bcb95",
+    "name": "贵州师范大学",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ce10d243c7b96add6",
+    "name": "清华大学附属中学",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cda2495a8105cb130",
+    "name": "诸暨荣怀学校",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cef26ab37568c28ee",
+    "name": "北京外国语大学附属海南外国语学校",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C1d585e49cb7eba4d",
+    "name": "国核湛江核电有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cc19da00e0cce0c6d",
+    "name": "宁波华茂外国语学校",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cb6d5c38249d0b356",
+    "name": "北京学而思教育科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cb5d4d8371fffbc44",
+    "name": "北京育达东方软件科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C4d4a6b8910f84aad",
+    "name": "镇江市新东方教育培训有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cd260e9c434d50a16",
+    "name": "高途教育科技集团有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cc6e259705eb8601f",
+    "name": "海亮教育科技服务集团有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C7412ff7dd46a30ab",
+    "name": "新航道（北京）管理咨询有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C2bdda8786e12e8be",
+    "name": "深圳市蓝天教育培训学校",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ccbc46c766a14061c",
+    "name": "北京思跃教育科技集团有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C2adb6d6b8d2e8366",
+    "name": "上海长宁区乐读线上教育培训学校",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ccf32ea951b3f1939",
+    "name": "北京平行线根源教育科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C770c5e21c66fe3c1",
+    "name": "杭州小事做好教育科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C32b183192838cd1c",
+    "name": "杭州未来校教育科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Ca0f0ac3cf4b80e96",
+    "name": "江苏乔木教育科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cb4028503a625b64b",
+    "name": "曼迪匹艾（北京）科技服务有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C3ede27e031b8c297",
+    "name": "知有无界（深圳）智能科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C617bd18bfc893df1",
+    "name": "巨人移动科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C3a67414ec1bfd685",
+    "name": "宏胜饮料集团有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "Cabc3e92df86a2299",
+    "name": "江苏共创人造草坪股份有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  },
+  {
+    "id": "C8616869f659dc8bd",
+    "name": "苏州萘思尔科技有限公司",
+    "score": 30.8,
+    "reasons": [
+      "按综合条件排序"
+    ],
+    "gaps": [
+      "未查到岗位，仅按企业与地域排序"
+    ],
+    "tier": "建议放弃",
+    "distanceKm": null,
+    "nearestCity": "未知"
+  }
+]

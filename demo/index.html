@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>双选会助手</title>
+<!--
+  ============================================================
+  双选会助手 · 壳（v0.1）
+  ------------------------------------------------------------
+  这是「合并 + 展示」的骨架：四屏能从头点到尾，数据全部内联，
+  双击打开即可运行，断网也能用。不需要任何构建、不装依赖。
+
+  【三个接入点，替换这三处就接上真数据】
+  1. COMPANIES  ← 企业模块交付的 companies.json
+  2. RESULTS    ← 匹配模块交付的 results.json（含分档与理由）
+  3. saveProfile() ← 把 profile 交给匹配模块，拿回 results
+
+  【契约】字段名不许改；缺值写字符串 "未知"；禁止 fetch。
+  ============================================================
+-->
+<style>
+  :root{
+    --blue:#2f5bd3;
+    --blue-bg:#eef2fd;
+    --ink:#16181d;
+    --ink-2:#3f4653;
+    --muted:#727a89;
+    --line:#e6e8ec;
+    --bg:#f4f5f7;
+    --card:#ffffff;
+    --t1:#2f5bd3; --t1-bg:#eef2fd;
+    --t2:#5b6472; --t2-bg:#f0f1f4;
+    --t3:#9aa1ad; --t3-bg:#f4f5f7;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg);color:var(--ink);font-size:15px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{max-width:430px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative}
+  @media(min-width:520px){
+    body{padding:24px 0;background:#e9ebee}
+    #app{border-radius:18px;box-shadow:0 10px 44px rgba(16,20,30,.13);overflow:hidden}
+  }
+  .screen{display:none;padding:22px 18px 36px}
+  .screen.active{display:block}
+
+  /* ---------- 通用 ---------- */
+  .hd h1{font-size:22px;margin:0 0 4px;letter-spacing:.3px}
+  .hd .sub{color:var(--muted);font-size:13px;margin:0 0 22px}
+  .block{margin-bottom:20px}
+  .q{display:block;font-size:14px;font-weight:600;color:var(--ink-2);margin-bottom:9px}
+  .q .opt{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink-2);
+    font:inherit;font-size:13.5px;padding:8px 14px;border-radius:999px;cursor:pointer;
+    transition:.14s ease;line-height:1;
+  }
+  .chip:hover{border-color:#c9cfda}
+  .chip.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+
+  details.more{margin-top:4px}
+  details.more summary{
+    cursor:pointer;list-style:none;color:var(--blue);font-size:13.5px;
+    padding:10px 0;font-weight:600;
+  }
+  details.more summary::-webkit-details-marker{display:none}
+  details.more summary::after{content:" ＋";font-weight:400}
+  details.more[open] summary::after{content:" －"}
+
+  .btn{
+    display:block;width:100%;appearance:none;border:0;border-radius:12px;
+    background:var(--blue);color:#fff;font:inherit;font-weight:600;font-size:16px;
+    padding:15px;cursor:pointer;margin-top:26px;letter-spacing:.5px;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--blue);border:1px solid var(--blue);font-size:14px;padding:11px;margin-top:10px}
+  .btn.plain{background:transparent;color:var(--muted);font-weight:400;font-size:13.5px;padding:10px;margin-top:6px}
+
+  .back{
+    appearance:none;border:0;background:transparent;color:var(--muted);
+    font:inherit;font-size:13.5px;padding:0 0 14px;cursor:pointer;
+  }
+  .back::before{content:"‹ ";font-size:17px;vertical-align:-1px}
+
+  .demo-note{
+    font-size:11.5px;color:#9aa1ad;text-align:center;margin-top:26px;line-height:1.5;
+  }
+
+  /* ---------- 屏2 列表 ---------- */
+  .budget{
+    background:linear-gradient(135deg,#2f5bd3,#3f6fe0);color:#fff;border-radius:var(--radius);
+    padding:16px 18px;margin-bottom:8px;
+  }
+  .budget .big{font-size:26px;font-weight:700;letter-spacing:.5px;line-height:1.2}
+  .budget .big em{font-style:normal;font-size:15px;font-weight:500;opacity:.9;margin-left:4px}
+  .budget .small{font-size:12.5px;opacity:.88;margin-top:5px}
+
+  .profile-line{
+    display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 20px;
+  }
+  .weights{
+    margin:14px 0 0;padding:10px 14px;background:#fff;border:1px solid var(--line);
+    border-radius:10px;font-size:12px;color:var(--muted);line-height:1.9;display:none;
+  }
+  .weights.on{display:block}
+  .weights .w{display:inline-block;margin-right:12px;white-space:nowrap}
+  .weights .w i{font-style:normal;font-weight:700;color:var(--blue)}
+  .tag{
+    font-size:11.5px;padding:4px 9px;border-radius:999px;background:#e9ebef;color:#5b6472;
+  }
+
+  .tier{margin-bottom:22px}
+  .tier-hd{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .tier-name{font-size:14px;font-weight:700;letter-spacing:.3px}
+  .tier-count{font-size:12px;color:var(--muted)}
+  .tier.t1 .tier-name{color:var(--t1)}
+  .tier.t2 .tier-name{color:var(--t2)}
+  .tier.t3 .tier-name{color:var(--t3)}
+  .tier.t4 .tier-name{color:#8b94a3}
+
+  .row{
+    display:block;width:100%;text-align:left;
+    appearance:none;border:1px solid var(--line);background:var(--card);
+    border-radius:12px;padding:13px 14px;margin-bottom:8px;cursor:pointer;font:inherit;
+    transition:.14s ease;
+  }
+  .row:hover{border-color:#cfd5e0;box-shadow:0 2px 8px rgba(20,26,40,.05)}
+  .row:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .row .rowtop{display:flex;align-items:flex-start;gap:12px}
+  .row .main{flex:1;min-width:0}
+  .row .nm{font-size:15px;font-weight:600;display:block}
+  .row .rs{font-size:12.5px;color:var(--muted);display:block;margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .sc{font-size:17px;font-weight:700;color:var(--t1);flex-shrink:0;
+    font-variant-numeric:tabular-nums;text-align:right;line-height:1.2}
+  .row .sc em{display:block;font-style:normal;font-size:10px;font-weight:400;color:#9aa1ad;margin-top:2px}
+  .tier.t2 .row .sc{color:var(--t2)}
+  .tier.t3 .row .sc{color:var(--t3)}
+  .tier.t4 .row .sc{color:#8b94a3}
+  .row .arrow{color:#c3c9d4;font-size:17px;margin-left:-2px;flex-shrink:0}
+  .row .rowinfo{display:block;font-size:12px;color:var(--muted);margin-top:6px;line-height:1.65}
+  .row .rowhits{display:block;font-size:12px;color:#1f7a45;margin-top:7px;line-height:1.65}
+  .row .rowmiss{display:block;font-size:11.5px;color:#9aa1ad;margin-top:2px;line-height:1.6}
+  .row .rowcalc{display:block;margin-top:7px;padding:8px 10px;background:#f7f9fc;
+    border:1px solid #e9edf4;border-radius:8px;font-size:11.5px;color:#5b6472;
+    line-height:1.7;text-align:left}
+  .row .rowcalc b{color:var(--ink)}
+  .row .rowcalc .sub{margin-top:2px;color:#7b8492}
+
+  .tier.t3 .row{opacity:.82}
+  .tier.t4 .row{opacity:.9}
+
+  /* ---------- 屏3 企业卡 ---------- */
+  .card{background:var(--card);border-radius:var(--radius);padding:20px 18px;box-shadow:0 1px 3px rgba(20,26,40,.05)}
+  .card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:4px}
+  .card-top h2{font-size:19px;margin:0;flex:1;line-height:1.35}
+  .badge{
+    font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;
+    flex-shrink:0;margin-top:2px;letter-spacing:.3px;
+  }
+  .badge.t1{background:var(--t1-bg);color:var(--t1)}
+  .badge.t2{background:var(--t2-bg);color:var(--t2)}
+  .badge.t3{background:var(--t3-bg);color:var(--t3)}
+  .badge.t4{background:#eef0f3;color:#6b7280}
+  .card-meta{font-size:12.5px;color:var(--muted);margin-bottom:18px}
+
+  .kv{display:grid;grid-template-columns:76px 1fr;gap:9px 12px;font-size:13.5px;margin-bottom:18px}
+  .kv dt{color:var(--muted)}
+  .kv dd{margin:0;color:var(--ink-2)}
+
+  .sec-t{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;margin:0 0 9px}
+  .sec{margin-bottom:18px}
+
+  .job-line{
+    background:#f7f8fa;border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--ink-2);
+  }
+  .job-line .lab{color:var(--muted);font-size:12px;display:block;margin-bottom:3px}
+  .job-line .hint{color:#9aa1ad;font-size:11.5px;display:block;margin-top:8px}
+
+  .job{padding:9px 0;border-bottom:1px solid #eceef2}
+  .job:last-of-type{border-bottom:0;padding-bottom:2px}
+  .job-title{font-size:13.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
+  .job-badge{
+    font-size:10.5px;font-weight:700;color:#b4510f;background:#fdeee2;
+    border-radius:4px;padding:1px 6px;letter-spacing:.3px;
+  }
+  .job-meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .job-req{font-size:12px;color:#9aa1ad;margin-top:2px}
+
+  ul.reasons{list-style:none;padding:0;margin:0}
+  ul.reasons li{
+    font-size:13.5px;padding:7px 0 7px 20px;position:relative;color:var(--ink-2);
+    border-bottom:1px solid #f1f2f5;
+  }
+  ul.reasons li:last-child{border-bottom:0}
+  ul.reasons li::before{
+    content:"";position:absolute;left:5px;top:15px;width:5px;height:5px;border-radius:50%;
+    background:var(--blue);
+  }
+  ul.gaps{list-style:none;padding:0;margin:0}
+  ul.gaps li{font-size:12.5px;color:#9aa1ad;padding:5px 0 5px 16px;position:relative}
+  ul.gaps li::before{content:"·";position:absolute;left:5px;color:#c3c9d4}
+
+  .source{font-size:11.5px;color:#a9afba;border-top:1px solid #f1f2f5;padding-top:12px;margin-top:4px}
+
+  .scorebox{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .scorebox b{font-size:30px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .scorebox span{font-size:12px;color:var(--muted)}
+  .calcbox{padding:12px 14px;background:#f7f9fc;border:1px solid #e9edf4;border-radius:10px;
+    font-size:12.5px;color:#5b6472;line-height:1.75}
+  .calcbox b{color:var(--ink)}
+  .calcbox .sub{margin-top:4px;color:#7b8492}
+  .calcbox details{margin-top:8px}
+  .calcbox summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:12px}
+
+  /* ---------- 屏4 作战卡 ---------- */
+  .sheet{background:var(--card);border-radius:var(--radius);padding:22px 20px}
+  .sheet-hd{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:16px}
+  .sheet-hd h2{font-size:19px;margin:0 0 4px;letter-spacing:1px}
+  .sheet-hd p{margin:0;font-size:12px;color:var(--muted)}
+  .sheet-limit{
+    background:var(--blue-bg);border-radius:10px;padding:12px 14px;margin-bottom:18px;
+    font-size:13.5px;color:var(--blue);font-weight:600;line-height:1.5;
+  }
+  .sheet-sec{margin-bottom:16px}
+  .sheet-sec h3{font-size:12px;letter-spacing:1px;color:var(--muted);margin:0 0 8px}
+  .sheet-item{display:flex;gap:10px;font-size:13.5px;padding:5px 0;border-bottom:1px dotted #eceef2}
+  .sheet-item:last-child{border-bottom:0}
+  .sheet-item .n{color:#a9afba;width:16px;flex-shrink:0;font-variant-numeric:tabular-nums}
+  .sheet-item .t{flex:1}
+  .sheet-item .d{color:var(--muted);font-size:12px;flex-shrink:0}
+  .sheet-item.give .t{color:#9aa1ad;text-decoration:line-through;text-decoration-color:#d5d9e0}
+  .sheet-foot{font-size:11px;color:#a9afba;border-top:1px solid #eceef2;padding-top:10px;line-height:1.6}
+
+  /* ---------- 打印 ---------- */
+  @media print{
+    body{background:#fff;padding:0}
+    #app{max-width:none;box-shadow:none;border-radius:0;background:#fff}
+    .screen{display:none!important;padding:0}
+    #s4{display:block!important}
+    .no-print{display:none!important}
+    .sheet{border-radius:0;padding:0;box-shadow:none}
+    @page{margin:14mm}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ==================== 屏① 输入 ==================== -->
+  <section id="s1" class="screen">
+    <div class="hd">
+      <h1>双选会助手</h1>
+      <p class="sub">先想清楚停在哪，再决定往哪走</p>
+    </div>
+
+    <div class="block">
+      <label class="q">你老家在哪个城市？<span class="opt">用于算离家近</span></label>
+      <div class="chips" data-group="home_city" data-mode="single">
+        <button class="chip" data-val="盐城">盐城</button>
+        <button class="chip" data-val="南京">南京</button>
+        <button class="chip" data-val="苏州">苏州</button>
+        <button class="chip" data-val="徐州">徐州</button>
+        <button class="chip" data-val="南通">南通</button>
+        <button class="chip" data-val="其他">其他</button>
+      </div>
+    </div>
+
+    <div class="block">
+      <label class="q">想在哪座城市工作？<span class="opt">可多选</span></label>
+      <div class="chips" data-group="region" data-mode="multi">
+        <button class="chip" data-val="江苏">江苏</button>
+        <button class="chip" data-val="上海">上海</button>
+        <button class="chip" data-val="浙江">浙江</button>
+        <button class="chip" data-val="广东">广东</button>
+        <button class="chip" data-val="北京">北京</button>
+        <button class="chip" data-val="不限">不限</button>
+      </div>
+    </div>
+
+    <div class="block">
+      <label class="q">这次主要想找什么？</label>
+      <div class="chips" data-group="stage_detail" data-mode="single">
+        <button class="chip" data-val="暑期实习">暑期实习</button>
+        <button class="chip" data-val="日常实习">日常实习</button>
+        <button class="chip" data-val="秋招校招">秋招校招</button>
+        <button class="chip" data-val="校招补录">校招补录</button>
+      </div>
+    </div>
+
+    <div class="block">
+      <label class="q">想做什么方向？<span class="opt">自述，仅作参考</span></label>
+      <div class="chips" data-group="direction_interest" data-mode="single">
+        <button class="chip" data-val="研发/技术">研发/技术</button>
+        <button class="chip" data-val="产品/设计">产品/设计</button>
+        <button class="chip" data-val="运营/市场">运营/市场</button>
+        <button class="chip" data-val="销售/商务">销售/商务</button>
+        <button class="chip" data-val="财务/法务">财务/法务</button>
+        <button class="chip" data-val="人力/行政">人力/行政</button>
+        <button class="chip" data-val="生产/制造/工程">生产/工程</button>
+        <button class="chip" data-val="供应链/物流">供应链/物流</button>
+        <button class="chip" data-val="医护/生物">医护/生物</button>
+        <button class="chip" data-val="教育/科研">教育/科研</button>
+      </div>
+    </div>
+
+    <details class="more">
+      <summary>再答两题，排序更准</summary>
+      <div class="block" style="margin-top:10px">
+        <label class="q">你学什么专业？<span class="opt">可选</span></label>
+        <div class="chips" data-group="major" data-mode="single">
+          <button class="chip" data-val="工学">工学</button>
+          <button class="chip" data-val="理学">理学</button>
+          <button class="chip" data-val="管理学">管理学</button>
+          <button class="chip" data-val="经济学">经济学</button>
+          <button class="chip" data-val="文学">文学</button>
+          <button class="chip" data-val="医学">医学</button>
+        </div>
+      </div>
+      <div class="block">
+        <label class="q">企业类型偏好<span class="opt">最多选 3 个，可跳过</span></label>
+        <div class="chips" data-group="target_company_types" data-mode="multi">
+          <button class="chip" data-val="央企">央企</button>
+          <button class="chip" data-val="国企">国企</button>
+          <button class="chip" data-val="民企">民企</button>
+          <button class="chip" data-val="外企">外企</button>
+          <button class="chip" data-val="合资">合资</button>
+          <button class="chip" data-val="事业单位">事业单位</button>
+        </div>
+      </div>
+    </details>
+
+    <button class="btn" id="go-rank">生成我的优先级</button>
+    <button class="btn ghost" id="use-demo" type="button">没有画像？用示例画像直接看</button>
+    <button class="btn plain" id="refill" type="button">重新走一遍画像采集 →</button>
+
+    <p class="demo-note">
+      演示用示例数据，非真实招聘信息。<br>
+      本页不收集姓名、手机号、简历；正式版对联系方式脱敏存储。
+    </p>
+  </section>
+
+  <!-- ==================== 屏② 分档列表 ==================== -->
+  <section id="s2" class="screen active">
+    <button class="back" data-go="s1">改一下我的偏好</button>
+
+    <div class="budget">
+      <div class="big"><span id="budget-num">13</span><em>家</em></div>
+      <div class="small" id="budget-sub">你能待 4 小时，按每家 18 分钟算，这是今天能深聊的上限</div>
+    </div>
+
+    <div class="weights" id="weights"></div>
+
+    <div class="profile-line" id="profile-line"></div>
+
+    <div id="tiers"></div>
+
+    <button class="btn ghost no-print" data-go="s4">生成一页纸作战卡</button>
+    <button class="btn plain no-print" data-go="s1">重新开始</button>
+
+    <p class="demo-note">数据来自公开信息，岗位方向为推测结果，已按证据强度降权。</p>
+  </section>
+
+  <!-- ==================== 屏③ 企业卡 ==================== -->
+  <section id="s3" class="screen">
+    <button class="back" data-go="s2">返回列表</button>
+    <div id="detail"></div>
+  </section>
+
+  <!-- ==================== 屏④ 一页纸 ==================== -->
+  <section id="s4" class="screen">
+    <button class="back no-print" data-go="s2">返回列表</button>
+    <div class="sheet" id="sheet"></div>
+    <button class="btn ghost no-print" id="btn-print">打印 / 存为 PDF</button>
+    <button class="btn plain no-print" data-go="s1">重新开始</button>
+  </section>
+
+</div>
+
+<script>
+/* ============================================================
+   接入点 1：企业模块的 companies.json
+   ============================================================ */
+const COMPANIES = [];
+
+/* ============================================================
+   接入点 2：匹配模块的 results.json
+   （这里先用预计算结果占位，接口和契约完全一致）
+   distanceKm / nearestCity 来自距离模块
+   ============================================================ */
+const RESULTS = [];
+
+const TIERS = [
+  { key:"优先去",   cls:"t1", desc:"先走这几家" },
+  { key:"可以看",   cls:"t2", desc:"有余力再去" },
+  { key:"建议放弃", cls:"t3", desc:"别把时间花在这" },
+  { key:"资料不全", cls:"t4", desc:"未查到岗位，先补数据" }
+];
+
+/* ============================================================
+   工具
+   ============================================================ */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+let companyPool = COMPANIES;
+const byId = id => companyPool.find(c => c.id === id);
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+const MIN_PER_COMPANY = 18;   // 深聊 + 走动 + 排队
+const STAY_HOURS = 4;         // 固定假设：待一整个半天。不再问用户
+
+let profile = loadProfile();
+
+function loadProfile(){
+  try {
+    const raw = localStorage.getItem("profile");
+    if (raw) return JSON.parse(raw);
+  } catch(e){}
+  return {
+    home_city:null, region:[], stage_detail:null, direction_interest:null,
+    major:null, target_company_types:[]
+  };
+}
+
+/* ============================================================
+   打分：接采集端 rules —— 个性化分 = 基础分 × (1 + Σ 权重ᵢ × 匹配度ᵢ / 100)
+   基础分 = 城市40 + 方向35 + 紧急25；软加分：企业类型 +5、家乡 +8
+   三条硬约束：只调顺序不做硬筛；全 0 当等权；软偏好不排除
+   ============================================================ */
+const DIM_KEYS = ["salary", "stability", "growth", "autonomy", "impact", "balance"];
+const DIM_LABEL = { salary:"薪资", stability:"稳定", growth:"成长",
+                    autonomy:"自主", impact:"影响", balance:"平衡" };
+const NATURE_LEVEL = { "央企":1.0, "事业单位":1.0, "国企":0.9, "合资":0.6, "外企":0.5, "民企":0.35 };
+const DIM_RULES = {
+  growth:   [["培训","导师","带教","晋升","轮岗","成长","培养"], []],
+  autonomy: [["自主","独立负责","独立完成","牵头"], ["协助","配合","执行上级"]],
+  impact:   [["影响","服务客户","价值","成果应用"], []],
+  balance:  [["双休","不加班","弹性","八小时","8小时"], ["倒班","轮班","长期出差","驻场"]]
+};
+const clamp01 = x => Math.max(0, Math.min(1, x));
+
+function weightsOf(prof){
+  const raw = (prof && prof.values) || {};
+  const vals = {};
+  let total = 0;
+  DIM_KEYS.forEach(k => { vals[k] = Math.max(0, Number(raw[k]) || 0); total += vals[k]; });
+  if (total <= 0){ const even = Math.floor(100 / DIM_KEYS.length);
+    DIM_KEYS.forEach(k => vals[k] = even); return { vals, uncollected: true }; }
+  return { vals, uncollected: false };
+}
+
+function dimScores(c){
+  const jobs = c.jobs || [];
+  const text = jobs.map(j => j.requirements || "").join(" ");
+  const salaryText = jobs.map(j => j.salary || "").join(" ");
+  const out = { stability: NATURE_LEVEL[c.nature] ?? 0.5 };
+  const notes = {
+    stability: c.nature && NATURE_LEVEL[c.nature] != null
+      ? "企业性质：" + c.nature + " → " + NATURE_LEVEL[c.nature].toFixed(2)
+      : "企业性质未知，按中性分 0.50"
+  };
+
+  if (!salaryText || salaryText === "未知") {
+    out.salary = 0.5;
+    notes.salary = "岗位薪资未知，按中性分 0.50";
+  } else if (/\d/.test(salaryText)) {
+    out.salary = 1.0;
+    notes.salary = "岗位薪资写明数字 → 1.00";
+  } else {
+    out.salary = 0.6;
+    notes.salary = "岗位薪资只写「" + salaryText.slice(0, 12) + "」→ 0.60";
+  }
+
+  Object.keys(DIM_RULES).forEach(dim => {
+    const [pos, neg] = DIM_RULES[dim];
+    if (!text) {
+      out[dim] = 0.5;
+      notes[dim] = "没有岗位描述，按中性分 0.50";
+      return;
+    }
+    const posHits = pos.filter(k => text.includes(k));
+    const negHits = neg.filter(k => text.includes(k));
+    let s = 0.5;
+    let why = "岗位描述未命中关键词，按中性分 0.50";
+    if (posHits.length) { s = 1.0; why = "命中「" + posHits.join("、") + "」→ 1.00"; }
+    if (negHits.length) { s = 0.1; why = "命中反向词「" + negHits.join("、") + "」→ 0.10"; }
+    out[dim] = s;
+    notes[dim] = why;
+  });
+  return { scores: out, notes };
+}
+
+function baseOf(prof, c){
+  const regions = Array.isArray(prof.region)
+                ? prof.region
+                : String(prof.region || "").split(/[、/，,\s]+/).filter(Boolean);
+  const city = String(c.city || "未知");
+  let cityPart = 0.6;
+  let cityNote = "未填期望城市，按中性分 0.60";
+  if (city === "未知") {
+    cityNote = "企业城市未知，按中性分 0.60";
+  } else if (regions.includes("不限")) {
+    cityNote = "期望城市不限，按中性分 0.60";
+  } else if (regions.length) {
+    const hit = regions.find(r => r && (city.includes(r) || r.includes(city)));
+    cityPart = hit ? 1.0 : 0;
+    cityNote = hit ? "在期望城市「" + hit + "」→ 1.00" : "不在期望城市（企业城市：" + city + "）→ 0.00";
+  }
+
+  const words = String(prof.direction_interest || "").split(/[、/，,\s]+/).filter(w => w.length >= 2);
+  const jobs = c.jobs || [];
+  const blob = jobs.map(j => (j.title || "") + (j.requirements || "")).join(" ");
+  let dirPart;
+  let dirNote;
+  let dirHits = [];
+  if (!words.length) {
+    dirPart = 0.5;
+    dirNote = "未填期望方向，按中性分 0.50";
+  } else if (!jobs.length) {
+    dirPart = 0.3;
+    dirNote = "没有岗位资料，方向只能按 0.30";
+  } else {
+    dirHits = words.filter(w => blob.includes(w));
+    dirPart = clamp01(dirHits.length / words.length * 1.5);
+    dirNote = dirHits.length
+      ? "岗位命中方向词「" + dirHits.join("、") + "」→ " + dirPart.toFixed(2)
+      : "岗位描述没有命中方向词「" + words.join("、") + "」→ 0.00";
+  }
+
+  const jobWithUrgency = jobs.find(j => ["高","中","低"].includes(j.urgency));
+  const u = jobWithUrgency ? jobWithUrgency.urgency : "";
+  const urgPart = { "高":1.0, "中":0.6, "低":0.2 }[u] ?? 0.4;
+  const urgNote = u
+    ? "岗位标注紧急度「" + u + "」→ " + urgPart.toFixed(2)
+    : "岗位未标注紧急度，按 0.40";
+
+  return {
+    base: 40*cityPart + 35*dirPart + 25*urgPart,
+    cityPart, dirPart, urgPart, cityNote, dirNote, urgNote, dirHits
+  };
+}
+
+const shortNote = s => String(s || "").replace(/\s*→\s*[\d.]+\s*$/, "").trim();
+
+function rank(companies, prof){
+  const weightInfo = weightsOf(prof);
+  const vals = weightInfo.vals;
+  const types = Array.isArray(prof.target_company_types) ? prof.target_company_types
+              : (prof.target_company_types ? [prof.target_company_types] : []);
+  const home = String(prof.home_city || "未知");
+
+  const scored = companies.map(c => {
+    const baseInfo = baseOf(prof, c);
+    const dimInfo = dimScores(c);
+    const dims = dimInfo.scores;
+    const dimNotes = dimInfo.notes;
+    const preferencePoints = DIM_KEYS.reduce((n, k) => n + vals[k] * dims[k], 0);
+    const factor = 1 + preferencePoints / 100;
+
+    const jobs = c.jobs || [];
+    const hot = jobs.find(j => j.urgency === "高");
+    const top = jobs[0];
+
+    const reasons = [];
+    if (baseInfo.cityPart >= 1) reasons.push("在期望城市");
+    if (baseInfo.dirPart >= 1) reasons.push("方向对口");
+    let bonus = 0;
+    const bonusReasons = [];
+    if (types.includes(c.nature)) {
+      bonus += 5;
+      bonusReasons.push("命中企业类型偏好 +5");
+      reasons.push("命中企业类型偏好");
+    }
+    if (home !== "未知" && c.city === home) {
+      bonus += 8;
+      bonusReasons.push("就在家乡 +8");
+      reasons.push("就在家乡");
+    }
+    if (hot) reasons.push(hot.title + " 急招");
+
+    // 命中 / 没中：把这家企业到底吃到了哪些分写清楚
+    const hits = [];
+    const misses = [];
+
+    if (baseInfo.cityPart >= 1) {
+      hits.push("城市（在期望城市「" + (c.city || "未知") + "」）");
+    } else if (baseInfo.cityPart === 0) {
+      misses.push("城市（不在期望城市，企业城市：" + (c.city || "未知") + "）");
+    }
+
+    const dirHits = baseInfo.dirHits || [];
+    if (baseInfo.dirPart >= 1) {
+      hits.push("方向（命中「" + dirHits.join("、") + "」）");
+    } else if (baseInfo.dirPart > 0 && jobs.length) {
+      hits.push("方向（部分命中 " + baseInfo.dirPart.toFixed(2) + "）");
+    } else if (baseInfo.dirPart === 0) {
+      misses.push("方向（未命中「" + String(prof.direction_interest || "") + "」）");
+    }
+
+    if (hot) {
+      hits.push("急招（" + (hot.title || "岗位") + "）");
+    } else if (baseInfo.urgPart >= 0.6) {
+      hits.push("紧急度（中）");
+    } else if (baseInfo.urgPart === 0.2) {
+      misses.push("紧急度（低）");
+    }
+
+    DIM_KEYS.forEach(k => {
+      const s = dims[k];
+      if (s >= 0.6) {
+        hits.push(DIM_LABEL[k] + "（" + shortNote(dimNotes[k]) + "）");
+      } else if (s <= 0.1) {
+        misses.push(DIM_LABEL[k] + "（" + shortNote(dimNotes[k]) + "）");
+      }
+    });
+
+    if (types.includes(c.nature)) hits.push("企业类型（" + c.nature + " +5）");
+    if (home !== "未知" && c.city === home) hits.push("家乡（" + home + " +8）");
+    if (!jobs.length) misses.push("岗位（未查到，方向和紧急度只能按中性分）");
+
+    return {
+      id: c.id,
+      tier: "可以看",
+      score: Math.round((baseInfo.base * factor + bonus) * 10) / 10,
+      distanceKm: "未知",
+      nearestCity: "未知",
+      jobs: jobs,
+      reasons: reasons.length ? reasons : ["按综合条件排序"],
+      hits: hits, misses: misses,
+      hitLine: hits.join(" · ") || "没有明显命中项，主要按中性分计算",
+      missLine: misses.join(" · "),
+      gaps: [],
+      calc: {
+        base: baseInfo.base,
+        cityPart: baseInfo.cityPart, dirPart: baseInfo.dirPart, urgPart: baseInfo.urgPart,
+        cityNote: baseInfo.cityNote, dirNote: baseInfo.dirNote, urgNote: baseInfo.urgNote,
+        dims: dims, dimNotes: dimNotes, weights: vals,
+        preferencePoints: preferencePoints, factor: factor,
+        bonus: bonus, bonusReasons: bonusReasons,
+        uncollected: weightInfo.uncollected
+      }
+    };
+  }).sort((a, b) => b.score - a.score);
+
+  const withJobs = scored.filter(r => r.jobs && r.jobs.length);
+  const noJobs = scored.filter(r => !(r.jobs && r.jobs.length));
+  withJobs.forEach((r, i) => {
+    const n = withJobs.length;
+    r.tier = i < Math.max(1, Math.round(n * 0.3)) ? "优先去"
+           : i < Math.max(2, Math.round(n * 0.7)) ? "可以看" : "建议放弃";
+  });
+  noJobs.forEach(r => { r.tier = "资料不全"; });
+  return withJobs.concat(noJobs);
+}
+
+const fmt1 = n => Number(n || 0).toFixed(1);
+const fmt2 = n => Number(n || 0).toFixed(2);
+
+function indexInfoLine(c){
+  const jobs = (c && c.jobs) || [];
+  return [
+    "城市：" + ((c && c.city) || "未知"),
+    "性质：" + ((c && c.nature) || "未知"),
+    "行业：" + ((c && c.industry) || "未知"),
+    jobs.length ? "岗位：" + jobs.length + " 个" : "岗位：未查到",
+    "来源：" + ((c && c.jobSource) || "未知")
+  ].join(" · ");
+}
+
+function indexCalcHTML(r){
+  const c = r.calc;
+  if (!c) return "";
+  const baseLine = "城市 40×" + fmt2(c.cityPart) + "=" + fmt1(40 * c.cityPart)
+    + " + 方向 35×" + fmt2(c.dirPart) + "=" + fmt1(35 * c.dirPart)
+    + " + 紧急度 25×" + fmt2(c.urgPart) + "=" + fmt1(25 * c.urgPart)
+    + " → 基础分 " + fmt1(c.base);
+  const prefParts = DIM_KEYS.map(k =>
+    DIM_LABEL[k] + " " + c.weights[k] + "×" + fmt2(c.dims[k]) + "=" + fmt1(c.weights[k] * c.dims[k])
+  );
+  const prefLine = "偏好：" + prefParts.join(" + ")
+    + " = " + fmt1(c.preferencePoints)
+    + " → 系数 1 + " + fmt1(c.preferencePoints) + "/100 = " + fmt2(c.factor);
+  const bonusLine = c.bonus
+    ? "加分：" + c.bonusReasons.join("；") + " → +" + c.bonus
+    : "加分：无";
+
+  return '<div><b>分数怎么算：</b>' + esc(baseLine)
+    + "；× 偏好系数 " + fmt2(c.factor)
+    + (c.bonus ? " + 加分 " + c.bonus : "")
+    + " = <b>" + fmt1(r.score) + "</b></div>"
+    + '<div class="sub">' + esc(prefLine) + "。" + esc(bonusLine) + "。</div>"
+    + '<div class="sub">' + esc("城市：" + c.cityNote + "；方向：" + c.dirNote + "；紧急度：" + c.urgNote) + "。</div>"
+    + (c.uncollected ? '<div class="sub">没有填写偏好，六项按等权（各 16）计算。</div>' : "");
+}
+
+function indexDimNotes(r){
+  const c = r.calc;
+  if (!c) return "";
+  return DIM_KEYS.map(k =>
+    DIM_LABEL[k] + "：" + c.dimNotes[k] + "（权重 " + c.weights[k] + "）"
+  ).join("；");
+}
+
+/* ============================================================
+   从 ② 画像页接手：fair_profile → 本页 profile
+   ============================================================ */
+function applyFairDocument(doc){
+  if (!doc) return false;
+  const a = doc.answers || {};
+  const f = doc.fair || {};
+  const id = doc.identity || {};
+  profile.region = a.region || profile.region;
+  profile.home_city = f.home_city || profile.home_city;
+  profile.direction_interest = a.direction_interest || profile.direction_interest;
+  profile.values = (a.values && typeof a.values === "object") ? a.values : profile.values;
+  profile.target_company_types = f.target_company_types || [];
+  profile.stage_detail = f.stage_detail || "";
+  profile.major = id.major || profile.major;
+  profile.fair_id = doc.fair_id || "";
+  return true;
+}
+
+/* ============================================================
+   屏切换
+   ============================================================ */
+function go(id){
+  $$(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+  window.scrollTo(0, 0);
+}
+
+document.addEventListener("click", e => {
+  const nav = e.target.closest("[data-go]");
+  if (nav) go(nav.dataset.go);
+});
+
+/* ============================================================
+   屏① chips
+   ============================================================ */
+$$(".chips").forEach(group => {
+  group.addEventListener("click", e => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    const mode = group.dataset.mode;
+
+    if (mode === "single"){
+      $$(".chip", group).forEach(c => c.classList.remove("on"));
+      chip.classList.add("on");
+      return;
+    }
+
+    // multi
+    chip.classList.toggle("on");
+    const unlimited = $('.chip[data-val="不限"]', group);
+    if (!unlimited) return;
+    if (chip.dataset.val === "不限" && chip.classList.contains("on")){
+      $$(".chip", group).forEach(c => { if (c !== chip) c.classList.remove("on"); });
+    } else if (chip.classList.contains("on")){
+      unlimited.classList.remove("on");
+    }
+  });
+});
+
+function readChips(key){
+  const g = $(`.chips[data-group="${key}"]`);
+  if (!g) return null;
+  const on = $$(".chip.on", g).map(c => c.dataset.val);
+  return g.dataset.mode === "single" ? (on[0] || null) : on;
+}
+
+$("#go-rank").addEventListener("click", () => {
+  profile.home_city            = readChips("home_city");
+  profile.region               = readChips("region") || [];
+  profile.stage_detail         = readChips("stage_detail");
+  profile.direction_interest   = readChips("direction_interest");
+  profile.major                = readChips("major");
+  profile.target_company_types = readChips("target_company_types") || [];
+
+  if (!profile.home_city || !profile.region.length){
+    alert("先把老家和愿意去的地方选上，这两项决定排序。");
+    return;
+  }
+  try { localStorage.setItem("profile", JSON.stringify(profile)); } catch(e){}
+
+  renderRank();
+  go("s2");
+});
+
+/* ============================================================
+   屏② 渲染
+   ============================================================ */
+function budgetText(){
+  const hours = STAY_HOURS;
+  const n = Math.max(1, Math.round(hours * 60 / MIN_PER_COMPANY));
+  return { n, hours };
+}
+
+const DIMS = [
+  { key:"salary",    label:"薪资" },
+  { key:"stability", label:"稳定" },
+  { key:"growth",    label:"成长" },
+  { key:"autonomy",  label:"自主" },
+  { key:"impact",    label:"影响" },
+  { key:"balance",   label:"平衡" }
+];
+
+function renderWeights(){
+  const box = $("#weights");
+  if (!box) return;
+  const v = (profile && profile.values) || {};
+  const parts = DIMS
+    .map(d => ({ ...d, val: Number(v[d.key]) || 0 }))
+    .filter(d => d.val > 0)
+    .sort((a, b) => b.val - a.val);
+
+  if (!parts.length){
+    box.classList.add("on");
+    box.innerHTML = `没填偏好权重，按各维度<b>等权</b>处理 —— 不会因为你没填而降低任何一家。`;
+    return;
+  }
+  box.classList.add("on");
+  box.innerHTML = "按你的偏好加权：" +
+    parts.map(d => `<span class="w">${d.label}<i>${d.val}</i></span>`).join("") +
+    `<span style="color:#a9afba">（权重只影响顺序，不排除任何企业）</span>`;
+}
+
+function renderRank(){
+  const { n, hours } = budgetText();
+  $("#budget-num").textContent = n;
+  $("#budget-sub").textContent =
+    `你能待 ${hours} 小时，按每家 ${MIN_PER_COMPANY} 分钟算，这是今天能深聊的上限`;
+
+  const tags = [];
+  if (profile.home_city) tags.push("老家 " + profile.home_city);
+  if (profile.region && profile.region.length) tags.push(profile.region.join(" / "));
+  if (profile.stage_detail) tags.push(profile.stage_detail);
+  if (profile.direction_interest) tags.push(profile.direction_interest);
+  if (profile.major) tags.push(profile.major);
+  if (profile.target_company_types && profile.target_company_types.length)
+    tags.push("偏好 " + profile.target_company_types.join("/"));
+  $("#profile-line").innerHTML = tags.map(t => `<span class="tag">${esc(t)}</span>`).join("");
+
+  renderWeights();
+
+  const results = rank(companyPool, profile);
+
+  if (!results.length) {
+    $("#tiers").innerHTML =
+      '<div style="background:#fff;border:1px solid #e6e8ec;border-radius:12px;padding:22px 18px;'
+      + 'font-size:13.5px;color:#6b7280;line-height:1.9">'
+      + '<b style="color:#16181d;font-size:15px;display:block;margin-bottom:6px">还没有企业数据</b>'
+      + '企业画像来自「采集 + 匹配」页的联网补全。<br>'
+      + '<a href="fair.html" style="color:#2f5bd3;font-weight:600">去采一份 →</a>'
+      + '</div>';
+    return;
+  }
+
+  $("#tiers").innerHTML = TIERS.map(tier => {
+    const list = results.filter(r => r.tier === tier.key);
+    if (!list.length) return "";
+    return `
+      <div class="tier ${tier.cls}">
+        <div class="tier-hd">
+          <span class="tier-name">${esc(tier.key)}</span>
+          <span class="tier-count">${list.length} 家 · ${esc(tier.desc)}</span>
+        </div>
+        ${list.map(r => {
+          const c = byId(r.id);
+          const name = c ? c.name : r.id;
+          return `
+            <div class="row" data-id="${esc(r.id)}" role="button" tabindex="0">
+              <div class="rowtop">
+                <span class="main">
+                  <span class="nm">${esc(name)}</span>
+                </span>
+                <span class="sc">${fmt1(r.score)}<em>分</em></span>
+                <span class="arrow">›</span>
+              </div>
+              <span class="rowhits">命中：${esc(r.hitLine || "没有明显命中项，主要按中性分计算")}</span>
+              ${r.missLine ? `<span class="rowmiss">没中：${esc(r.missLine)}</span>` : ""}
+              <span class="rowinfo">${esc(indexInfoLine(c))}</span>
+              <div class="rowcalc">${indexCalcHTML(r)}</div>
+            </div>`;
+        }).join("")}
+      </div>`;
+  }).join("");
+
+  $$("#tiers .row").forEach(btn => {
+    const open = () => { renderDetail(btn.dataset.id); go("s3"); };
+    btn.addEventListener("click", open);
+    btn.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  });
+}
+
+/* ============================================================
+   屏③ 企业卡
+   ============================================================ */
+function renderJobs(jobs, label, hint){
+  if (!jobs || !jobs.length) return "";
+  const items = jobs.map(j => {
+    const meta = [
+      (j.headcount && j.headcount !== "未知") ? `招 ${j.headcount} 人` : null,
+      (j.group && j.group !== "未知") ? j.group : null,
+      (j.salary && j.salary !== "未知") ? j.salary : null
+    ].filter(Boolean).join(" · ");
+    const badge = j.urgency === "高" ? `<span class="job-badge">急招</span>` : "";
+    const req = (j.requirements && j.requirements !== "未知")
+      ? `<div class="job-req">${esc(j.requirements)}</div>` : "";
+    return `<div class="job">
+      <div class="job-title">${esc(j.title)}${badge}</div>
+      ${meta ? `<div class="job-meta">${esc(meta)}</div>` : ""}
+      ${req}
+    </div>`;
+  }).join("");
+  return `<span class="lab">${esc(label)}</span>${items}` +
+         (hint ? `<span class="hint">${esc(hint)}</span>` : "");
+}
+
+function jobsBlock(c){
+  switch (c.jobSource){
+    case "校招公告":
+      return renderJobs(c.jobs, "在招岗位", "");
+    case "社招信息":
+      return renderJobs(c.jobs, "相关岗位", "来自社招信息，是否面向应届需现场确认");
+    case "主营业务推测":
+      return renderJobs(c.jobs, "可能方向", "据主营业务推测，仅供参考");
+    default:
+      return "";   // jobSource 未知：整段不显示
+  }
+}
+
+function renderDetail(id){
+  const c = byId(id);
+  const live = rank(companyPool, profile).find(x => x.id === id);
+  const r = live || RESULTS.find(x => x.id === id) || { tier:"未知", score:"-", reasons:[], gaps:[], distanceKm:null };
+  if (!c) return;
+
+  const tierCls = (TIERS.find(t => t.key === r.tier) || {}).cls || "t2";
+  const jobs = jobsBlock(c);
+
+  $("#detail").innerHTML = `
+    <div class="card">
+      <div class="card-top">
+        <h2>${esc(c.name)}</h2>
+        <span class="badge ${tierCls}">${esc(r.tier)}</span>
+      </div>
+      <div class="card-meta">${esc(c.industry)} · ${esc(c.nature)} · ${esc(c.city)}</div>
+
+      ${r.calc ? `
+      <div class="sec">
+        <p class="sec-t">匹配结果</p>
+        <div class="scorebox">
+          <b>${fmt1(r.score)}</b><span>分 · ${esc(r.tier)}</span>
+        </div>
+        <div class="calcbox">
+          ${indexCalcHTML(r)}
+          <details>
+            <summary>每一项匹配度怎么来的</summary>
+            <div class="sub">${esc(indexDimNotes(r))}。</div>
+          </details>
+        </div>
+      </div>` : ""}
+
+      <dl class="kv">
+        <dt>企业类型</dt><dd>${esc(c.nature)}</dd>
+        <dt>所在城市</dt><dd>${esc(c.city)}</dd>
+        <dt>所属行业</dt><dd>${esc(c.industry)}</dd>
+        <dt>离家距离</dt><dd>${
+          r.distanceKm == null ? "未知" :
+          `${esc(r.nearestCity || c.city)} ${esc(r.distanceKm)} 公里
+           <span style="color:#a9afba;font-size:11.5px">（按企业所在城市估算）</span>`
+        }</dd>
+      </dl>
+
+      ${jobs ? `<div class="sec"><p class="sec-t">招聘岗位</p><div class="job-line">${jobs}</div></div>` : ""}
+
+      <div class="sec">
+        <p class="sec-t">命中了什么</p>
+        <ul class="reasons">${((r.hits && r.hits.length) ? r.hits : (r.reasons || [])).map(x => `<li>${esc(x)}</li>`).join("") || "<li>没有明显命中项</li>"}</ul>
+        ${(r.misses && r.misses.length) ? `
+        <p class="sec-t" style="margin-top:14px">没命中什么</p>
+        <ul class="gaps">${r.misses.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+      </div>
+
+      ${(r.gaps && r.gaps.length) ? `
+      <div class="sec">
+        <p class="sec-t">需要留意</p>
+        <ul class="gaps">${r.gaps.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      </div>` : ""}
+
+      <div class="source">来源：${esc(c.source)} · 采集于 ${esc(c.date)}</div>
+    </div>`;
+}
+
+/* ============================================================
+   屏④ 一页纸
+   ============================================================ */
+function renderSheet(){
+  const { n, hours } = budgetText();
+  const results = rank(companyPool, profile);
+  const pick = TIERS.filter(t => t.key !== "建议放弃" && t.key !== "资料不全")
+                    .flatMap(t => results.filter(r => r.tier === t.key));
+  const top = pick.slice(0, n);
+  const drop = results.filter(r => r.tier === "建议放弃");
+  const incomplete = results.filter(r => r.tier === "资料不全");
+
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+
+  const head = [
+    profile.home_city && `老家 ${profile.home_city}`,
+    (profile.region || []).join("/"),
+    profile.stage_detail, profile.direction_interest
+  ].filter(Boolean).join(" · ");
+
+  $("#sheet").innerHTML = `
+    <div class="sheet-hd">
+      <h2>今日作战卡</h2>
+      <p>${esc(dateStr)} · ${esc(head || "未填写偏好")}</p>
+    </div>
+
+    <div class="sheet-limit">
+      你能待 ${hours} 小时，按每家 ${MIN_PER_COMPANY} 分钟算，<br>
+      今天最多深聊 <b>${n} 家</b>。下面是按优先级排好的 ${top.length} 家。
+    </div>
+
+    <div class="sheet-sec">
+      <h3>按顺序走这几家</h3>
+      ${top.map((r, i) => {
+        const c = byId(r.id);
+        return `<div class="sheet-item">
+          <span class="n">${i+1}</span>
+          <span class="t">${esc(c ? c.name : r.id)}</span>
+          <span class="d">${esc(c ? c.industry : "")}</span>
+        </div>`;
+      }).join("") || `<div class="sheet-item"><span class="t">无</span></div>`}
+    </div>
+
+    ${drop.length ? `
+    <div class="sheet-sec">
+      <h3>今天别去</h3>
+      ${drop.map(r => {
+        const c = byId(r.id);
+        return `<div class="sheet-item give">
+          <span class="n"></span>
+          <span class="t">${esc(c ? c.name : r.id)}</span>
+          <span class="d">${esc((r.gaps || [])[0] || "")}</span>
+        </div>`;
+      }).join("")}
+    </div>` : ""}
+
+    <div class="sheet-foot">
+      排序依据：城市 40 + 方向 35 + 紧急度 25，再乘六项偏好系数；企业类型 +5 / 家乡 +8 只加分不排除。<br>
+      ${incomplete.length ? `另有 ${incomplete.length} 家未查到岗位，已放入“资料不全”，未列入作战卡。<br>` : ""}
+      数据来自公开信息，岗位方向可能为推测，现场以企业公布为准。
+    </div>`;
+}
+
+$("#btn-print").addEventListener("click", () => window.print());
+
+/* ============================================================
+   进入屏④时重新渲染
+   ============================================================ */
+document.addEventListener("click", e => {
+  if (e.target.closest('[data-go="s4"]')) renderSheet();
+});
+
+/* ============================================================
+   首屏：如果之前填过，回填
+   ============================================================ */
+(function restore(){
+  const single = ["home_city","stage_detail","direction_interest","major"];
+  single.forEach(k => {
+    const v = profile[k];
+    if (v == null) return;
+    const chip = $(`.chips[data-group="${k}"] .chip[data-val="${String(v)}"]`);
+    if (chip) chip.classList.add("on");
+  });
+  ["region","target_company_types"].forEach(k => {
+    const vals = profile[k];
+    if (!Array.isArray(vals)) return;
+    vals.forEach(v => {
+      const chip = $(`.chips[data-group="${k}"] .chip[data-val="${v}"]`);
+      if (chip) chip.classList.add("on");
+    });
+  });
+})();
+
+/* ============================================================
+   开发辅助：在地址后加 #s1 ~ #s4 可直接跳到某一屏
+   截图、演示、联调时用得上（例如 index.html#s3）
+   ============================================================ */
+const DEMO_PROFILE = {
+  fair_id:"FAIR-3F7A21C9", event_date:"2026-11-01",
+  target_stage:"校招", stage_detail:"秋招校招",
+  region:["江苏","上海"], home_city:"盐城",
+  direction_interest:"财务/法务",
+  target_company_types:["国企"],
+  values:{ salary:30, stability:20, growth:50, autonomy:0, impact:0, balance:0 },  timeline:"毕业前一年", major:"管理学", degree:"本科"
+};
+
+(function hashRouter(){
+  const id = (location.hash || "").replace("#", "");
+  if (!/^s[1-4]$/.test(id)) return;
+  if (id !== "s1"){
+    profile = Object.assign({}, profile, DEMO_PROFILE);
+    renderRank();
+    renderSheet();
+  }
+  go(id);
+})();
+
+/* ============================================================
+   自动接手：② 生成过画像就直接排序，不再问一遍
+   ============================================================ */
+(function boot(){
+  const h = (location.hash || "").replace("#", "");
+
+  let doc = null;
+  try {
+    const raw = localStorage.getItem("fair_profile");
+    if (raw) doc = JSON.parse(raw);
+  } catch (e) {}
+
+  try {
+    if (doc) applyFairDocument(doc);
+    else profile = Object.assign({}, profile, DEMO_PROFILE);
+  } catch (e) {
+    profile = Object.assign({}, profile, DEMO_PROFILE);
+  }
+
+  // ① 采集到的名单：统计有多少家还没有企业画像
+  try {
+    const rawNames = localStorage.getItem("company_names");
+    if (rawNames) {
+      const names = JSON.parse(rawNames) || [];
+      const known = new Set(COMPANIES.map(c => c.name));
+      const pending = names.filter(n => !known.has(n));
+      window.__pending = { total: names.length, pending: pending.length, names: pending };
+    }
+  } catch (e) {}
+
+  // 企业数据来自采集页联网补全（localStorage.companies），不再内置演示数据
+  try {
+    const rawC = localStorage.getItem("companies");
+    if (rawC) {
+      const list = JSON.parse(rawC);
+      if (Array.isArray(list) && list.length) companyPool = list;
+    }
+  } catch (e) {}
+
+  try { renderRank(); renderSheet(); } catch (e) {}
+
+  if (!/^s[1-4]$/.test(h)) go("s2");
+
+  try {
+    const box = $("#weights");
+    if (box){
+      if (doc){
+        box.insertAdjacentHTML("afterbegin",
+          `<div style="margin-bottom:6px;color:#9aa1ad">画像来自 ② 采集页（${esc(doc.fair_id || "")}）</div>`);
+      } else {
+        box.insertAdjacentHTML("afterbegin",
+          `<div style="margin-bottom:6px;color:#9aa1ad">当前是<b style="color:#2f5bd3">示例画像</b> ·
+           <a href="fair.html" style="color:#2f5bd3">走一遍，换成你自己的 →</a></div>`);
+      }
+      const pend = window.__pending;
+      if (pend && pend.pending > 0){
+        box.insertAdjacentHTML("beforeend",
+          '<div style="margin-top:6px;color:#9aa1ad">名单里还有 <b style="color:#2f5bd3">'
+          + pend.pending + '</b> 家没有企业画像（共 ' + pend.total
+          + ' 家），等企业端数据到了会自动进入排序</div>');
+      }
+    }
+  } catch (e) {}
+})();
+
+/* 屏① 上的「用示例画像先看」与「重新填画像」 */
+(function wireFallback(){
+  const demoBtn = $("#use-demo");
+  if (demoBtn) demoBtn.addEventListener("click", () => {
+    profile = Object.assign({}, profile, DEMO_PROFILE);
+    renderRank(); renderSheet(); go("s2");
+  });
+  const againBtn = $("#refill");
+  if (againBtn) againBtn.addEventListener("click", () => {
+    try { localStorage.removeItem("fair_profile"); } catch (e) {}
+    location.href = "fair.html";
+  });
+})();
+</script>
+
+<div id="dsh-nav" style="position:fixed;left:0;right:0;bottom:0;z-index:9999;
+ background:rgba(255,255,255,.96);border-top:1px solid #e6e8ec;
+ backdrop-filter:blur(8px);font:13px/1 -apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;">
+ <div style="max-width:520px;margin:0 auto;display:flex;padding:9px 12px 11px;gap:6px;">
+  <a href="start.html" style="flex:1;text-align:center;padding:8px 0;border-radius:9px;color:#6b7280;text-decoration:none;">入口</a>
+  <a href="fair.html" style="flex:1;text-align:center;padding:8px 0;border-radius:9px;color:#2f5bd3;font-weight:600;text-decoration:none;">采集 + 匹配</a>
+  <a href="index.html" style="flex:1;text-align:center;padding:8px 0;border-radius:9px;color:#6b7280;text-decoration:none;">详细视图</a>
+ </div>
+</div>
+<style>body{padding-bottom:56px}</style>
+
+</body>
+</html>
