@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -413,6 +414,41 @@ def audit(c, m, all_titles=None, by_title=None):
     return trust, notes
 
 
+_TITLE_NOISE = ("实习生", "岗位", "职位", "岗", "校招", "春招", "秋招", "招聘")
+_TITLE_RE_MJ = re.compile(r"mj\d+")
+_TITLE_RE_GRAD = re.compile(r"(?:20\d{2})?届")
+
+
+def _norm_title(s):
+    """岗位名归一化，用于判断「模型给的叫法」与「企业 JD 原文」是否同一个岗。"""
+    t = str(s or "").lower()
+    t = _TITLE_RE_MJ.sub("", t)
+    t = re.sub(r"[^0-9a-z\u4e00-\u9fa5]", "", t)
+    for w in _TITLE_NOISE:
+        t = t.replace(w, "")
+    t = _TITLE_RE_GRAD.sub("", t)
+    t = re.sub(r"\d+", "", t)
+    return t
+
+
+def _same_title(a, b):
+    """同一岗位的不同写法（业务运营岗（代销方向） vs 业务运营（代销方向）-27届秋招(MJ003064)）。
+
+    只放宽「写法差异」，不放宽「凭空编造」：要求归一化后完全相等，或一方包含另一方
+    且长度比 ≥0.6、较短一方至少 4 字。
+    """
+    na, nb = _norm_title(a), _norm_title(b)
+    if not na or not nb:
+        return False
+    if na == nb:
+        return True
+    if len(na) < 4 or len(nb) < 4:
+        return False
+    if na in nb or nb in na:
+        return min(len(na), len(nb)) / max(len(na), len(nb)) >= 0.6
+    return False
+
+
 def hallucination_guard(c, m, trust, by_title):
     """v6 幻觉拦截：拦「岗位名」和「证据等级」，不拦「企业」。
 
@@ -430,7 +466,7 @@ def hallucination_guard(c, m, trust, by_title):
     ok_words = INDUSTRY_OK.get(ind, [])
     bad, reasons, industry_warn = [], [], False
     for t in m["matched_jobs"]:
-        if not t or t in titles:
+        if not t or any(_same_title(t, x) for x in titles):
             continue
         if has_jd:
             bad.append(t)

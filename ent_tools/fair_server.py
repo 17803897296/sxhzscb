@@ -225,6 +225,14 @@ def main():
     a = ap.parse_args()
     if not os.path.exists(PAYLOAD):
         fair_bridge.build()
+    # 企业端搜索/初筛接口复用 portal.py，需要先初始化模型；不初始化会静默降级成关键词规则
+    try:
+        if portal.setup_model():
+            print("  模型：已配置（/api/filter 走大模型初筛）")
+        else:
+            print("  模型：未配置 key，/api/filter 走关键词规则")
+    except Exception as exc:
+        print("  模型初始化失败：%s（/api/filter 走关键词规则）" % exc)
     print("双选会助手 v6 同源服务  http://%s:%d/fair.html" % (a.host, a.port))
     print("  写库端点 POST /api/fair/profile ｜ 报告数据 GET /api/fair/payload")
     ThreadingHTTPServer((a.host, a.port), Handler).serve_forever()
