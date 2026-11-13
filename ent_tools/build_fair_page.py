@@ -198,6 +198,64 @@ def patch_fair_js(js):
         _run_anchor + "    if (step.guard && !step.guard()) continue;  // v11：按所选关注点动态跳过\n", 1)
     edits.append("排序追问按关注点动态跳过（未选的维度不显示）")
 
+    # ③g v12：简历上传支持图片（手机拍简历照片直接传）。
+    #    服务端 resume_parse 已接 GLM-4V OCR；前端只需放开 accept，
+    #    并把文案里的「支持格式」补上图片。
+    _old_accept = 'accept=".docx,.pdf,.txt,.md,.markdown,.html,.htm"'
+    _new_accept = 'accept=".docx,.pdf,.txt,.md,.markdown,.html,.htm,.jpg,.jpeg,.png,.webp,.bmp"'
+    if _old_accept in js:
+        js = js.replace(_old_accept, _new_accept, 1)
+        edits.append("简历上传放开图片格式（jpg/png/webp/bmp）")
+
+    # ③f v12（2026-11-13 用户要求）：两类硬约束问答。
+    #   ① hard_filter：自由填空，如「只要南京的工作」「只看互联网」。
+    #      这一步产出的是**硬约束**，进匹配端后由大模型解析成结构化条件，
+    #      命中的企业以外的全部剔除（不是降权）。空着就代表不设限。
+    #   ② 教培接受度：教培等「无专业要求」企业默认剔除，学生明确接受才纳入。
+    # 注意：这里必须挂在 buildFlow 里的 flow.push(...) 段之后，
+    # 不能挂进 fairSteps() 的 return [ ... ] 数组字面量（否则 const 语句非法）。
+    _anchor_hf = "  flow.push(industryRankStep(), 'industry'));\n"
+    _anchor_hf2 = "  flow.push(_rankIfPicked(industryRankStep(), 'industry'));\n"
+    _use = _anchor_hf2 if _anchor_hf2 in js else _anchor_hf
+    if _use not in js:
+        raise RuntimeError("buildFlow 的 industryRankStep 定位没找到，无法插入硬约束步骤")
+    js = js.replace(_use,
+        _use
+        + "  /* v12：硬约束（自由填空）与教培接受度，排在排序追问之后 */\n"
+        + "  flow.push(hardFilterStep());\n"
+        + "  flow.push(noMajorAcceptStep());\n", 1)
+    # 两个 step 以函数形式定义，避免再往数组字面量里塞内容。
+    _step_defs = (
+        "function hardFilterStep() {\n"
+        "  return fairStep('hard_filter', '有没有硬性要求？只写一句就行，比如「只要南京的工作」「只看互联网」。没有就输入「没有」。', {\n"
+        "    allowCustom: true,\n"
+        "    optional: true,\n"
+        "    placeholder: '例如：只要南京 / 只看互联网 / 不要外企',\n"
+        "    hint: '这句会被当成硬条件：不满足的企业直接从名单里删掉，不是降权。空着或输入「没有」= 不设限。',\n"
+        "    after(value, a) {\n"
+        "      const v = String(value || '').trim();\n"
+        "      a.hard_filter = /^(没有|无|不设限|暂无|随便|都行)$/.test(v) ? '' : v;\n"
+        "    },\n"
+        "    reset(a) { a.hard_filter = ''; },\n"
+        "  });\n"
+        "}\n"
+        "function noMajorAcceptStep() {\n"
+        "  return fairStep('no_major_accept', '教培机构这类「不要求专业对口」的企业，你愿意考虑吗？', {\n"
+        "    options: ['愿意考虑', '不考虑'],\n"
+        "    alias: { 愿意: '愿意考虑', 可以: '愿意考虑', 接受: '愿意考虑', 考虑: '愿意考虑',\n"
+        "             不: '不考虑', 不要: '不考虑', 拒绝: '不考虑', 不接受: '不考虑' },\n"
+        "    hint: '教培、销售等岗位大多不限专业。选「不考虑」时，这类企业会从名单中剔除，避免它们占据靠前位置。',\n"
+        "    after(value, a) { a.accept_no_major = (value === '愿意考虑'); },\n"
+        "    reset(a) { a.accept_no_major = false; },\n"
+        "  });\n"
+        "}\n\n"
+    )
+    _def_anchor = "function fairSteps() {\n"
+    if _def_anchor not in js:
+        raise RuntimeError("fairSteps 定位没找到，无法定义硬约束步骤")
+    js = js.replace(_def_anchor, _step_defs + _def_anchor, 1)
+    edits.append("新增硬约束填空（hard_filter）与教培接受度（accept_no_major）两步")
+
     # ③e v11.1：?detail=企业名 / ?report=1 直接进报告页，不再从头跑采集问卷
     _init_anchor = "async function init() {\n"
     if _init_anchor not in js:
@@ -419,6 +477,8 @@ function _buildDocument(body) {
   if (fair.target_company_types && fair.target_company_types.length)
     traits.push("企业类型偏好（软）：" + fair.target_company_types.join("、"));
   if (fair.home_city) traits.push("家乡城市：" + fair.home_city);
+  if (a.hard_filter) traits.push("硬约束：" + a.hard_filter + "（不满足的企业直接剔除）");
+  traits.push("教培等无专业要求企业：" + (a.accept_no_major === true ? "可考虑" : "不考虑（已剔除）"));
 
   const missing = [];
   if (!a.direction_interest) missing.push({ why: "没填实习经历" });
@@ -453,7 +513,13 @@ function _buildDocument(body) {
       values, skills: r.skills || [],
       city_rank: a.city_rank || {},
       company_type_rank: a.company_type_rank || {},
-      industry_rank: a.industry_rank || {}
+      industry_rank: a.industry_rank || {},
+      /* v12 硬约束：一句自由填空（如「只要南京」「只看互联网」），
+         匹配端由大模型解析成结构化条件后硬过滤企业池，不满足者直接剔除。
+         空串 = 不设限。 */
+      hard_filter: a.hard_filter || "",
+      /* v12 教培类接受度：false（默认）= 教培/无专业要求企业剔除；true 才纳入。 */
+      accept_no_major: a.accept_no_major === true
     },
     resume: {
       uploaded: !!r.uploaded,

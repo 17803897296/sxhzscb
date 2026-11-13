@@ -16,7 +16,7 @@ REPORT_JS = r"""<script>
 (function(){
 const D = __TRI_DATA__;
 let BASE = D.rows, W0 = D.weights, PM = D.province_map || {};
-const ORDER = {hit:0, inferred:1, miss:2};
+// ORDER 已停用：名次只按排序分，岗位状态不再参与比较（见 recompute）
 const WMAP = {岗位:'industry', 行业:'industry', 职责:'scale', 阶段:'scale',
               薪资:'scale', 人数:'scale', 城市:'city', 性质:'company_type',
               作息:'city', 证据:'scale'};
@@ -296,28 +296,33 @@ function recompute(P){
     return x;
   });
   rows.sort(function(a,b){
+    // 名次只由排序分决定（用户 2026-11-13 明确要求）。
+    // 可信度 / 待核实 / 岗位状态只是展示标注，不进名次比较；
+    // 唯一例外是「现场确认不招」——那是事实层面的出局，仍顺延到队尾。
     const an=(feedback[a.name]||{}).result==='no'?1:0;
     const bn=(feedback[b.name]||{}).result==='no'?1:0;
-    return (an-bn) || (ORDER[a.state]-ORDER[b.state]) || (b.priority-a.priority)
-        || (b.score-a.score) || a.name.localeCompare(b.name);
+    return (an-bn) || (b.score-a.score)
+        || (b.priority-a.priority) || a.name.localeCompare(b.name);
   });
   rows.forEach(function(r,i){
     r.rank=i+1;
     r.next=rows[i+1]?rows[i+1].name:'';
-    r.rank_reason='队列第 '+(i+1)+' 位：'
-      +({hit:'有真实 JD 命中',inferred:'按行业推断待核实',miss:'无对口岗位'})[r.state]
-      +' / 优先级 '+r.priority+'；排序分 '+r.score+'（仅 '+r.effective_weight+'% 权重生效）';
+    r.rank_reason='第 '+(i+1)+' 位：排序分 '+r.score
+      +'（仅 '+r.effective_weight+'% 权重生效）'
+      +' / '+({hit:'有真实 JD 命中',inferred:'按行业推断待核实',miss:'无对口岗位'})[r.state];
     const fb=feedback[r.name];
-    if(fb&&fb.result==='yes') r.rank_reason+='；现场已确认招，升级为明确命中';
+    if(fb&&fb.result==='yes') r.rank_reason+='；现场已确认招，推断升级为明确命中';
     if(fb&&fb.result==='no') r.rank_reason+='；现场确认不招，已顺延（保留在队尾供核对）';
   });
   return rows;
 }
 
 /* ---------- 报告内容（复用原 CSS 类） ---------- */
+// 可信度只做「提示」，不参与名次（用户要求：低置信度、要核实都不影响排名）。
 function trustBadge(r){
-  if(r.trust==='low') return '<span style="color:#c0392b;font-weight:650">⚠ 低可信</span>';
-  if(r.trust==='medium') return '<span style="color:#b7791f">◐ 待核实</span>';
+  const n='<span style="font-size:11px;color:#8a94a6">（仅提示，不影响名次）</span>';
+  if(r.trust==='low') return '<span style="color:#c0392b;font-weight:650">⚠ 低可信</span>'+n;
+  if(r.trust==='medium') return '<span style="color:#b7791f">◐ 待核实</span>'+n;
   return '<span style="color:#0f9960">✓ 与企业端一致</span>';
 }
 function fbBadge(r){
@@ -455,6 +460,84 @@ function rowBrief(r, idx, P){
    + '</div></div>';
 }
 
+/* ---------- v12 硬约束：条件必须可见 ---------- */
+// 硬约束会直接删企业，删了却不说等于骗人。这里把「因你的条件删掉了哪些」摆出来。
+function hardFilterNote(){
+  var hf=D.hard_filter||{};
+  if(!hf.raw_text && !hf.dropped_count && hf.accept_no_major) return '';
+  var p=hf.parsed||{};
+  var bits=[];
+  if((p.cities||[]).length) bits.push('城市：'+p.cities.join('、'));
+  if((p.industries||[]).length) bits.push('行业：'+p.industries.join('、'));
+  if((p.exclude_natures||[]).length) bits.push('排除性质：'+p.exclude_natures.join('、'));
+  var txt=[];
+  if(hf.raw_text) txt.push('你的要求「'+e(hf.raw_text)+'」'+(bits.length?'（已理解为 '+e(bits.join('；'))+'）':''));
+  if(!hf.accept_no_major) txt.push('未接受教培类企业');
+  if(!txt.length) return '';
+  var names=(hf.dropped||[]).slice(0,6).map(function(d){return e(d.name);}).join('、');
+  var more=(hf.dropped||[]).length>6?' 等':'';
+  return '<div class="note" style="font-size:12px;margin:0 0 10px;padding:8px 10px;'
+    + 'background:#fff8e6;border-left:3px solid #d9a400;border-radius:0 5px 5px 0">'
+    + '<b>已按你的条件筛掉 '+ (hf.dropped_count||0) +' 家企业</b>：'+txt.join('，')
+    + ((hf.dropped||[]).length? '<br><span style="color:#8a94a6">排除名单：'+names+more+'</span>' : '')
+    + '<br><span style="color:#8a94a6">这是硬条件，不是降权——不满足的企业不会出现在任何排名里。</span>'
+    + '</div>';
+}
+
+/* ---------- v12 测试数据库：保存本次填写 + 排序结果 ---------- */
+function testSaveBox(rows){
+  var hf=D.hard_filter||{};
+  var hfLine=hf.raw_text
+    ? '硬约束「'+e(hf.raw_text)+'」已剔除 <b>'+hf.dropped_count+'</b> 家'
+    : '未设硬约束';
+  return '<details style="margin:18px 0 0;border-top:1px dashed #cfd6e4;padding-top:10px">'
+    + '<summary style="cursor:pointer;font-size:12px;color:#41506b">'
+    + '实验记录：把这次的填写与排序结果存入测试数据库</summary>'
+    + '<div class="note" style="font-size:12px;margin:8px 0">'
+    + '当前共 '+rows.length+' 家企业参与排名；'+hfLine
+    + '；教培类：'+(hf.accept_no_major?'已纳入':'已剔除')
+    + '<br>保存后可在库里用 SQL 对比不同条件下列表的差异，不会被后续采集覆盖。'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+    + '<input id="tst-tag" placeholder="标签：会场名 / 组别，如 南大场-A组" '
+    +   'style="flex:1;min-width:180px;padding:6px 8px;border:1px solid #cfd6e4;border-radius:5px;font-size:12px">'
+    + '<input id="tst-sid" placeholder="问卷编号（选填）" '
+    +   'style="width:130px;padding:6px 8px;border:1px solid #cfd6e4;border-radius:5px;font-size:12px">'
+    + '<button type="button" class="btn btn-p" data-test-save>保存到测试库</button>'
+    + '<span id="tst-msg" style="font-size:12px;color:#0f9960"></span>'
+    + '</div></details>';
+}
+function bindTestSave(box){
+  var btn=box.querySelector('[data-test-save]');
+  if(!btn) return;
+  btn.onclick=function(){
+    var tagEl=box.querySelector('#tst-tag'), sidEl=box.querySelector('#tst-sid');
+    var msg=box.querySelector('#tst-msg');
+    var tag=(tagEl&&tagEl.value||'').trim();
+    if(!tag){
+      if(msg){msg.style.color='#c0392b';msg.textContent='先填个标签，否则以后分不清是哪一场';}
+      return;
+    }
+    btn.disabled=true;
+    if(msg){msg.style.color='#8a94a6';msg.textContent='保存中…';}
+    fetch('/api/fair/test-save',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tag:tag,sid:(sidEl&&sidEl.value||'').trim(),top_n:12})
+    }).then(function(r){return r.json();}).then(function(d){
+      if(msg){
+        msg.style.color=d&&d.ok?'#0f9960':'#c0392b';
+        msg.textContent=d&&d.ok
+          ? ('已保存（记录 #'+d.id+'，'+d.n_rows+' 家企业）')
+          : ('保存失败：'+((d&&d.error)||'未知原因'));
+      }
+      btn.disabled=false;
+    }).catch(function(err){
+      if(msg){msg.style.color='#c0392b';msg.textContent='保存失败：连不上服务（离线模式不支持）';}
+      btn.disabled=false;
+    });
+  };
+}
+
 function render(){
   const box=document.getElementById('mres');
   if(!box) return;
@@ -562,6 +645,7 @@ function render(){
       + ' · 明确命中 '+D.stats.states.hit+' / 推断 '+D.stats.states.inferred
       + ' / 不对口 '+D.stats.states.miss
       + ' · 意向岗位 '+e((P.intended_jobs||[]).join('、')||'—')+'</div>'
+      + hardFilterNote()
       + '<div class="btns" style="margin:0 0 12px">'
       + '<button type="button" class="btn '+(sortMode==='queue'?'btn-p':'btn-g')
         +'" data-sort="queue">按排名</button>'
@@ -572,12 +656,16 @@ function render(){
       + '更多设置 / 完整信息（统计 · 权重微调 · 筛选 · 导出 · 现场进度）</summary>'
       + _infoHtml + '</details>';
   }
+  // v12 测试数据库：把本次填写与排序结果存一条记录，供现场实验分析。
+  // 只在自己跑实验时用，学生正常浏览不会误触（按钮在折叠区里，且要填标签才保存）。
+  html+=testSaveBox(rows);
   let idx=0;
+  // 排名模式不再按「命中/推断/不对口」分组渲染——那会把全局分数顺序打乱，
+  // 出现第 4 名分数低于第 5 名的情况。现在只有一条连续的榜单，名次即分数序；
+  // 岗位状态仍逐条显示在卡片上（展示，不影响名次）。
   const groups = sortMode==='booth'
     ? [['t1','按会场序列号（展位号）顺序 · 走一遍不折返 · 评分照常显示', rows]]
-    : ['hit','inferred','miss'].map(function(s){
-        const g=groupTitle(s); return [g[0],g[1],rows.filter(function(r){return r.state===s;})];
-      });
+    : [['t1','按排序分从高到低 · 可信度与岗位状态仅作提示，不影响名次', rows]];
   if(!DETAIL_NAME){
     groups.forEach(function(g){
       const rs=g[2];
@@ -592,6 +680,7 @@ function render(){
   box.innerHTML=html;
   // 详情页本来就是看细节的，折叠区默认展开。
   if(DETAIL_NAME) box.querySelectorAll('.jobbox details').forEach(function(d){ d.open=true; });
+  bindTestSave(box);
   setTimeout(function(){suppress=false;},60);
   box.querySelectorAll('[data-wk]').forEach(function(b){
     b.onclick=function(){

@@ -6,13 +6,16 @@
 这里提供真实解析，字段结构与前端 state.resume / DEMO_RESUME 完全一致。
 
 支持：.txt .md .markdown .html .htm .docx（zipfile 读 word/document.xml）
+      .jpg .jpeg .png .webp .bmp（2026-11-13 新增：走 GLM-4V 视觉模型 OCR）
 .pdf 暂不支持（环境无 pypdf/pdfminer），会如实返回 warning，不假装解析成功。
 
 只用标准库；use_llm=true 时可选调 .env 里的 GLM-4-flash 增强抽取，
-模型失败自动退回规则结果，绝不编造。
+模型失败自动退回规则结果，绝不编造。图片必须先 OCR 成功才能继续，
+OCR 失败会明说「没读到文字」，不会拿空字符串硬解析。
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -86,8 +89,83 @@ def _decode(data: bytes) -> str:
     return data.decode("utf-8", errors="replace")
 
 
+def _env_cfg() -> dict:
+    cfg, path = {}, os.path.join(HERE, ".env")
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if "=" in line and not line.strip().startswith("#"):
+                    k, v = line.strip().split("=", 1)
+                    cfg[k.strip()] = v.strip().strip('"').strip("'")
+    return cfg
+
+
+IMG_EXT = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
+
+OCR_PROMPT = (
+    "这是一份简历的照片或截图。请把图中**所有文字**原样转写出来：\n"
+    "1. 保持原有的分行结构，一行对应一行；\n"
+    "2. 不要总结、不要翻译、不要补充图里没有的内容；\n"
+    "3. 表格按「栏目：内容」的形式逐行写出；\n"
+    "4. 如果图片模糊导致某些字无法辨认，用「□」代替该字，不要猜测；\n"
+    "5. 只输出转写结果，不要任何说明文字。"
+)
+
+
+def ocr_image(data: bytes) -> tuple:
+    """图片 -> 文字。走智谱 GLM-4V 系列视觉模型（标准库实现，无需第三方 SDK）。
+
+    返回 (text, warnings, method)。失败时 text 为空并给出可操作提示，
+    绝不返回占位文本让学生以为解析成功了。
+    """
+    warnings = []
+    cfg = _env_cfg()
+    key = os.environ.get("DEEPSEEK_API_KEY") or cfg.get("DEEPSEEK_API_KEY", "")
+    base = (os.environ.get("DEEPSEEK_BASE_URL") or cfg.get("DEEPSEEK_BASE_URL")
+            or "https://open.bigmodel.cn/api/paas/v4")
+    if not key:
+        warnings.append("没有配置视觉模型密钥，无法识别图片；请改传 .docx / .txt，"
+                        "或把简历另存为文字版再上传")
+        return "", warnings, "image-no-key"
+
+    model = (os.environ.get("DEEPSEEK_VL_MODEL") or cfg.get("DEEPSEEK_VL_MODEL")
+             or "glm-4v-flash")
+    b64 = base64.b64encode(data).decode("ascii")
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": b64}},
+            {"type": "text", "text": OCR_PROMPT},
+        ]}],
+        "temperature": 0,
+    }
+    req = urllib.request.Request(
+        base.rstrip("/") + "/chat/completions",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
+    try:
+        with urllib.request.urlopen(req, timeout=90) as r:
+            raw = json.loads(r.read().decode("utf-8"))
+        text = (raw["choices"][0]["message"]["content"] or "").strip()
+        # 视觉模型常把结果包进 ```plaintext 代码块，去掉围栏再解析，
+        # 否则第一行会被当成「经历」抓进去。
+        text = re.sub(r"^```[a-zA-Z]*\s*\n?", "", text)
+        text = re.sub(r"\n?```\s*$", "", text).strip()
+        if not text:
+            warnings.append("图片里没识别出文字，可能太模糊或不是简历；请重拍或换文字版")
+            return "", warnings, "image-empty"
+        n_bad = text.count("□")
+        if n_bad:
+            warnings.append("有 %d 处字迹模糊无法辨认，已用「□」标出，建议核对" % n_bad)
+        return text, warnings, "image-ocr"
+    except Exception as exc:
+        warnings.append("图片识别失败（%s）；请改传 .docx / .txt 或重拍更清晰的照片"
+                        % str(exc)[:60])
+        return "", warnings, "image-error"
+
+
 def extract_text(filename: str, data: bytes):
-    """返回 (text, warnings)。支持 txt/md/html/docx；pdf 如实说明不支持。"""
+    """返回 (text, warnings[, method])。支持 txt/md/html/docx/图片；pdf 如实说明不支持。"""
     low = (filename or "").lower()
     warnings = []
     if low.endswith(".docx"):
@@ -107,6 +185,10 @@ def extract_text(filename: str, data: bytes):
         except Exception as exc:
             warnings.append("docx 解析失败：%s" % str(exc)[:60])
             return "", warnings
+    if low.endswith(IMG_EXT):
+        text, warns, method = ocr_image(data)
+        warnings.extend(warns)
+        return text, warnings, method
     if low.endswith(".pdf"):
         warnings.append("当前环境没有 PDF 解析库，请把简历另存为 .txt / .md / .docx 再上传")
         return "", warnings
@@ -170,9 +252,25 @@ def parse_fields(text: str):
         m = re.search(r"(?:预计|预期)?\s*(20\d{2})\s*年\s*(\d{1,2})?\s*月?\s*毕业", text)
         if m:
             grad = m.group(1) + " 年 " + (m.group(2) or "") + " 月"
+    if not grad:
+        # 简历照片常见写法：「2027届」「2027 届毕业生」
+        m = re.search(r"(20\d{2})\s*届", text)
+        if m:
+            grad = m.group(1) + " 届"
     put("graduation", grad.strip() if grad else "", "毕业时间")
 
-    put("phone", _first(r"(1[3-9]\d{9})", text), "手机号")
+    # 手机号：真实简历常写成 138-0000-1234 / 138 0000 1234 / +86 138...，
+    # 允许分隔符与 +86 前缀，统一存成 11 位纯数字。
+    _phone = ""
+    for _pat in (r"(?:\+?86[-\s]?)?(1[3-9]\d[-\s]?\d{4}[-\s]?\d{4})",
+                 r"(1[3-9]\d{9})"):
+        _m = re.search(_pat, text)
+        if _m:
+            _phone = re.sub(r"\D", "", _m.group(1))
+            if len(_phone) == 11:
+                break
+            _phone = ""
+    put("phone", _phone, "手机号")
     put("email", _first(r"([\w.\-]+@[\w.\-]+\.[A-Za-z]{2,})", text), "邮箱")
     return f
 
@@ -301,20 +399,32 @@ def _llm_enhance(text: str, base: dict):
 
 
 def parse_resume(filename: str, data: bytes, use_llm: bool = False) -> dict:
-    text, warnings = extract_text(filename, data)
+    got = extract_text(filename, data)
+    # 图片走 OCR 时多返回一个 method，普通格式只有两个
+    if len(got) == 3:
+        text, warnings, source_method = got
+    else:
+        text, warnings = got
+        source_method = "text"
     if not text.strip():
-        return {"ok": False, "error": "没能从文件里读到文字；请另存为 .txt / .md / .docx",
-                "warnings": warnings}
+        hint = ("图片没读到文字，请重拍或改传 .docx / .txt"
+                if source_method.startswith("image") else
+                "没能从文件里读到文字；请另存为 .txt / .md / .docx")
+        return {"ok": False, "error": hint, "warnings": warnings,
+                "source_method": source_method}
     fields = parse_fields(text)
     sec = parse_sections(text)
     missing = [label for key, label in FIELDS if not fields[key]["value"]]
     if missing:
         warnings.append("以下字段没抽到（不会猜）：" + "、".join(missing))
     warnings.append("解析的是本次上传的文件：" + (filename or "未命名"))
+    if source_method.startswith("image"):
+        warnings.append("来源：图片识别（视觉模型转写），字段请自行核对一遍再提交")
     out = {
         "ok": True, "filename": filename or "resume", "chars": len(text),
         "sha256": hashlib.sha256(data).hexdigest()[:16],
         "method": "rules+llm" if use_llm else "rules", "model": "",
+        "source_method": source_method,
         "fields": fields, "skills": sec["skills"],
         "experiences": sec["experiences"], "competitions": sec["competitions"],
         "papers": sec["papers"], "certificates": sec["certificates"],

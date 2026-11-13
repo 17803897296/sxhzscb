@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.join(HERE, "demo_v2"))
 import core as V2            # noqa: E402  复用五项权重 / 维度取值口径
 import rules as R            # noqa: E402
 import intent_semantics      # noqa: E402  岗位语义符合度（大模型推断）
+import hard_filter           # noqa: E402  v12 硬约束解析与教培类判定
 
 # ── v4.2 最新数据源（hy3 工作区产出）────────────────────────────
 # 采集流程（校招官网 → 招聘软件 → 联网兜底 / 4 列库）保持原样，一步不改。
@@ -478,6 +479,26 @@ def build():
             if _v.get(_k):
                 _c[_k] = _v[_k]
     profile = profile_from(raw_profile)
+
+    # v12（2026-11-13 用户要求）：硬约束过滤。
+    #  ① 学生那句自由填空（「只要南京」「只看互联网」）由大模型解析成条件，
+    #     不满足的企业**直接从名单里删除**，不是降权。
+    #  ② 教培类企业默认剔除，学生明确表示「愿意考虑」才保留。
+    # 过滤发生在后续所有计算之前，被删的企业不会出现在 rows 里。
+    _conds = hard_filter.build_conditions(raw_profile, list(companies.values()))
+    _dropped = []
+    if _conds["hard"].get("mode") not in (None, "none") or _conds["drop_training"]:
+        _keep = {}
+        for _n, _c in companies.items():
+            if _conds["drop_training"] and hard_filter.is_training_biz(_c):
+                _dropped.append({"name": _n, "why": "教培类（学生未选择接受）"})
+                continue
+            if not hard_filter.match(_c, _conds["hard"]):
+                _dropped.append({"name": _n, "why": "不满足硬约束：" + (_conds["raw_text"] or "")})
+                continue
+            _keep[_n] = _c
+        companies = _keep
+
     # 用大模型判断「学生勾选的意向岗位」与「企业真实岗位名」是否语义相符。
     # 结果放进 payload 顶层，前端据此显示语义命中；模型不可用时返回 {}，前端退回字面匹配。
     _all_titles = sorted({j.get("title", "").strip()
@@ -599,19 +620,20 @@ def build():
             "v42": v42_view(v42.get(name)),
         })
 
-    order = {"hit": 0, "inferred": 1, "miss": 2}
-    # 现场确认不招的企业不删除，只排到队尾，方便回头核对「今天问过谁」
+    # 名次只由排序分决定（2026-11-13 用户明确要求）。
+    # 可信度 / 待核实 / 岗位状态一律不进名次比较——它们是展示标注，不是排序依据。
+    # 唯一例外：「现场确认不招」属于事实出局，仍顺延到队尾。
     rows.sort(key=lambda r: (1 if (r.get("feedback") or {}).get("result") == "no" else 0,
-                             order.get(r["state"], 3), -r["priority"], r["name"]))
+                             -r["score"], -r["priority"], r["name"]))
     by_booth = sorted([r for r in rows if r["booth"]], key=lambda r: str(r["booth"]))
     booth_pos = {r["name"]: i for i, r in enumerate(by_booth)}
     for i, r in enumerate(rows):
         r["next"] = rows[i + 1]["name"] if i + 1 < len(rows) else ""
         r["rank"] = i + 1
-        r["rank_reason"] = ("队列第 %d 位：%s / 优先级 %s；排序分 %s（仅 %s%% 权重生效）"
-                            % (i + 1, {"hit": "有真实 JD 命中", "inferred": "按行业推断待核实",
-                                       "miss": "无对口岗位"}[r["state"]],
-                               r["priority"], r["score"], r["effective_weight"]))
+        r["rank_reason"] = ("第 %d 位：排序分 %s（仅 %s%% 权重生效） / %s"
+                            % (i + 1, r["score"], r["effective_weight"],
+                               {"hit": "有真实 JD 命中", "inferred": "按行业推断待核实",
+                                "miss": "无对口岗位"}[r["state"]]))
         if (r.get("feedback") or {}).get("result") == "yes":
             r["rank_reason"] += "；现场已确认招，升级为明确命中"
         if (r.get("feedback") or {}).get("result") == "no":
@@ -624,6 +646,16 @@ def build():
         "version": "v7-tri-2026-11-10", "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "profile": profile, "weights": W,
         "active_fair_id": profile.get("fair_id", ""),
+        # v12 硬约束：让学生看见「因为自己设的条件，哪些企业被排除了」。
+        # 排除是硬性的（不满足即不出现），但必须可见，不能悄悄删。
+        "hard_filter": {
+            "raw_text": _conds.get("raw_text") or "",
+            "parsed": {k: _conds["hard"].get(k) for k in
+                       ("cities", "industries", "exclude_natures", "keywords", "note", "mode")},
+            "accept_no_major": _conds.get("accept_no_major", False),
+            "dropped": _dropped,
+            "dropped_count": len(_dropped),
+        },
         "province_map": R.CITY_PROVINCE,
         "sources": {
             "采集端": "careersafari.db / fair_profiles（fair_active 指定当前生效画像；"

@@ -23,3 +23,8 @@ live_payload_tmp.json
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# 备份与本地缓存（不入库）
+*.bak_*
+ent_tools/data/hard_filter_cache.json
+ent_tools/test_photos/

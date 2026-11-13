@@ -566,6 +566,8 @@ function _buildDocument(body) {
   if (fair.target_company_types && fair.target_company_types.length)
     traits.push("企业类型偏好（软）：" + fair.target_company_types.join("、"));
   if (fair.home_city) traits.push("家乡城市：" + fair.home_city);
+  if (a.hard_filter) traits.push("硬约束：" + a.hard_filter + "（不满足的企业直接剔除）");
+  traits.push("教培等无专业要求企业：" + (a.accept_no_major === true ? "可考虑" : "不考虑（已剔除）"));
 
   const missing = [];
   if (!a.direction_interest) missing.push({ why: "没填实习经历" });
@@ -600,7 +602,13 @@ function _buildDocument(body) {
       values, skills: r.skills || [],
       city_rank: a.city_rank || {},
       company_type_rank: a.company_type_rank || {},
-      industry_rank: a.industry_rank || {}
+      industry_rank: a.industry_rank || {},
+      /* v12 硬约束：一句自由填空（如「只要南京」「只看互联网」），
+         匹配端由大模型解析成结构化条件后硬过滤企业池，不满足者直接剔除。
+         空串 = 不设限。 */
+      hard_filter: a.hard_filter || "",
+      /* v12 教培类接受度：false（默认）= 教培/无专业要求企业剔除；true 才纳入。 */
+      accept_no_major: a.accept_no_major === true
     },
     resume: {
       uploaded: !!r.uploaded,
@@ -1292,7 +1300,7 @@ async function startCard() {
       <button type="button" class="btn btn-p" data-act="upload">上传简历</button>
       <button type="button" class="btn btn-g" data-act="manual">没有简历，直接聊</button>
     </div>
-    <input type="file" id="resume-file" accept=".docx,.pdf,.txt,.md,.markdown,.html,.htm" hidden>
+    <input type="file" id="resume-file" accept=".docx,.pdf,.txt,.md,.markdown,.html,.htm,.jpg,.jpeg,.png,.webp,.bmp" hidden>
     <label class="check slim"><input type="checkbox" id="use-llm">
       <span>允许把简历文字发送给模型做增强抽取（默认只用本地规则）</span></label>
     <div id="upload-msg" class="cc-sub"></div>
@@ -1610,6 +1618,30 @@ function consentCardStep() {
 
 /* ---------------- 流程 ---------------- */
 
+function hardFilterStep() {
+  return fairStep('hard_filter', '有没有硬性要求？只写一句就行，比如「只要南京的工作」「只看互联网」。没有就输入「没有」。', {
+    allowCustom: true,
+    optional: true,
+    placeholder: '例如：只要南京 / 只看互联网 / 不要外企',
+    hint: '这句会被当成硬条件：不满足的企业直接从名单里删掉，不是降权。空着或输入「没有」= 不设限。',
+    after(value, a) {
+      const v = String(value || '').trim();
+      a.hard_filter = /^(没有|无|不设限|暂无|随便|都行)$/.test(v) ? '' : v;
+    },
+    reset(a) { a.hard_filter = ''; },
+  });
+}
+function noMajorAcceptStep() {
+  return fairStep('no_major_accept', '教培机构这类「不要求专业对口」的企业，你愿意考虑吗？', {
+    options: ['愿意考虑', '不考虑'],
+    alias: { 愿意: '愿意考虑', 可以: '愿意考虑', 接受: '愿意考虑', 考虑: '愿意考虑',
+             不: '不考虑', 不要: '不考虑', 拒绝: '不考虑', 不接受: '不考虑' },
+    hint: '教培、销售等岗位大多不限专业。选「不考虑」时，这类企业会从名单中剔除，避免它们占据靠前位置。',
+    after(value, a) { a.accept_no_major = (value === '愿意考虑'); },
+    reset(a) { a.accept_no_major = false; },
+  });
+}
+
 function fairSteps() {
   return [
     jobRecommendStep(),
@@ -1636,6 +1668,9 @@ function buildFlow() {
   flow.push(_rankIfPicked(cityRankStep(), 'city'));
   flow.push(_rankIfPicked(companyTypeRankStep(), 'company_type'));
   flow.push(_rankIfPicked(industryRankStep(), 'industry'));
+  /* v12：硬约束（自由填空）与教培接受度，排在排序追问之后 */
+  flow.push(hardFilterStep());
+  flow.push(noMajorAcceptStep());
   flow.push(consentCardStep());
   return flow;
 }
@@ -2779,7 +2814,7 @@ window.__mountMatch = function(doc){
 (function(){
 const D = {
  "version": "v7-tri-2026-11-10",
- "generated_at": "2026-11-13 15:09:03",
+ "generated_at": "2026-11-13 20:02:15",
  "profile": {
   "major": "管理科学与工程",
   "experiences": [
@@ -2840,6 +2875,65 @@ const D = {
   "growth": 0.0
  },
  "active_fair_id": "FAIR-Y7Y8LBRT",
+ "hard_filter": {
+  "raw_text": "",
+  "parsed": {
+   "cities": [],
+   "industries": [],
+   "exclude_natures": [],
+   "keywords": [],
+   "note": "未设限",
+   "mode": "none"
+  },
+  "accept_no_major": false,
+  "dropped": [
+   {
+    "name": "北京学而思教育科技有限公司",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "北京育达东方软件科技有限公司",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "镇江市新东方教育培训有限公司",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "高途教育科技集团有限公司",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "深圳市蓝天教育培训学校",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "上海新舟投资管理有限公司",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "上海长宁区乐读线上教育培训学校",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "上海我们方田科技有限公司",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "北京平行线根源教育科技有限公司",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "杭州小事做好教育科技有限公司",
+    "why": "教培类（学生未选择接受）"
+   },
+   {
+    "name": "苏州萘思尔科技有限公司",
+    "why": "教培类（学生未选择接受）"
+   }
+  ],
+  "dropped_count": 11
+ },
  "province_map": {
   "北京": "北京",
   "上海": "上海",
@@ -2965,160 +3059,137 @@ const D = {
   "现场回流": "careersafari.db / fair_feedback（招 -> 升级明确命中；不招 -> 顺延到队尾）"
  },
  "stats": {
-  "companies": 122,
-  "jobs": 762,
+  "companies": 111,
+  "jobs": 719,
   "states": {
    "hit": 13,
-   "inferred": 80,
-   "miss": 29
+   "inferred": 70,
+   "miss": 28
   },
-  "distinct_gap_sets": 19,
-  "distinct_reasons": 90,
-  "distinct_questions": 122,
-  "with_evidence_url": 122,
-  "with_nearby": 118,
+  "distinct_gap_sets": 18,
+  "distinct_reasons": 83,
+  "distinct_questions": 111,
+  "with_evidence_url": 111,
+  "with_nearby": 107,
   "trust": {
    "medium": 11,
-   "high": 40,
-   "low": 71
+   "high": 39,
+   "low": 61
   },
   "guard": {
-   "masked": 73,
-   "none": 44,
+   "masked": 63,
+   "none": 43,
    "flagged": 5
   },
-  "masked_job_names": 180,
+  "masked_job_names": 157,
   "state_fixes": 0,
   "feedback": {
-   "none": 122
+   "none": 111
   },
   "realtime": true,
   "writeback": true,
   "active_fair_id": "FAIR-Y7Y8LBRT"
  },
  "intent_semantics": {
-  "供应链管理培训生": {
+  "管理培训生": {
    "titles": [
-    "供应链专员",
-    "供应链岗",
-    "供应链管培生",
-    "供应链管理",
-    "供应链管理培训生",
-    "供应链管理培训生",
-    "供应链管理培训生",
-    "供应链管理培训生",
-    "供应链管理培训生",
-    "供应链管理培训生",
-    "供应链管理培训生",
-    "供应链管理培训生",
-    "供应链管理培训生",
-    "供应链管理培训生",
-    "供应链管理培训生"
-   ],
-   "terms": [],
-   "reason": "大模型判定为同类校招岗位",
-   "via": "llm"
-  },
-  "数据分析分析师": {
-   "titles": [
-    "数据分析师",
-    "数据分析岗",
-    "数据分析师",
-    "数据分析岗",
-    "数据分析师",
-    "数据分析岗",
-    "数据分析师",
-    "数据分析岗",
-    "数据分析师",
-    "数据分析岗",
-    "数据分析师",
-    "数据分析岗",
-    "数据分析师",
-    "数据分析岗",
-    "数据分析师"
-   ],
-   "terms": [],
-   "reason": "大模型判定为同类校招岗位",
-   "via": "llm"
-  },
-  "运营管理培训生": {
-   "titles": [
-    "运营管理岗",
-    "运营专员",
-    "运营产品经理(AI医疗)",
-    "运营培训生(综合柜员方向)",
-    "运营类管培生",
-    "运营经理",
-    "运营管理【管培生】",
-    "运营管理培训生",
-    "运营管理管培生",
-    "运营管理岗（实习生）"
-   ],
-   "terms": [],
-   "reason": "大模型判定为同类校招岗位",
-   "via": "llm"
-  },
-  "市场研究助理": {
-   "titles": [
-    "市场专员",
-    "市场助理",
-    "市场助理(期刊推广)",
-    "市场营运助理岗",
-    "市场研究",
-    "市场研究助理",
-    "市场分析",
-    "市场分析助理",
-    "市场调研",
-    "市场调研助理",
-    "业务产品经理",
-    "业务支持实习生",
-    "业务支持岗（实习生）",
-    "业务运营岗（代销方向）-27届秋招",
-    "业务运营（代销方向）-27届秋招 (MJ003064)"
-   ],
-   "terms": [],
-   "reason": "大模型判定为同类校招岗位",
-   "via": "llm"
-  },
-  "销售支持专员": {
-   "titles": [
-    "业务支持实习生",
-    "业务支持岗（实习生）",
-    "业务运营岗（代销方向）-27届秋招",
-    "业务运营（代销方向）-27届秋招 (MJ003064)",
-    "业务销售管培生",
-    "销售助理工程师",
-    "销售工程师",
+    "管培生(产品/运营/政企营销方向)",
+    "人力资源管培生",
+    "财务管培生",
     "销售管培生",
-    "销售管理管培生",
-    "销售精英/市场BD",
-    "市场专员",
-    "市场助理",
-    "市场助理(期刊推广)",
-    "市场营运助理岗",
-    "营销培训生(公司金融方向)"
+    "市场营销实习生",
+    "运营专员(AI应用专项)",
+    "产品经理(AI应用专项)",
+    "产品经理(偏硬件)",
+    "精英C++开发工程师(全栈发展)",
+    "精英算法研发工程师(全栈发展)"
    ],
    "terms": [],
    "reason": "大模型判定为同类校招岗位",
    "via": "llm"
   },
-  "产品经理助理": {
+  "供应链管理专员": {
    "titles": [
-    "产品助理",
-    "产品岗",
+    "产品经理",
+    "运营专员(AI应用专项)",
+    "管培生(产品/运营/政企营销方向)",
+    "产品体验设计师",
     "产品工程师",
-    "产品工程师（杭州）",
-    "产品教研",
-    "产品研发工程师（碳酸、运动、功能饮料）",
-    "产品管理管培生",
     "产品类",
+    "运营经理",
+    "市场营销实习生",
+    "校园招聘专员",
+    "人力资源管培生",
+    "财务管培生",
+    "销售管培生",
+    "项目型销售",
+    "项目管理",
+    "项目经理"
+   ],
+   "terms": [],
+   "reason": "大模型判定为同类校招岗位",
+   "via": "llm"
+  },
+  "项目管理助理": {
+   "titles": [
+    "项目管理",
+    "项目经理",
+    "项目管理助理",
     "产品经理",
     "产品经理(AI应用专项)",
     "产品经理(偏硬件)",
-    "产品设计",
-    "产品设计(电气类)",
-    "业务产品经理",
-    "业务运营岗（代销方向）-27届秋招"
+    "运营专员(AI应用专项)",
+    "运营经理",
+    "管培生(产品/运营/政企营销方向)",
+    "精英C++开发工程师(全栈发展)",
+    "精英算法研发工程师(全栈发展)",
+    "校园招聘专员",
+    "储备嵌入式软件工程师",
+    "全栈工程师",
+    "内容质量专家(小说内容研判方向)"
+   ],
+   "terms": [],
+   "reason": "大模型判定为同类校招岗位",
+   "via": "llm"
+  },
+  "市场分析助理": {
+   "titles": [
+    "数据分析师",
+    "市场分析助理",
+    "产品经理",
+    "产品经理(AI应用专项)",
+    "运营专员(AI应用专项)",
+    "运营经理",
+    "投资运营分析师",
+    "内容质量专家(小说内容研判方向)",
+    "市场营销实习生",
+    "销售管培生",
+    "校园招聘专员",
+    "管培生(产品/运营/政企营销方向)",
+    "精英算法研发工程师(全栈发展)",
+    "精英C++开发工程师(全栈发展)"
+   ],
+   "terms": [],
+   "reason": "大模型判定为同类校招岗位",
+   "via": "llm"
+  },
+  "运营数据分析专员": {
+   "titles": [
+    "数据分析师",
+    "运营专员(AI应用专项)",
+    "投资运营分析师",
+    "产品经理",
+    "产品经理(AI应用专项)",
+    "产品经理(偏硬件)",
+    "管培生(产品/运营/政企营销方向)",
+    "运营经理",
+    "市场营销实习生",
+    "内容质量专家(小说内容研判方向)",
+    "测试工程师",
+    "初级测试工程师",
+    "软件工程师",
+    "软件开发工程师",
+    "软件测试开发工程师"
    ],
    "terms": [],
    "reason": "大模型判定为同类校招岗位",
@@ -4806,8 +4877,7 @@ const D = {
    "rank": 6,
    "rank_reason": "队列第 6 位：有真实 JD 命中 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
-    "宏胜饮料集团有限公司",
-    "苏州萘思尔科技有限公司"
+    "宏胜饮料集团有限公司"
    ]
   },
   {
@@ -6669,490 +6739,12 @@ const D = {
     },
     "raw": {}
    },
-   "next": "上海新舟投资管理有限公司",
+   "next": "南京普利迪橡塑制品有限公司",
    "rank": 13,
    "rank_reason": "队列第 13 位：有真实 JD 命中 / 优先级 2；排序分 70.0（仅 100.0% 权重生效）",
    "nearby": [
     "矩阵时光数字科技有限公司",
     "匠岭科技(上海)有限公司"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "一线",
-     "value": 1.0,
-     "basis": "上海 · 一线",
-     "traits": [
-      "交通枢纽"
-     ],
-     "city": "上海"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 上海 · 上海省",
-     "city": "上海",
-     "province": "上海"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.4,
-     "tier_key": "仅规模信号",
-     "basis": "展位招聘人数 70 人",
-     "confidence": 0.5
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 4 条真实 JD 中（疑似串批次）",
-    "推断岗位与 教育 行业常见岗位不太吻合，请优先现场确认"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "供应链计划"
-    ],
-    "display_jobs": [
-     "（待现场确认：供应链计划）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 1 个硬事实错误岗位名（供应链计划）：有 JD 却给了不在本家 4 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "上海新舟投资管理有限公司",
-   "booth": "104",
-   "headcount": 70,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "上海",
-   "province": "上海",
-   "scale_tier": "中型",
-   "state": "inferred",
-   "priority": 5,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：供应链计划）"
-   ],
-   "original_matched_jobs": [
-    "供应链计划"
-   ],
-   "reason": "无岗位记录，但企业类型为制造，推断可能需要供应链计划岗位",
-   "verify_question": "贵公司是否招聘供应链计划岗位？",
-   "hits": [
-    "（待现场确认：供应链计划）"
-   ],
-   "misses": [
-    "小学数学教师",
-    "数学/奥数竞赛教练",
-    "小学/初中数学教师",
-    "幼儿教师"
-   ],
-   "job_count": 4,
-   "job_titles": [
-    "小学数学教师",
-    "数学/奥数竞赛教练",
-    "小学/初中数学教师",
-    "幼儿教师"
-   ],
-   "gaps": [
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 上海新舟投资管理有限公司 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 上海新舟投资管理有限公司 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：贵公司是否招聘供应链计划岗位？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 上海新舟投资管理有限公司 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    }
-   ],
-   "score": 100.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 1.0,
-     "weight": 100.0,
-     "contribution": 100.0,
-     "basis": "城市 上海 命中「一线」(你的第1优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 上海 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.65,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 中型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://www.sohu.com/a/782032844_121124009",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "普通公司",
-    "rank_dim": "",
-    "rank_tier": "",
-    "rank_hits": [],
-    "industry_rank": null,
-    "growth_tier": "none",
-    "growth_hits": [],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "投资管理与教育产业投资——经营范围含投资管理、实业投资、资产管理、投资咨询、企业管理咨询；对外全资控股新舟教育科技、校佳家科技、新舟智能科技、趣宁多媒体等教培/科技主体",
-    "segment_source_url": "https://aiqicha.baidu.com/detail/compinfo?pid=18739191784419&subtab=annual",
-    "segment_leader": "none",
-    "segment_leader_source_url": "",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "上海",
-     "长沙",
-     "南宁",
-     "曲靖"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 0,
-    "job_sources": {
-     "official": [
-      "小学数学教师",
-      "数学/奥数竞赛教练",
-      "小学/初中数学教师",
-      "幼儿教师"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "小学数学教师",
-      "数学/奥数竞赛教练",
-      "小学/初中数学教师",
-      "幼儿教师"
-     ]
-    },
-    "raw": {}
-   },
-   "next": "上海长宁区乐读线上教育培训学校",
-   "rank": 14,
-   "rank_reason": "队列第 14 位：按行业推断待核实 / 优先级 5；排序分 100.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "北京思跃教育科技集团有限公司",
-    "上海长宁区乐读线上教育培训学校"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "一线",
-     "value": 1.0,
-     "basis": "上海 · 一线",
-     "traits": [
-      "交通枢纽"
-     ],
-     "city": "上海"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 上海 · 上海省",
-     "city": "上海",
-     "province": "上海"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.4,
-     "tier_key": "仅规模信号",
-     "basis": "展位招聘人数 55 人",
-     "confidence": 0.5
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 4 条真实 JD 中（疑似串批次）"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "课程顾问",
-     "教学研发人员",
-     "市场推广专员"
-    ],
-    "display_jobs": [
-     "（待现场确认：课程顾问）",
-     "（待现场确认：教学研发人员）",
-     "（待现场确认：市场推广专员）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 3 个硬事实错误岗位名（课程顾问、教学研发人员、市场推广专员）：有 JD 却给了不在本家 4 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "上海长宁区乐读线上教育培训学校",
-   "booth": "105",
-   "headcount": 55,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "上海",
-   "province": "上海",
-   "scale_tier": "大型",
-   "state": "inferred",
-   "priority": 5,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：课程顾问）",
-    "（待现场确认：教学研发人员）",
-    "（待现场确认：市场推广专员）"
-   ],
-   "original_matched_jobs": [
-    "课程顾问",
-    "教学研发人员",
-    "市场推广专员"
-   ],
-   "reason": "教育行业通常需要课程顾问、教学研发人员和市场推广专员等岗位",
-   "verify_question": "请问今年是不是招课程顾问、教学研发人员或市场推广专员岗位？",
-   "hits": [
-    "（待现场确认：课程顾问）",
-    "（待现场确认：教学研发人员）",
-    "（待现场确认：市场推广专员）"
-   ],
-   "misses": [
-    "学科运营",
-    "产品教研",
-    "竞赛教练",
-    "在线小班主讲教师(小学/初中)"
-   ],
-   "job_count": 4,
-   "job_titles": [
-    "学科运营",
-    "产品教研",
-    "竞赛教练",
-    "在线小班主讲教师(小学/初中)"
-   ],
-   "gaps": [
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 上海长宁区乐读线上教育培训学校 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 上海长宁区乐读线上教育培训学校 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：请问今年是不是招课程顾问、教学研发人员或市场推广专员岗位？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 上海长宁区乐读线上教育培训学校 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    }
-   ],
-   "score": 100.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 1.0,
-     "weight": 100.0,
-     "contribution": 100.0,
-     "basis": "城市 上海 命中「一线」(你的第1优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 上海 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.85,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 大型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://www.ledupeiyou.com/m/?_t=1791233186765",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "不适用（非企业主体）",
-    "rank_dim": "",
-    "rank_tier": "",
-    "rank_hits": [],
-    "industry_rank": null,
-    "growth_tier": "none",
-    "growth_hits": [],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "非营利性中小学在线学科教育：1-9年级全学科在线小班直播课程",
-    "segment_source_url": "http://ledupeiyou.com/about",
-    "segment_leader": "self_claim",
-    "segment_leader_source_url": "http://ledupeiyou.com/about",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "北京",
-     "上海",
-     "广州",
-     "深圳",
-     "杭州",
-     "天津",
-     "南京",
-     "西安",
-     "武汉",
-     "成都",
-     "重庆"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 1,
-    "job_sources": {
-     "official": [
-      "学科运营",
-      "产品教研",
-      "竞赛教练",
-      "在线小班主讲教师(小学/初中)"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "学科运营",
-      "产品教研",
-      "竞赛教练",
-      "在线小班主讲教师(小学/初中)"
-     ]
-    },
-    "raw": {
-     "nature": "民办非企业"
-    }
-   },
-   "next": "南京普利迪橡塑制品有限公司",
-   "rank": 15,
-   "rank_reason": "队列第 15 位：按行业推断待核实 / 优先级 5；排序分 100.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "上海新舟投资管理有限公司",
-    "上海我们方田科技有限公司"
    ]
   },
   {
@@ -7376,8 +6968,8 @@ const D = {
     "raw": {}
    },
    "next": "新华人寿保险股份有限公司浙江分公司",
-   "rank": 16,
-   "rank_reason": "队列第 16 位：按行业推断待核实 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 14,
+   "rank_reason": "队列第 14 位：按行业推断待核实 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "立时飞讯信息科技（上海）有限公司",
     "苏州青河科技有限公司"
@@ -7686,8 +7278,8 @@ const D = {
     "raw": {}
    },
    "next": "正泰安能数字能源（浙江）股份有限公司",
-   "rank": 17,
-   "rank_reason": "队列第 17 位：按行业推断待核实 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 15,
+   "rank_reason": "队列第 15 位：按行业推断待核实 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京字跳网络技术有限公司",
     "中国民生银行股份有限公司南京分行"
@@ -7987,8 +7579,8 @@ const D = {
     "raw": {}
    },
    "next": "浙江浙达能源科技有限公司",
-   "rank": 18,
-   "rank_reason": "队列第 18 位：按行业推断待核实 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 16,
+   "rank_reason": "队列第 16 位：按行业推断待核实 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "中国铝业郑州有色金属研究院有限公司",
     "浙江浙达能源科技有限公司"
@@ -8238,274 +7830,12 @@ const D = {
     },
     "raw": {}
    },
-   "next": "深圳市蓝天教育培训学校",
-   "rank": 19,
-   "rank_reason": "队列第 19 位：按行业推断待核实 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
+   "next": "贝斯（无锡）信息系统有限公司",
+   "rank": 17,
+   "rank_reason": "队列第 17 位：按行业推断待核实 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "正泰安能数字能源（浙江）股份有限公司",
     "大参林医药集团股份有限公司"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "一线",
-     "value": 1.0,
-     "basis": "深圳 · 一线",
-     "traits": [],
-     "city": "深圳"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 深圳 · 广东省",
-     "city": "深圳",
-     "province": "广东"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.4,
-     "tier_key": "仅规模信号",
-     "basis": "展位招聘人数 50 人",
-     "confidence": 0.5
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 5 条真实 JD 中（疑似串批次）"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "课程顾问",
-     "教学研发人员",
-     "市场推广专员"
-    ],
-    "display_jobs": [
-     "（待现场确认：课程顾问）",
-     "（待现场确认：教学研发人员）",
-     "（待现场确认：市场推广专员）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 3 个硬事实错误岗位名（课程顾问、教学研发人员、市场推广专员）：有 JD 却给了不在本家 5 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "深圳市蓝天教育培训学校",
-   "booth": "102",
-   "headcount": 50,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "深圳",
-   "province": "广东",
-   "scale_tier": "中型",
-   "state": "inferred",
-   "priority": 5,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：课程顾问）",
-    "（待现场确认：教学研发人员）",
-    "（待现场确认：市场推广专员）"
-   ],
-   "original_matched_jobs": [
-    "课程顾问",
-    "教学研发人员",
-    "市场推广专员"
-   ],
-   "reason": "教育行业通常需要课程顾问、教学研发人员和市场推广专员等岗位",
-   "verify_question": "请问今年是不是招课程顾问、教学研发人员或市场推广专员岗位？",
-   "hits": [
-    "（待现场确认：课程顾问）",
-    "（待现场确认：教学研发人员）",
-    "（待现场确认：市场推广专员）"
-   ],
-   "misses": [
-    "数学老师(小初高)",
-    "语文老师(小初高)",
-    "英语老师(小初高)",
-    "理化老师(初高)",
-    "竞赛教练"
-   ],
-   "job_count": 5,
-   "job_titles": [
-    "数学老师(小初高)",
-    "语文老师(小初高)",
-    "英语老师(小初高)",
-    "理化老师(初高)",
-    "竞赛教练"
-   ],
-   "gaps": [
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 深圳市蓝天教育培训学校 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 深圳市蓝天教育培训学校 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：请问今年是不是招课程顾问、教学研发人员或市场推广专员岗位？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 深圳市蓝天教育培训学校 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    }
-   ],
-   "score": 100.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 1.0,
-     "weight": 100.0,
-     "contribution": 100.0,
-     "basis": "城市 深圳 命中「一线」(你的第1优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 深圳 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.65,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 中型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://sz.jiaoyubao.cn/edu/szlantian/",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "不适用（非企业主体）",
-    "rank_dim": "",
-    "rank_tier": "",
-    "rank_hits": [],
-    "industry_rank": null,
-    "growth_tier": "none",
-    "growth_hits": [],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "面向深圳的K12中小学课外培训（含幼儿英语），课程服务涵盖中小学英语、数学、语文、科学及出国留学托福、SAT、SSAT，覆盖早期教育至出国留学各阶段，采用“小班授课、针对辅导、分层次教学”模式",
-    "segment_source_url": "http://2018hc.skyedu99.com/m-sky/about.html",
-    "segment_leader": "none",
-    "segment_leader_source_url": "",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "深圳",
-     "广州",
-     "厦门",
-     "珠海",
-     "海口",
-     "北京",
-     "天津",
-     "上海",
-     "杭州",
-     "南昌",
-     "威海",
-     "济南",
-     "南京",
-     "青岛",
-     "武汉",
-     "长沙",
-     "西安",
-     "重庆",
-     "成都",
-     "哈尔滨",
-     "长春",
-     "沈阳",
-     "大连"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 1,
-    "job_sources": {
-     "official": [
-      "数学老师(小初高)",
-      "语文老师(小初高)",
-      "英语老师(小初高)",
-      "理化老师(初高)",
-      "竞赛教练"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "数学老师(小初高)",
-      "语文老师(小初高)",
-      "英语老师(小初高)",
-      "理化老师(初高)",
-      "竞赛教练"
-     ]
-    },
-    "raw": {
-     "nature": "民办非企业"
-    }
-   },
-   "next": "贝斯（无锡）信息系统有限公司",
-   "rank": 20,
-   "rank_reason": "队列第 20 位：按行业推断待核实 / 优先级 5；排序分 100.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "新航道（北京）管理咨询有限公司",
-    "北京思跃教育科技集团有限公司"
    ]
   },
   {
@@ -8729,8 +8059,8 @@ const D = {
     "raw": {}
    },
    "next": "上海合合信息科技发展有限公司",
-   "rank": 21,
-   "rank_reason": "队列第 21 位：按行业推断待核实 / 优先级 5；排序分 70.0（仅 100.0% 权重生效）",
+   "rank": 18,
+   "rank_reason": "队列第 18 位：按行业推断待核实 / 优先级 5；排序分 70.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海鹏扶投资管理有限公司",
     "北京海量数据技术股份有限公司"
@@ -9017,8 +8347,8 @@ const D = {
     "raw": {}
    },
    "next": "上海镱镭飞秒激光技术有限公司",
-   "rank": 22,
-   "rank_reason": "队列第 22 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 19,
+   "rank_reason": "队列第 19 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "苏州思必驰信息科技有限公司",
     "矩阵时光数字科技有限公司"
@@ -9259,8 +8589,8 @@ const D = {
     "raw": {}
    },
    "next": "上海鹏扶投资管理有限公司",
-   "rank": 23,
-   "rank_reason": "队列第 23 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 20,
+   "rank_reason": "队列第 20 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京中科腾越科技发展有限公司",
     "江苏箸境智能科技有限公司"
@@ -9483,8 +8813,8 @@ const D = {
     "raw": {}
    },
    "next": "中建一局集团建设发展有限公司",
-   "rank": 24,
-   "rank_reason": "队列第 24 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 21,
+   "rank_reason": "队列第 21 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海宁苑资产管理有限公司",
     "贝斯（无锡）信息系统有限公司"
@@ -9750,8 +9080,8 @@ const D = {
     "raw": {}
    },
    "next": "中建五局土木工程有限公司",
-   "rank": 25,
-   "rank_reason": "队列第 25 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 22,
+   "rank_reason": "队列第 22 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "中建八局第一建设有限公司",
     "中建八局华中建设有限公司"
@@ -10003,8 +9333,8 @@ const D = {
     "raw": {}
    },
    "next": "中建八局华中建设有限公司",
-   "rank": 26,
-   "rank_reason": "队列第 26 位：按行业推断待核实 / 优先级 4；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 23,
+   "rank_reason": "队列第 23 位：按行业推断待核实 / 优先级 4；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "中建四局建设投资有限公司",
     "北方爆破科技有限公司"
@@ -10287,8 +9617,8 @@ const D = {
     "raw": {}
    },
    "next": "中建四局建设投资有限公司",
-   "rank": 27,
-   "rank_reason": "队列第 27 位：按行业推断待核实 / 优先级 4；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 24,
+   "rank_reason": "队列第 24 位：按行业推断待核实 / 优先级 4；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "中建一局集团建设发展有限公司",
     "中建四局建设投资有限公司"
@@ -10507,8 +9837,8 @@ const D = {
     "raw": {}
    },
    "next": "北京字跳网络技术有限公司",
-   "rank": 28,
-   "rank_reason": "队列第 28 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 25,
+   "rank_reason": "队列第 25 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "中建八局华中建设有限公司",
     "中建五局土木工程有限公司"
@@ -10733,8 +10063,8 @@ const D = {
     "raw": {}
    },
    "next": "北京当升材料科技股份有限公司",
-   "rank": 29,
-   "rank_reason": "队列第 29 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 26,
+   "rank_reason": "队列第 26 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "腾讯科技（上海）有限公司",
     "新华人寿保险股份有限公司浙江分公司"
@@ -11037,270 +10367,12 @@ const D = {
     },
     "raw": {}
    },
-   "next": "北京育达东方软件科技有限公司",
-   "rank": 30,
-   "rank_reason": "队列第 30 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "next": "北方爆破科技有限公司",
+   "rank": 27,
+   "rank_reason": "队列第 27 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "浙江超级灵魂人工智能研究院有限公司",
     "中国铝业郑州有色金属研究院有限公司"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "一线",
-     "value": 1.0,
-     "basis": "北京 · 一线",
-     "traits": [],
-     "city": "北京"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 北京 · 北京省",
-     "city": "北京",
-     "province": "北京"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.4,
-     "tier_key": "仅规模信号",
-     "basis": "展位招聘人数 100 人",
-     "confidence": 0.5
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 1 条真实 JD 中（疑似串批次）",
-    "岗位名「数据分析师」出现在其他企业 JD 中，疑似串用",
-    "推断岗位与 教育 行业常见岗位不太吻合，请优先现场确认"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "供应链计划",
-     "数据分析师"
-    ],
-    "display_jobs": [
-     "（待现场确认：供应链计划）",
-     "（待现场确认：数据分析师）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 2 个硬事实错误岗位名（供应链计划、数据分析师）：有 JD 却给了不在本家 1 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "北京育达东方软件科技有限公司",
-   "booth": "097",
-   "headcount": 100,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "北京",
-   "province": "北京",
-   "scale_tier": "中小型",
-   "state": "inferred",
-   "priority": 4,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：供应链计划）",
-    "（待现场确认：数据分析师）"
-   ],
-   "original_matched_jobs": [
-    "供应链计划",
-    "数据分析师"
-   ],
-   "reason": "企业为建筑类公司，可能涉及供应链计划和数据分析相关岗位，网上未查到岗位",
-   "verify_question": "贵公司是否招聘供应链计划或数据分析师？",
-   "hits": [
-    "（待现场确认：供应链计划）",
-    "（待现场确认：数据分析师）"
-   ],
-   "misses": [
-    "高中教师(数学/物理/化学)"
-   ],
-   "job_count": 1,
-   "job_titles": [
-    "高中教师(数学/物理/化学)"
-   ],
-   "gaps": [
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 北京育达东方软件科技有限公司 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 北京育达东方软件科技有限公司 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：贵公司是否招聘供应链计划或数据分析师？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 北京育达东方软件科技有限公司 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    }
-   ],
-   "score": 100.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 1.0,
-     "weight": 100.0,
-     "contribution": 100.0,
-     "basis": "城市 北京 命中「一线」(你的第1优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 北京 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.45,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 中小型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://www.visitbeijing.com.cn/article/4J6NKmov93k",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "普通公司",
-    "rank_dim": "",
-    "rank_tier": "",
-    "rank_hits": [],
-    "industry_rank": null,
-    "growth_tier": "none",
-    "growth_hits": [],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "应用软件开发（教育/培训类软件与人工智能应用软件），兼营出版物批发零售；国标行业为应用软件开发（I6513）",
-    "segment_source_url": "https://www.qcc.com/firm/4b308b54173d9707dbfcc76d4dbd6d06.html",
-    "segment_leader": "none",
-    "segment_leader_source_url": "",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "北京",
-     "广州",
-     "深圳",
-     "南京",
-     "苏州",
-     "济南",
-     "合肥",
-     "厦门",
-     "福州",
-     "青岛",
-     "长沙",
-     "天津",
-     "太原",
-     "常州",
-     "东莞",
-     "贵阳",
-     "呼和浩特",
-     "洛阳",
-     "南昌",
-     "南宁",
-     "南通",
-     "泉州",
-     "石家庄",
-     "泰州",
-     "唐山",
-     "襄阳",
-     "许昌",
-     "烟台",
-     "盐城",
-     "扬州",
-     "镇江",
-     "郑州",
-     "珠海",
-     "开封",
-     "淮安",
-     "兰州",
-     "宁波",
-     "绍兴",
-     "保定",
-     "杭州"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 0,
-    "job_sources": {
-     "official": [
-      "高中教师(数学/物理/化学)"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "高中教师(数学/物理/化学)"
-     ]
-    },
-    "raw": {}
-   },
-   "next": "北方爆破科技有限公司",
-   "rank": 31,
-   "rank_reason": "队列第 31 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "北京学而思教育科技有限公司",
-    "镇江市新东方教育培训有限公司"
    ]
   },
   {
@@ -11531,8 +10603,8 @@ const D = {
     "raw": {}
    },
    "next": "匠岭科技(上海)有限公司",
-   "rank": 32,
-   "rank_reason": "队列第 32 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 28,
+   "rank_reason": "队列第 28 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "中建五局土木工程有限公司",
     "天津泰达建设集团有限公司"
@@ -11793,8 +10865,8 @@ const D = {
     "raw": {}
    },
    "next": "新航道（北京）管理咨询有限公司",
-   "rank": 33,
-   "rank_reason": "队列第 33 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 29,
+   "rank_reason": "队列第 29 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "无锡卓海科技股份有限公司",
     "绍兴市上虞区杭州湾集成电路设计工程中心"
@@ -12005,11 +11077,11 @@ const D = {
     "raw": {}
    },
    "next": "曼迪匹艾（北京）科技服务有限公司",
-   "rank": 34,
-   "rank_reason": "队列第 34 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 30,
+   "rank_reason": "队列第 30 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "海亮教育科技服务集团有限公司",
-    "深圳市蓝天教育培训学校"
+    "北京思跃教育科技集团有限公司"
    ]
   },
   {
@@ -12276,8 +11348,8 @@ const D = {
     "raw": {}
    },
    "next": "杭州银行股份有限公司上海分行",
-   "rank": 35,
-   "rank_reason": "队列第 35 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 31,
+   "rank_reason": "队列第 31 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "江苏乔木教育科技有限公司",
     "知有无界（深圳）智能科技有限公司"
@@ -12557,8 +11629,8 @@ const D = {
     "raw": {}
    },
    "next": "矩阵时光数字科技有限公司",
-   "rank": 36,
-   "rank_reason": "队列第 36 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 32,
+   "rank_reason": "队列第 32 位：按行业推断待核实 / 优先级 4；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "珠海金山办公软件有限公司",
     "杭州银行股份有限公司南京分行"
@@ -12782,8 +11854,8 @@ const D = {
     "raw": {}
    },
    "next": "苏州思必驰信息科技有限公司",
-   "rank": 37,
-   "rank_reason": "队列第 37 位：按行业推断待核实 / 优先级 4；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 33,
+   "rank_reason": "队列第 33 位：按行业推断待核实 / 优先级 4；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海合合信息科技发展有限公司",
     "无锡卓海科技股份有限公司"
@@ -13124,8 +12196,8 @@ const D = {
     "raw": {}
    },
    "next": "上海妙文创意科技有限公司",
-   "rank": 38,
-   "rank_reason": "队列第 38 位：按行业推断待核实 / 优先级 4；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 34,
+   "rank_reason": "队列第 34 位：按行业推断待核实 / 优先级 4；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海精测半导体技术有限公司",
     "上海合合信息科技发展有限公司"
@@ -13441,8 +12513,8 @@ const D = {
     "raw": {}
    },
    "next": "上海宁苑资产管理有限公司",
-   "rank": 39,
-   "rank_reason": "队列第 39 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 35,
+   "rank_reason": "队列第 35 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海芒啾网络科技有限公司",
     "宏胜饮料集团有限公司"
@@ -13689,8 +12761,8 @@ const D = {
     }
    },
    "next": "上海市滴水湖学校",
-   "rank": 40,
-   "rank_reason": "队列第 40 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 36,
+   "rank_reason": "队列第 36 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "图灵私募基金管理（海南）有限公司",
     "上海鹏扶投资管理有限公司"
@@ -13935,264 +13007,12 @@ const D = {
     },
     "raw": {}
    },
-   "next": "上海我们方田科技有限公司",
-   "rank": 41,
-   "rank_reason": "队列第 41 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "next": "上海杉泰私募基金管理有限公司",
+   "rank": 37,
+   "rank_reason": "队列第 37 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "宁波华茂外国语学校",
-    "北京学而思教育科技有限公司"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "一线",
-     "value": 1.0,
-     "basis": "上海 · 一线",
-     "traits": [
-      "交通枢纽"
-     ],
-     "city": "上海"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 上海 · 上海省",
-     "city": "上海",
-     "province": "上海"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.4,
-     "tier_key": "仅规模信号",
-     "basis": "展位招聘人数 40 人",
-     "confidence": 0.5
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 5 条真实 JD 中（疑似串批次）",
-    "推断岗位与 教育 行业常见岗位不太吻合，请优先现场确认"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "生产计划专员",
-     "供应链管理专员",
-     "质量管理工程师"
-    ],
-    "display_jobs": [
-     "（待现场确认：生产计划专员）",
-     "（待现场确认：供应链管理专员）",
-     "（待现场确认：质量管理工程师）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 3 个硬事实错误岗位名（生产计划专员、供应链管理专员、质量管理工程师）：有 JD 却给了不在本家 5 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "上海我们方田科技有限公司",
-   "booth": "106",
-   "headcount": 40,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "上海",
-   "province": "上海",
-   "scale_tier": "大型",
-   "state": "inferred",
-   "priority": 3,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：生产计划专员）",
-    "（待现场确认：供应链管理专员）",
-    "（待现场确认：质量管理工程师）"
-   ],
-   "original_matched_jobs": [
-    "生产计划专员",
-    "供应链管理专员",
-    "质量管理工程师"
-   ],
-   "reason": "网上未查到岗位，按制造行业推断",
-   "verify_question": "请问今年是不是招供应链计划专员岗位？",
-   "hits": [
-    "（待现场确认：生产计划专员）",
-    "（待现场确认：供应链管理专员）",
-    "（待现场确认：质量管理工程师）"
-   ],
-   "misses": [
-    "国际数学竞赛教练",
-    "高中竞赛教练",
-    "新分校骨干",
-    "全职教师",
-    "国际学科教师"
-   ],
-   "job_count": 5,
-   "job_titles": [
-    "国际数学竞赛教练",
-    "高中竞赛教练",
-    "新分校骨干",
-    "全职教师",
-    "国际学科教师"
-   ],
-   "gaps": [
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 上海我们方田科技有限公司 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 上海我们方田科技有限公司 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：请问今年是不是招供应链计划专员岗位？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 上海我们方田科技有限公司 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    }
-   ],
-   "score": 100.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 1.0,
-     "weight": 100.0,
-     "contribution": 100.0,
-     "basis": "城市 上海 命中「一线」(你的第1优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 上海 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.85,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 大型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://www.sohu.com/a/782032844_121124009",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "普通公司",
-    "rank_dim": "",
-    "rank_tier": "",
-    "rank_hits": [],
-    "industry_rank": null,
-    "growth_tier": "none",
-    "growth_hits": [],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "中小学学科与竞赛培训（“方田教育”）——涵盖国际学科教育、素质教育、软件研发、图书出版等板块，分校覆盖合肥、芜湖、南京、上海、杭州、深圳、成都、重庆、新加坡、中国香港等12个城市",
-    "segment_source_url": "https://hfuu.ahbys.com/company.html?cid=434422",
-    "segment_leader": "self_claim",
-    "segment_leader_source_url": "https://hfuu.ahbys.com/company.html?cid=434422",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "上海",
-     "合肥",
-     "南京",
-     "杭州",
-     "深圳",
-     "成都",
-     "重庆",
-     "芜湖",
-     "安庆",
-     "马鞍山",
-     "新加坡",
-     "中国香港"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 0,
-    "job_sources": {
-     "official": [
-      "国际数学竞赛教练",
-      "高中竞赛教练",
-      "新分校骨干",
-      "全职教师",
-      "国际学科教师"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "国际数学竞赛教练",
-      "高中竞赛教练",
-      "新分校骨干",
-      "全职教师",
-      "国际学科教师"
-     ]
-    },
-    "raw": {}
-   },
-   "next": "上海杉泰私募基金管理有限公司",
-   "rank": 42,
-   "rank_reason": "队列第 42 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "上海长宁区乐读线上教育培训学校",
-    "北京平行线根源教育科技有限公司"
+    "海亮教育科技服务集团有限公司"
    ]
   },
   {
@@ -14403,8 +13223,8 @@ const D = {
     "raw": {}
    },
    "next": "上海照寰文化传播有限公司",
-   "rank": 43,
-   "rank_reason": "队列第 43 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 38,
+   "rank_reason": "队列第 38 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "苏州青河科技有限公司",
     "南京中医药大学"
@@ -14635,8 +13455,8 @@ const D = {
     "raw": {}
    },
    "next": "上海矩量光启计算技术有限公司",
-   "rank": 44,
-   "rank_reason": "队列第 44 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 39,
+   "rank_reason": "队列第 39 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "杭州未来校教育科技有限公司",
     "江苏乔木教育科技有限公司"
@@ -14869,8 +13689,8 @@ const D = {
     "raw": {}
    },
    "next": "上海芒啾网络科技有限公司",
-   "rank": 45,
-   "rank_reason": "队列第 45 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 40,
+   "rank_reason": "队列第 40 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "绍兴市上虞区杭州湾集成电路设计工程中心",
     "杭州原子矩阵计算有限公司"
@@ -15084,8 +13904,8 @@ const D = {
     "raw": {}
    },
    "next": "亿嘉和科技股份有限公司",
-   "rank": 46,
-   "rank_reason": "队列第 46 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 41,
+   "rank_reason": "队列第 41 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "巨人移动科技有限公司",
     "上海妙文创意科技有限公司"
@@ -15392,8 +14212,8 @@ const D = {
     "raw": {}
    },
    "next": "北京世辉（上海）律师事务所",
-   "rank": 47,
-   "rank_reason": "队列第 47 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 42,
+   "rank_reason": "队列第 42 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "无锡奥特维科技股份有限公司",
     "杭州德创电子股份有限公司"
@@ -15658,8 +14478,8 @@ const D = {
     }
    },
    "next": "北京中科腾越科技发展有限公司",
-   "rank": 48,
-   "rank_reason": "队列第 48 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 43,
+   "rank_reason": "队列第 43 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "广州美保科技有限公司",
     "宁波美鹰家居集团有限公司"
@@ -15903,8 +14723,8 @@ const D = {
     "raw": {}
    },
    "next": "北京北方华创微电子装备有限公司",
-   "rank": 49,
-   "rank_reason": "队列第 49 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 44,
+   "rank_reason": "队列第 44 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "杭州兆华电子股份有限公司",
     "上海镱镭飞秒激光技术有限公司"
@@ -16179,8 +14999,8 @@ const D = {
     "raw": {}
    },
    "next": "北京外国语大学附属海南外国语学校",
-   "rank": 50,
-   "rank_reason": "队列第 50 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 45,
+   "rank_reason": "队列第 45 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "京东方科技集团股份有限公司",
     "摩尔线程智能科技（北京）股份有限公司"
@@ -16430,248 +15250,12 @@ const D = {
      "nature": "民办非企业"
     }
    },
-   "next": "北京平行线根源教育科技有限公司",
-   "rank": 51,
-   "rank_reason": "队列第 51 位：按行业推断待核实 / 优先级 3；排序分 40.0（仅 100.0% 权重生效）",
+   "next": "北京汽车国际发展有限公司",
+   "rank": 46,
+   "rank_reason": "队列第 46 位：按行业推断待核实 / 优先级 3；排序分 40.0（仅 100.0% 权重生效）",
    "nearby": [
     "诸暨荣怀学校",
     "国核湛江核电有限公司"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "一线",
-     "value": 1.0,
-     "basis": "北京 · 一线",
-     "traits": [],
-     "city": "北京"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 北京 · 北京省",
-     "city": "北京",
-     "province": "北京"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.4,
-     "tier_key": "仅规模信号",
-     "basis": "展位招聘人数 85 人",
-     "confidence": 0.5
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 2 条真实 JD 中（疑似串批次）"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "教育产品经理",
-     "市场调研专员",
-     "课程顾问"
-    ],
-    "display_jobs": [
-     "（待现场确认：教育产品经理）",
-     "（待现场确认：市场调研专员）",
-     "（待现场确认：课程顾问）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 3 个硬事实错误岗位名（教育产品经理、市场调研专员、课程顾问）：有 JD 却给了不在本家 2 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "北京平行线根源教育科技有限公司",
-   "booth": "107",
-   "headcount": 85,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "北京",
-   "province": "北京",
-   "scale_tier": "大型",
-   "state": "inferred",
-   "priority": 3,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：教育产品经理）",
-    "（待现场确认：市场调研专员）",
-    "（待现场确认：课程顾问）"
-   ],
-   "original_matched_jobs": [
-    "教育产品经理",
-    "市场调研专员",
-    "课程顾问"
-   ],
-   "reason": "教育科技公司可能需要教育产品经理、市场调研专员和课程顾问等岗位来开发和教育产品。",
-   "verify_question": "请问今年是不是招教育产品经理、市场调研专员或课程顾问岗位？",
-   "hits": [
-    "（待现场确认：教育产品经理）",
-    "（待现场确认：市场调研专员）",
-    "（待现场确认：课程顾问）"
-   ],
-   "misses": [
-    "数学/物理竞赛教练",
-    "学科主讲教师(数学/物理/化学/英语)"
-   ],
-   "job_count": 2,
-   "job_titles": [
-    "数学/物理竞赛教练",
-    "学科主讲教师(数学/物理/化学/英语)"
-   ],
-   "gaps": [
-    {
-     "kind": "薪资",
-     "why": "岗位记录里薪资全为未知",
-     "confidence": 0.2,
-     "question": "请问 北京平行线根源教育科技有限公司 这个岗位的薪资范围大概是多少？"
-    },
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 北京平行线根源教育科技有限公司 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 北京平行线根源教育科技有限公司 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：请问今年是不是招教育产品经理、市场调研专员或课程顾问岗位？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 北京平行线根源教育科技有限公司 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    }
-   ],
-   "score": 100.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 1.0,
-     "weight": 100.0,
-     "contribution": 100.0,
-     "basis": "城市 北京 命中「一线」(你的第1优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 北京 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.85,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 大型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://job.hust.edu.cn/zpinfo1/2288376.htm",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "普通公司",
-    "rank_dim": "",
-    "rank_tier": "",
-    "rank_hits": [],
-    "industry_rank": null,
-    "growth_tier": "none",
-    "growth_hits": [],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "专注理科培优的K12教育企业，主营线下班课、在线大班/小班、VIP全科培训及高端竞赛培训，并覆盖图书出版、直播、教育软件开发",
-    "segment_source_url": "https://jobcareer.sdu.edu.cn/eweb/jygl/index.so?id=WezW1k5FkxJ7BCyGaaneKE&type=ssoXnzpView",
-    "segment_leader": "none",
-    "segment_leader_source_url": "",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "北京",
-     "上海",
-     "西安",
-     "郑州",
-     "洛阳"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 0,
-    "job_sources": {
-     "official": [
-      "数学/物理竞赛教练",
-      "学科主讲教师(数学/物理/化学/英语)"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "数学/物理竞赛教练",
-      "学科主讲教师(数学/物理/化学/英语)"
-     ]
-    },
-    "raw": {}
-   },
-   "next": "北京汽车国际发展有限公司",
-   "rank": 52,
-   "rank_reason": "队列第 52 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "上海我们方田科技有限公司",
-    "杭州小事做好教育科技有限公司"
    ]
   },
   {
@@ -16935,8 +15519,8 @@ const D = {
     "raw": {}
    },
    "next": "北京跃瀚科技有限责任公司",
-   "rank": 53,
-   "rank_reason": "队列第 53 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 47,
+   "rank_reason": "队列第 47 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "苏州东山精密制造股份有限公司",
     "杭州老板电器股份有限公司"
@@ -17197,8 +15781,8 @@ const D = {
     "raw": {}
    },
    "next": "南京中医药大学",
-   "rank": 54,
-   "rank_reason": "队列第 54 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 48,
+   "rank_reason": "队列第 48 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "世坤咨询（北京）有限公司",
     "新城控股集团股份有限公司上海分公司"
@@ -17433,8 +16017,8 @@ const D = {
     "raw": {}
    },
    "next": "南京艾尔普再生医学科技股份有限公司",
-   "rank": 55,
-   "rank_reason": "队列第 55 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 49,
+   "rank_reason": "队列第 49 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海杉泰私募基金管理有限公司",
     "贵州师范大学"
@@ -17715,8 +16299,8 @@ const D = {
     "raw": {}
    },
    "next": "南京诺尔曼生物技术股份有限公司",
-   "rank": 56,
-   "rank_reason": "队列第 56 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 50,
+   "rank_reason": "队列第 50 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京贝瑞和康生物技术有限公司",
     "宁波市博坤生物科技有限公司"
@@ -17953,8 +16537,8 @@ const D = {
     "raw": {}
    },
    "next": "南华大学附属第一医院",
-   "rank": 57,
-   "rank_reason": "队列第 57 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 51,
+   "rank_reason": "队列第 51 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "宁波市博坤生物科技有限公司",
     "国电投广西核电有限公司"
@@ -18192,8 +16776,8 @@ const D = {
     "raw": {}
    },
    "next": "国核湛江核电有限公司",
-   "rank": 58,
-   "rank_reason": "队列第 58 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
+   "rank": 52,
+   "rank_reason": "队列第 52 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
    "nearby": [
     "山西省人民医院",
     "北京贝瑞和康生物技术有限公司"
@@ -18447,8 +17031,8 @@ const D = {
     "raw": {}
    },
    "next": "天津中医药大学第一附属医院",
-   "rank": 59,
-   "rank_reason": "队列第 59 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
+   "rank": 53,
+   "rank_reason": "队列第 53 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京外国语大学附属海南外国语学校",
     "宁波华茂外国语学校"
@@ -18677,8 +17261,8 @@ const D = {
     "raw": {}
    },
    "next": "宁波华茂外国语学校",
-   "rank": 60,
-   "rank_reason": "队列第 60 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 54,
+   "rank_reason": "队列第 54 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "中国科学技术大学附属第一医院 （安徽省立医院）",
     "石河子大学第一附属医院"
@@ -18914,8 +17498,8 @@ const D = {
     }
    },
    "next": "宁波市博坤生物科技有限公司",
-   "rank": 61,
-   "rank_reason": "队列第 61 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 55,
+   "rank_reason": "队列第 55 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "国核湛江核电有限公司",
     "上海市滴水湖学校"
@@ -19143,8 +17727,8 @@ const D = {
     "raw": {}
    },
    "next": "宁波美鹰家居集团有限公司",
-   "rank": 62,
-   "rank_reason": "队列第 62 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 56,
+   "rank_reason": "队列第 56 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "南京艾尔普再生医学科技股份有限公司",
     "南京诺尔曼生物技术股份有限公司"
@@ -19362,8 +17946,8 @@ const D = {
     "raw": {}
    },
    "next": "安徽国元信托有限责任公司",
-   "rank": 63,
-   "rank_reason": "队列第 63 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 57,
+   "rank_reason": "队列第 57 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京世辉（上海）律师事务所",
     "立时飞讯信息科技（上海）有限公司"
@@ -19607,8 +18191,8 @@ const D = {
     "raw": {}
    },
    "next": "宏胜饮料集团有限公司",
-   "rank": 64,
-   "rank_reason": "队列第 64 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 58,
+   "rank_reason": "队列第 58 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "浙银理财有限责任公司",
     "厦门国际信托有限公司"
@@ -19900,8 +18484,8 @@ const D = {
     "raw": {}
    },
    "next": "广州美保科技有限公司",
-   "rank": 65,
-   "rank_reason": "队列第 65 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 59,
+   "rank_reason": "队列第 59 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海妙文创意科技有限公司",
     "江苏共创人造草坪股份有限公司"
@@ -20154,253 +18738,12 @@ const D = {
     },
     "raw": {}
    },
-   "next": "杭州小事做好教育科技有限公司",
-   "rank": 66,
-   "rank_reason": "队列第 66 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "next": "杭州德创电子股份有限公司",
+   "rank": 60,
+   "rank_reason": "队列第 60 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "天津南大通用数据技术股份有限公司",
     "北京世辉（上海）律师事务所"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "新一线",
-     "value": 0.8,
-     "basis": "杭州 · 新一线",
-     "traits": [
-      "生态宜居"
-     ],
-     "city": "杭州"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 杭州 · 浙江省",
-     "city": "杭州",
-     "province": "浙江"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.4,
-     "tier_key": "仅规模信号",
-     "basis": "展位招聘人数 50 人",
-     "confidence": 0.5
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 4 条真实 JD 中（疑似串批次）"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "教育产品经理",
-     "教育数据分析",
-     "课程设计专员"
-    ],
-    "display_jobs": [
-     "（待现场确认：教育产品经理）",
-     "（待现场确认：教育数据分析）",
-     "（待现场确认：课程设计专员）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 3 个硬事实错误岗位名（教育产品经理、教育数据分析、课程设计专员）：有 JD 却给了不在本家 4 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "杭州小事做好教育科技有限公司",
-   "booth": "108",
-   "headcount": 50,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "杭州",
-   "province": "浙江",
-   "scale_tier": "中小型",
-   "state": "inferred",
-   "priority": 3,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：教育产品经理）",
-    "（待现场确认：教育数据分析）",
-    "（待现场确认：课程设计专员）"
-   ],
-   "original_matched_jobs": [
-    "教育产品经理",
-    "教育数据分析",
-    "课程设计专员"
-   ],
-   "reason": "教育科技公司通常需要教育产品管理、数据分析和课程设计相关岗位",
-   "verify_question": "请问今年是不是招教育产品经理/教育数据分析/课程设计专员岗位？",
-   "hits": [
-    "（待现场确认：教育产品经理）",
-    "（待现场确认：教育数据分析）",
-    "（待现场确认：课程设计专员）"
-   ],
-   "misses": [
-    "小初高理科老师",
-    "小初高英语老师",
-    "中学理科竞赛老师",
-    "理科竞赛教师"
-   ],
-   "job_count": 4,
-   "job_titles": [
-    "小初高理科老师",
-    "小初高英语老师",
-    "中学理科竞赛老师",
-    "理科竞赛教师"
-   ],
-   "gaps": [
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 杭州小事做好教育科技有限公司 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 杭州小事做好教育科技有限公司 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：请问今年是不是招教育产品经理/教育数据分析/课程设计专员岗位？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 杭州小事做好教育科技有限公司 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    }
-   ],
-   "score": 90.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 0.9,
-     "weight": 100.0,
-     "contribution": 90.0,
-     "basis": "城市 杭州 命中「新一线」(你的第2优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 杭州 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.45,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 中小型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "未知",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "普通公司",
-    "rank_dim": "",
-    "rank_tier": "",
-    "rank_hits": [],
-    "industry_rank": null,
-    "growth_tier": "none",
-    "growth_hits": [],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "面向3-18岁学生的线上线下教学产品服务：6-12岁素养课程（创新思维、人文创作、自拼阅读、科学探究、少儿棋类）与12-18岁学习空间、阅读解决方案",
-    "segment_source_url": "https://scc.pku.edu.cn/frontpage/pku/html/recruitmentinfoForm.html?positionDetailId=6369e46e39ed4fbeac731b5cf823f141",
-    "segment_leader": "none",
-    "segment_leader_source_url": "",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "杭州",
-     "湖州",
-     "南京",
-     "深圳",
-     "广州",
-     "上海"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 0,
-    "job_sources": {
-     "official": [
-      "小初高理科老师",
-      "小初高英语老师",
-      "中学理科竞赛老师",
-      "理科竞赛教师"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "小初高理科老师",
-      "小初高英语老师",
-      "中学理科竞赛老师",
-      "理科竞赛教师"
-     ]
-    },
-    "raw": {}
-   },
-   "next": "杭州德创电子股份有限公司",
-   "rank": 67,
-   "rank_reason": "队列第 67 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "北京平行线根源教育科技有限公司",
-    "杭州未来校教育科技有限公司"
    ]
   },
   {
@@ -20683,8 +19026,8 @@ const D = {
     "raw": {}
    },
    "next": "杭州未来校教育科技有限公司",
-   "rank": 68,
-   "rank_reason": "队列第 68 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 61,
+   "rank_reason": "队列第 61 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "亿嘉和科技股份有限公司",
     "杭州兆华电子股份有限公司"
@@ -20919,10 +19262,10 @@ const D = {
     "raw": {}
    },
    "next": "杭州联合农村商业银行股份有限公司",
-   "rank": 69,
-   "rank_reason": "队列第 69 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 62,
+   "rank_reason": "队列第 62 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
-    "杭州小事做好教育科技有限公司",
+    "北京思跃教育科技集团有限公司",
     "上海照寰文化传播有限公司"
    ]
   },
@@ -21181,8 +19524,8 @@ const D = {
     "raw": {}
    },
    "next": "江苏乔木教育科技有限公司",
-   "rank": 70,
-   "rank_reason": "队列第 70 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 63,
+   "rank_reason": "队列第 63 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "厦门国际信托有限公司",
     "世坤咨询（北京）有限公司"
@@ -21415,8 +19758,8 @@ const D = {
     "raw": {}
    },
    "next": "浙江超级灵魂人工智能研究院有限公司",
-   "rank": 71,
-   "rank_reason": "队列第 71 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 64,
+   "rank_reason": "队列第 64 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海照寰文化传播有限公司",
     "曼迪匹艾（北京）科技服务有限公司"
@@ -21681,8 +20024,8 @@ const D = {
     "raw": {}
    },
    "next": "浙银理财有限责任公司",
-   "rank": 72,
-   "rank_reason": "队列第 72 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
+   "rank": 65,
+   "rank_reason": "队列第 65 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
    "nearby": [
     "杭州原子矩阵计算有限公司",
     "北京当升材料科技股份有限公司"
@@ -21952,8 +20295,8 @@ const D = {
     "raw": {}
    },
    "next": "海亮教育科技服务集团有限公司",
-   "rank": 73,
-   "rank_reason": "队列第 73 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 66,
+   "rank_reason": "队列第 66 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "中粮期货有限公司",
     "安徽国元信托有限责任公司"
@@ -22187,10 +20530,10 @@ const D = {
     "raw": {}
    },
    "next": "清华大学附属中学",
-   "rank": 74,
-   "rank_reason": "队列第 74 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 67,
+   "rank_reason": "队列第 67 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
-    "高途教育科技集团有限公司",
+    "上海市滴水湖学校",
     "新航道（北京）管理咨询有限公司"
    ]
   },
@@ -22422,8 +20765,8 @@ const D = {
     }
    },
    "next": "珠海金山办公软件有限公司",
-   "rank": 75,
-   "rank_reason": "队列第 75 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 68,
+   "rank_reason": "队列第 68 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "贵州师范大学",
     "诸暨荣怀学校"
@@ -22705,8 +21048,8 @@ const D = {
     "raw": {}
    },
    "next": "知有无界（深圳）智能科技有限公司",
-   "rank": 76,
-   "rank_reason": "队列第 76 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
+   "rank": 69,
+   "rank_reason": "队列第 69 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
    "nearby": [
     "国元证券股份有限公司",
     "杭州银行股份有限公司上海分行"
@@ -22943,8 +21286,8 @@ const D = {
     "raw": {}
    },
    "next": "石河子大学第一附属医院",
-   "rank": 77,
-   "rank_reason": "队列第 77 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 70,
+   "rank_reason": "队列第 70 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "曼迪匹艾（北京）科技服务有限公司",
     "巨人移动科技有限公司"
@@ -23176,8 +21519,8 @@ const D = {
     "raw": {}
    },
    "next": "立时飞讯信息科技（上海）有限公司",
-   "rank": 78,
-   "rank_reason": "队列第 78 位：按行业推断待核实 / 优先级 3；排序分 40.0（仅 100.0% 权重生效）",
+   "rank": 71,
+   "rank_reason": "队列第 71 位：按行业推断待核实 / 优先级 3；排序分 40.0（仅 100.0% 权重生效）",
    "nearby": [
     "天津中医药大学第一附属医院",
     "山西省人民医院"
@@ -23406,8 +21749,8 @@ const D = {
     "raw": {}
    },
    "next": "绍兴市上虞区杭州湾集成电路设计工程中心",
-   "rank": 79,
-   "rank_reason": "队列第 79 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 72,
+   "rank_reason": "队列第 72 位：按行业推断待核实 / 优先级 3；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "宁波美鹰家居集团有限公司",
     "南京普利迪橡塑制品有限公司"
@@ -23649,8 +21992,8 @@ const D = {
     }
    },
    "next": "联检（江苏）科技股份有限公司",
-   "rank": 80,
-   "rank_reason": "队列第 80 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
+   "rank": 73,
+   "rank_reason": "队列第 73 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
    "nearby": [
     "匠岭科技(上海)有限公司",
     "上海矩量光启计算技术有限公司"
@@ -23942,8 +22285,8 @@ const D = {
     "raw": {}
    },
    "next": "苏州东山精密制造股份有限公司",
-   "rank": 81,
-   "rank_reason": "队列第 81 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
+   "rank": 74,
+   "rank_reason": "队列第 74 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
    "nearby": [
     "中汽研汽车试验场股份有限公司",
     "上海千象资产管理有限公司"
@@ -24243,8 +22586,8 @@ const D = {
     "raw": {}
    },
    "next": "苏州青河科技有限公司",
-   "rank": 82,
-   "rank_reason": "队列第 82 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 75,
+   "rank_reason": "队列第 75 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "郑州宇通集团有限公司",
     "北京汽车国际发展有限公司"
@@ -24480,8 +22823,8 @@ const D = {
     "raw": {}
    },
    "next": "诸暨荣怀学校",
-   "rank": 83,
-   "rank_reason": "队列第 83 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 76,
+   "rank_reason": "队列第 76 位：按行业推断待核实 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "南京普利迪橡塑制品有限公司",
     "上海杉泰私募基金管理有限公司"
@@ -24721,252 +23064,12 @@ const D = {
      "nature": "民办非企业"
     }
    },
-   "next": "镇江市新东方教育培训有限公司",
-   "rank": 84,
-   "rank_reason": "队列第 84 位：按行业推断待核实 / 优先级 3；排序分 40.0（仅 100.0% 权重生效）",
+   "next": "东方电气集团东方电机有限公司",
+   "rank": 77,
+   "rank_reason": "队列第 77 位：按行业推断待核实 / 优先级 3；排序分 40.0（仅 100.0% 权重生效）",
    "nearby": [
     "清华大学附属中学",
     "北京外国语大学附属海南外国语学校"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "unknown",
-     "tier_key": null,
-     "value": null,
-     "basis": "city 未采到或抽取脏文本",
-     "traits": [],
-     "city": null
-    },
-    "home": {
-     "status": "unknown",
-     "tier_key": null,
-     "value": null,
-     "basis": "工作城市未知，无法计算距离",
-     "city": null,
-     "province": ""
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.1,
-     "tier_key": "弱信号",
-     "basis": "展位招聘人数 20 人，无其他可核实信号",
-     "confidence": 0.4
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 4 条真实 JD 中（疑似串批次）"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "教育培训顾问",
-     "课程开发专员",
-     "市场推广专员"
-    ],
-    "display_jobs": [
-     "（待现场确认：教育培训顾问）",
-     "（待现场确认：课程开发专员）",
-     "（待现场确认：市场推广专员）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 3 个硬事实错误岗位名（教育培训顾问、课程开发专员、市场推广专员）：有 JD 却给了不在本家 4 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "镇江市新东方教育培训有限公司",
-   "booth": "098",
-   "headcount": 20,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "镇江",
-   "province": "江苏",
-   "scale_tier": "中型",
-   "state": "inferred",
-   "priority": 3,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：教育培训顾问）",
-    "（待现场确认：课程开发专员）",
-    "（待现场确认：市场推广专员）"
-   ],
-   "original_matched_jobs": [
-    "教育培训顾问",
-    "课程开发专员",
-    "市场推广专员"
-   ],
-   "reason": "教育培训行业需要顾问、课程开发和市场推广人才",
-   "verify_question": "请问今年是不是招商业分析岗位？",
-   "hits": [
-    "（待现场确认：教育培训顾问）",
-    "（待现场确认：课程开发专员）",
-    "（待现场确认：市场推广专员）"
-   ],
-   "misses": [
-    "数学教师",
-    "英语教师",
-    "高中教师(数学、英语、物理、化学)",
-    "市场专员"
-   ],
-   "job_count": 4,
-   "job_titles": [
-    "数学教师",
-    "英语教师",
-    "高中教师(数学、英语、物理、化学)",
-    "市场专员"
-   ],
-   "gaps": [
-    {
-     "kind": "城市",
-     "why": "city 抽取异常（镇江）",
-     "confidence": 0.2,
-     "question": "请问 镇江市新东方教育培训有限公司 的工作地点具体在哪个城市？"
-    },
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 镇江市新东方教育培训有限公司 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 镇江市新东方教育培训有限公司 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：请问今年是不是招商业分析岗位？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 镇江市新东方教育培训有限公司 的工作地点具体在哪个城市？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "city 抽取异常（镇江）"
-    }
-   ],
-   "score": 70.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 0.7,
-     "weight": 100.0,
-     "contribution": 70.0,
-     "basis": "城市 镇江 命中「经济发达」(你的第4优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 镇江 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.65,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 中型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://www.sohu.com/a/1020222854_121893286",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "普通公司",
-    "rank_dim": "",
-    "rank_tier": "",
-    "rank_hits": [],
-    "industry_rank": null,
-    "growth_tier": "none",
-    "growth_hits": [],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "中小学学科培训，及语言能力、艺术、体育、科技类营利性民办培训、教育咨询、研学与留学中介服务（新东方教育科技集团第42所直属分校）",
-    "segment_source_url": "http://zj.xdf.cn/huodong/202104/128616192.html",
-    "segment_leader": "none",
-    "segment_leader_source_url": "",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "镇江"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 0,
-    "job_sources": {
-     "official": [
-      "数学教师",
-      "英语教师",
-      "高中教师(数学、英语、物理、化学)",
-      "市场专员"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "数学教师",
-      "英语教师",
-      "高中教师(数学、英语、物理、化学)",
-      "市场专员"
-     ]
-    },
-    "raw": {}
-   },
-   "next": "东方电气集团东方电机有限公司",
-   "rank": 85,
-   "rank_reason": "队列第 85 位：按行业推断待核实 / 优先级 3；排序分 70.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "北京育达东方软件科技有限公司",
-    "高途教育科技集团有限公司"
    ]
   },
   {
@@ -25228,8 +23331,8 @@ const D = {
     "raw": {}
    },
    "next": "中共黔西南州委组织部",
-   "rank": 86,
-   "rank_reason": "队列第 86 位：按行业推断待核实 / 优先级 2；排序分 40.0（仅 100.0% 权重生效）",
+   "rank": 78,
+   "rank_reason": "队列第 78 位：按行业推断待核实 / 优先级 2；排序分 40.0（仅 100.0% 权重生效）",
    "nearby": [
     "杭州老板电器股份有限公司",
     "济南二机床集团有限公司"
@@ -25445,8 +23548,8 @@ const D = {
     }
    },
    "next": "中建八局第一建设有限公司",
-   "rank": 87,
-   "rank_reason": "队列第 87 位：按行业推断待核实 / 优先级 2；排序分 40.0（仅 100.0% 权重生效）",
+   "rank": 79,
+   "rank_reason": "队列第 79 位：按行业推断待核实 / 优先级 2；排序分 40.0（仅 100.0% 权重生效）",
    "nearby": [
     "天津泰达建设集团有限公司",
     "腾讯科技（上海）有限公司"
@@ -25718,8 +23821,8 @@ const D = {
     "raw": {}
    },
    "next": "图灵私募基金管理（海南）有限公司",
-   "rank": 88,
-   "rank_reason": "队列第 88 位：按行业推断待核实 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 80,
+   "rank_reason": "队列第 80 位：按行业推断待核实 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "国电投广西核电有限公司",
     "中建一局集团建设发展有限公司"
@@ -26002,8 +24105,8 @@ const D = {
     "raw": {}
    },
    "next": "天津南大通用数据技术股份有限公司",
-   "rank": 89,
-   "rank_reason": "队列第 89 位：按行业推断待核实 / 优先级 2；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 81,
+   "rank_reason": "队列第 81 位：按行业推断待核实 / 优先级 2；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "杭州龙旗科技有限公司",
     "上海宁苑资产管理有限公司"
@@ -26279,8 +24382,8 @@ const D = {
     "raw": {}
    },
    "next": "杭州原子矩阵计算有限公司",
-   "rank": 90,
-   "rank_reason": "队列第 90 位：按行业推断待核实 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 82,
+   "rank_reason": "队列第 82 位：按行业推断待核实 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京海量数据技术股份有限公司",
     "广州美保科技有限公司"
@@ -26557,546 +24660,12 @@ const D = {
     },
     "raw": {}
    },
-   "next": "高途教育科技集团有限公司",
-   "rank": 91,
-   "rank_reason": "队列第 91 位：按行业推断待核实 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
+   "next": "中国铝业郑州有色金属研究院有限公司",
+   "rank": 83,
+   "rank_reason": "队列第 83 位：按行业推断待核实 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海矩量光启计算技术有限公司",
     "浙江超级灵魂人工智能研究院有限公司"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "一线",
-     "value": 1.0,
-     "basis": "北京 · 一线",
-     "traits": [],
-     "city": "北京"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 北京 · 北京省",
-     "city": "北京",
-     "province": "北京"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 1.0,
-     "tier_key": "招聘规模大",
-     "basis": "展位招聘人数 642 人（≥500）",
-     "confidence": 0.6
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 6 条真实 JD 中（疑似串批次）",
-    "推断岗位与 教育 行业常见岗位不太吻合，请优先现场确认"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "教育行业数据分析师"
-    ],
-    "display_jobs": [
-     "（待现场确认：教育行业数据分析师）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 1 个硬事实错误岗位名（教育行业数据分析师）：有 JD 却给了不在本家 6 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "高途教育科技集团有限公司",
-   "booth": "099",
-   "headcount": 642,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "北京",
-   "province": "北京",
-   "scale_tier": "大型",
-   "state": "inferred",
-   "priority": 2,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：教育行业数据分析师）"
-   ],
-   "original_matched_jobs": [
-    "教育行业数据分析师"
-   ],
-   "reason": "无岗位记录，但企业类型为教育，推断可能需要数据分析师",
-   "verify_question": "贵公司是否招聘教育行业数据分析师？",
-   "hits": [
-    "（待现场确认：教育行业数据分析师）"
-   ],
-   "misses": [
-    "学习顾问",
-    "主讲老师",
-    "算法工程师",
-    "后端开发",
-    "内容运营",
-    "产品经理"
-   ],
-   "job_count": 6,
-   "job_titles": [
-    "学习顾问",
-    "主讲老师",
-    "算法工程师",
-    "后端开发",
-    "内容运营",
-    "产品经理"
-   ],
-   "gaps": [
-    {
-     "kind": "薪资",
-     "why": "岗位记录里薪资全为未知",
-     "confidence": 0.2,
-     "question": "请问 高途教育科技集团有限公司 这个岗位的薪资范围大概是多少？"
-    },
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 高途教育科技集团有限公司 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 高途教育科技集团有限公司 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：贵公司是否招聘教育行业数据分析师？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 高途教育科技集团有限公司 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    }
-   ],
-   "score": 100.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 1.0,
-     "weight": 100.0,
-     "contribution": 100.0,
-     "basis": "城市 北京 命中「一线」(你的第1优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 北京 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.85,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 大型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://about.gaotu.cn/",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "榜单在列",
-    "rank_dim": "industry",
-    "rank_tier": "niche",
-    "rank_hits": [
-     {
-      "list": "六大数字教育上市公司营收榜",
-      "year": 2025,
-      "rank": 1,
-      "source_url": "https://www.163.com/dy/article/KRKBSH7A05524XBF.html",
-      "confidence": "medium",
-      "rank_tier": "niche",
-      "rank_dim": "industry"
-     },
-     {
-      "list": "六大数字教育上市公司营收榜",
-      "year": "",
-      "rank": "1",
-      "rank_dim": "industry",
-      "rank_tier": "niche",
-      "source_url": "",
-      "confidence": "medium",
-      "group_scope": "self"
-     }
-    ],
-    "industry_rank": {
-     "list": "六大数字教育上市公司营收榜",
-     "year": 2025,
-     "rank": 1,
-     "source_url": "https://www.163.com/dy/article/KRKBSH7A05524XBF.html",
-     "confidence": "medium",
-     "rank_tier": "niche",
-     "rank_dim": "industry"
-    },
-    "growth_tier": "rising_star",
-    "growth_hits": [
-     {
-      "report": "高途集团（NYSE:GOTU）2025财年年度报告",
-      "year": "2025",
-      "metric": "同比增速",
-      "value": "营业收入61.5亿元，同比+35.0%；现金收入69.0亿元，同比+23.0%",
-      "rank": "",
-      "cls": "A",
-      "source_url": "https://qiye.chinadaily.com.cn/a/202603/09/WS69ae5bc6a310942cc49a2207.html",
-      "confidence": "high"
-     }
-    ],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "科技教育公司，业务涵盖面向中小学生、大学生与成人的在线直播大班课与线下辅导，以及出国留学咨询、直播电商（高途佳品）",
-    "segment_source_url": "https://job.gaotu.cn",
-    "segment_leader": "none",
-    "segment_leader_source_url": "",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "北京",
-     "郑州",
-     "武汉",
-     "成都",
-     "西安",
-     "太原",
-     "上海",
-     "深圳",
-     "广州",
-     "苏州",
-     "杭州",
-     "重庆",
-     "南京",
-     "天津",
-     "石家庄",
-     "东莞",
-     "佛山",
-     "长沙",
-     "合肥",
-     "济南",
-     "温州",
-     "沈阳",
-     "徐州",
-     "南昌"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 0,
-    "job_sources": {
-     "official": [
-      "学习顾问",
-      "主讲老师",
-      "算法工程师",
-      "后端开发",
-      "内容运营",
-      "产品经理"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "学习顾问",
-      "主讲老师",
-      "算法工程师",
-      "后端开发",
-      "内容运营",
-      "产品经理"
-     ]
-    },
-    "raw": {}
-   },
-   "next": "苏州萘思尔科技有限公司",
-   "rank": 92,
-   "rank_reason": "队列第 92 位：按行业推断待核实 / 优先级 2；排序分 100.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "镇江市新东方教育培训有限公司",
-    "海亮教育科技服务集团有限公司"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "新一线",
-     "value": 0.8,
-     "basis": "苏州 · 新一线",
-     "traits": [
-      "交通枢纽",
-      "生态宜居"
-     ],
-     "city": "苏州"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 苏州 · 江苏省",
-     "city": "苏州",
-     "province": "江苏"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.1,
-     "tier_key": "弱信号",
-     "basis": "展位招聘人数 10 人，无其他可核实信号",
-     "confidence": 0.4
-    }
-   },
-   "trust": "low",
-   "check_notes": [
-    "模型给出的岗位均不在该企业 4 条真实 JD 中（疑似串批次）",
-    "推断岗位与 教育 行业常见岗位不太吻合，请优先现场确认"
-   ],
-   "guard": {
-    "action": "masked",
-    "bad_jobs": [
-     "建筑行业相关岗位"
-    ],
-    "display_jobs": [
-     "（待现场确认：建筑行业相关岗位）"
-    ],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "已拦截 1 个硬事实错误岗位名（建筑行业相关岗位）：有 JD 却给了不在本家 4 条岗位记录里的岗位名；本企业仍照常参与排序，现场问一句即可确认；没有就顺延",
-    "state_fix": false,
-    "original_state": "inferred"
-   },
-   "feedback": null,
-   "name": "苏州萘思尔科技有限公司",
-   "booth": "119",
-   "headcount": 10,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "苏州",
-   "province": "江苏",
-   "scale_tier": "中小型",
-   "state": "inferred",
-   "priority": 1,
-   "original_state": "inferred",
-   "matched_jobs": [
-    "（待现场确认：建筑行业相关岗位）"
-   ],
-   "original_matched_jobs": [
-    "建筑行业相关岗位"
-   ],
-   "reason": "无岗位记录，按行业推断可能有对口岗位",
-   "verify_question": "贵公司是否招聘供应链计划、数据分析师、商业分析等相关岗位？",
-   "hits": [
-    "（待现场确认：建筑行业相关岗位）"
-   ],
-   "misses": [
-    "数学学科教师（万人名师计划）",
-    "物理学科教师（万人名师计划）",
-    "化学学科教师（万人名师计划）",
-    "英语学科教师（万人名师计划）"
-   ],
-   "job_count": 4,
-   "job_titles": [
-    "数学学科教师（万人名师计划）",
-    "物理学科教师（万人名师计划）",
-    "化学学科教师（万人名师计划）",
-    "英语学科教师（万人名师计划）"
-   ],
-   "gaps": [
-    {
-     "kind": "薪资",
-     "why": "岗位记录里薪资全为未知",
-     "confidence": 0.2,
-     "question": "请问 苏州萘思尔科技有限公司 这个岗位的薪资范围大概是多少？"
-    },
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 苏州萘思尔科技有限公司 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 苏州萘思尔科技有限公司 这边是双休吗？加班多不多？"
-    },
-    {
-     "kind": "岗位",
-     "why": "岗位为模型推断，需现场确认",
-     "confidence": 0.3,
-     "question": "请问贵司今年是不是招 对口岗位 岗位？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "【显著提示】网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句：贵公司是否招聘供应链计划、数据分析师、商业分析等相关岗位？",
-     "priority": 999,
-     "infer": true
-    },
-    {
-     "q": "请问 苏州萘思尔科技有限公司 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    }
-   ],
-   "score": 90.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 0.9,
-     "weight": 100.0,
-     "contribution": 90.0,
-     "basis": "城市 苏州 命中「新一线」(你的第2优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 苏州 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.45,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 中小型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://www.thepaper.cn/newsDetail_forward_27466441",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "网上没有岗位信息，根据「教育」行业我们推断他们可能有 对口岗位 类岗位，您可以去现场问一句是不是招这个岗位",
-   "v42": {
-    "industry_rank_label": "普通公司",
-    "rank_dim": "",
-    "rank_tier": "",
-    "rank_hits": [],
-    "industry_rank": null,
-    "growth_tier": "none",
-    "growth_hits": [],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "面向中小学生的校外托管服务，及智能机器人销售与研发、人工智能应用软件开发、教学用模型及教具销售、非学科类培训与教育咨询",
-    "segment_source_url": "https://www.qibook.com/company-wiki-s/suzhounaisierkejiyouxiangongsi-0b3581a3.html?s=t",
-    "segment_leader": "none",
-    "segment_leader_source_url": "",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "苏州"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 0,
-    "job_sources": {
-     "official": [
-      "数学学科教师（万人名师计划）",
-      "物理学科教师（万人名师计划）",
-      "化学学科教师（万人名师计划）",
-      "英语学科教师（万人名师计划）"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "数学学科教师（万人名师计划）",
-      "物理学科教师（万人名师计划）",
-      "化学学科教师（万人名师计划）",
-      "英语学科教师（万人名师计划）"
-     ]
-    },
-    "raw": {}
-   },
-   "next": "中国铝业郑州有色金属研究院有限公司",
-   "rank": 93,
-   "rank_reason": "队列第 93 位：按行业推断待核实 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "江苏共创人造草坪股份有限公司"
    ]
   },
   {
@@ -27344,8 +24913,8 @@ const D = {
     "raw": {}
    },
    "next": "北京思跃教育科技集团有限公司",
-   "rank": 94,
-   "rank_reason": "队列第 94 位：无对口岗位 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 84,
+   "rank_reason": "队列第 84 位：无对口岗位 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京当升材料科技股份有限公司",
     "正泰安能数字能源（浙江）股份有限公司"
@@ -27557,11 +25126,11 @@ const D = {
     "raw": {}
    },
    "next": "江苏箸境智能科技有限公司",
-   "rank": 95,
-   "rank_reason": "队列第 95 位：无对口岗位 / 优先级 5；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 85,
+   "rank_reason": "队列第 85 位：无对口岗位 / 优先级 5；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
-    "深圳市蓝天教育培训学校",
-    "上海新舟投资管理有限公司"
+    "新航道（北京）管理咨询有限公司",
+    "杭州未来校教育科技有限公司"
    ]
   },
   {
@@ -27770,8 +25339,8 @@ const D = {
     "raw": {}
    },
    "next": "济南二机床集团有限公司",
-   "rank": 96,
-   "rank_reason": "队列第 96 位：无对口岗位 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 86,
+   "rank_reason": "队列第 86 位：无对口岗位 / 优先级 5；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海镱镭飞秒激光技术有限公司",
     "华为技术有限公司"
@@ -28032,8 +25601,8 @@ const D = {
     "raw": {}
    },
    "next": "国元证券股份有限公司",
-   "rank": 97,
-   "rank_reason": "队列第 97 位：无对口岗位 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 87,
+   "rank_reason": "队列第 87 位：无对口岗位 / 优先级 3；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "东方电气集团东方电机有限公司",
     "无锡奥特维科技股份有限公司"
@@ -28295,8 +25864,8 @@ const D = {
     "raw": {}
    },
    "next": "杭州兆华电子股份有限公司",
-   "rank": 98,
-   "rank_reason": "队列第 98 位：无对口岗位 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 88,
+   "rank_reason": "队列第 88 位：无对口岗位 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "浙商证券股份有限公司",
     "珠海金山办公软件有限公司"
@@ -28564,8 +26133,8 @@ const D = {
     "raw": {}
    },
    "next": "杭州老板电器股份有限公司",
-   "rank": 99,
-   "rank_reason": "队列第 99 位：无对口岗位 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 89,
+   "rank_reason": "队列第 89 位：无对口岗位 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "杭州德创电子股份有限公司",
     "北京中科腾越科技发展有限公司"
@@ -28823,8 +26392,8 @@ const D = {
     "raw": {}
    },
    "next": "上海千象资产管理有限公司",
-   "rank": 100,
-   "rank_reason": "队列第 100 位：无对口岗位 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 90,
+   "rank_reason": "队列第 90 位：无对口岗位 / 优先级 2；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京汽车国际发展有限公司",
     "东方电气集团东方电机有限公司"
@@ -29050,8 +26619,8 @@ const D = {
     "raw": {}
    },
    "next": "世坤咨询（北京）有限公司",
-   "rank": 101,
-   "rank_reason": "队列第 101 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 91,
+   "rank_reason": "队列第 91 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "联检（江苏）科技股份有限公司",
     "杭州龙旗科技有限公司"
@@ -29266,8 +26835,8 @@ const D = {
     "raw": {}
    },
    "next": "中国科学技术大学附属第一医院 （安徽省立医院）",
-   "rank": 102,
-   "rank_reason": "队列第 102 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 92,
+   "rank_reason": "队列第 92 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "杭州联合农村商业银行股份有限公司",
     "北京跃瀚科技有限责任公司"
@@ -29509,8 +27078,8 @@ const D = {
     "raw": {}
    },
    "next": "中汽研汽车试验场股份有限公司",
-   "rank": 103,
-   "rank_reason": "队列第 103 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 93,
+   "rank_reason": "队列第 93 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "大参林医药集团股份有限公司",
     "天津中医药大学第一附属医院"
@@ -29762,8 +27331,8 @@ const D = {
     "raw": {}
    },
    "next": "京东方科技集团股份有限公司",
-   "rank": 104,
-   "rank_reason": "队列第 104 位：无对口岗位 / 优先级 1；排序分 70.0（仅 100.0% 权重生效）",
+   "rank": 94,
+   "rank_reason": "队列第 94 位：无对口岗位 / 优先级 1；排序分 70.0（仅 100.0% 权重生效）",
    "nearby": [
     "新城控股集团股份有限公司上海分公司",
     "联检（江苏）科技股份有限公司"
@@ -30016,278 +27585,12 @@ const D = {
     },
     "raw": {}
    },
-   "next": "北京学而思教育科技有限公司",
-   "rank": 105,
-   "rank_reason": "队列第 105 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "next": "北京海量数据技术股份有限公司",
+   "rank": 95,
+   "rank_reason": "队列第 95 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "华为技术有限公司",
     "北京北方华创微电子装备有限公司"
-   ]
-  },
-  {
-   "dims": {
-    "city": {
-     "status": "hit",
-     "tier_key": "一线",
-     "value": 1.0,
-     "basis": "北京 · 一线",
-     "traits": [],
-     "city": "北京"
-    },
-    "home": {
-     "status": "hit",
-     "tier_key": "待按家乡计算",
-     "value": null,
-     "basis": "工作城市 北京 · 北京省",
-     "city": "北京",
-     "province": "北京"
-    },
-    "company_type": {
-     "status": "hit",
-     "tier_key": "民企",
-     "value": 0.4,
-     "basis": "nature = 民企"
-    },
-    "industry": {
-     "status": "hit",
-     "category": "教育",
-     "value": null,
-     "basis": "industry = 教育"
-    },
-    "scale": {
-     "status": "hit",
-     "value": 0.4,
-     "tier_key": "仅规模信号",
-     "basis": "展位招聘人数 170 人",
-     "confidence": 0.5
-    }
-   },
-   "trust": "high",
-   "check_notes": [
-    "与企业端记录一致"
-   ],
-   "guard": {
-    "action": "none",
-    "bad_jobs": [],
-    "display_jobs": [],
-    "ask_jobs": [
-     "对口岗位"
-    ],
-    "note": "",
-    "state_fix": false,
-    "original_state": "miss"
-   },
-   "feedback": null,
-   "name": "北京学而思教育科技有限公司",
-   "booth": "096",
-   "headcount": 170,
-   "industry": "教育",
-   "nature": "民企",
-   "city": "北京",
-   "province": "北京",
-   "scale_tier": "大型",
-   "state": "miss",
-   "priority": 1,
-   "original_state": "miss",
-   "matched_jobs": [],
-   "original_matched_jobs": [],
-   "reason": "企业类型未知，无法确定岗位对口情况",
-   "verify_question": "",
-   "hits": [],
-   "misses": [
-    "素养教师(科学思维方向)",
-    "高中主讲教师(物理)",
-    "国际语言教师(英语方向)",
-    "启明星计划竞赛教练(C++)"
-   ],
-   "job_count": 4,
-   "job_titles": [
-    "素养教师(科学思维方向)",
-    "高中主讲教师(物理)",
-    "国际语言教师(英语方向)",
-    "启明星计划竞赛教练(C++)"
-   ],
-   "gaps": [
-    {
-     "kind": "薪资",
-     "why": "岗位记录里薪资全为未知",
-     "confidence": 0.2,
-     "question": "请问 北京学而思教育科技有限公司 这个岗位的薪资范围大概是多少？"
-    },
-    {
-     "kind": "人数",
-     "why": "岗位记录里招聘人数全为未知",
-     "confidence": 0.3,
-     "question": "请问 北京学而思教育科技有限公司 这个岗位今年计划招几个人？"
-    },
-    {
-     "kind": "作息",
-     "why": "公开 JD 中「双休」出现 0/277",
-     "confidence": 0.2,
-     "question": "请问 北京学而思教育科技有限公司 这边是双休吗？加班多不多？"
-    }
-   ],
-   "questions": [
-    {
-     "q": "请问 北京学而思教育科技有限公司 这边是双休吗？加班多不多？",
-     "priority": 80.0,
-     "infer": false,
-     "why": "公开 JD 中「双休」出现 0/277"
-    },
-    {
-     "q": "请问 北京学而思教育科技有限公司 这个岗位的薪资范围大概是多少？",
-     "priority": 0.0,
-     "infer": false,
-     "why": "岗位记录里薪资全为未知"
-    }
-   ],
-   "score": 100.0,
-   "effective_weight": 100.0,
-   "parts": [
-    {
-     "id": "city",
-     "name": "城市条件",
-     "value": 1.0,
-     "weight": 100.0,
-     "contribution": 100.0,
-     "basis": "城市 北京 命中「一线」(你的第1优先)"
-    },
-    {
-     "id": "home",
-     "name": "离家近",
-     "value": 0.3,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "工作城市 北京 / 家乡 山东枣庄"
-    },
-    {
-     "id": "company_type",
-     "name": "企业类型",
-     "value": 0.7,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "性质 民企 → 民企(你的第2优先)"
-    },
-    {
-     "id": "industry",
-     "name": "行业对口",
-     "value": 0.55,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "行业 教育(你的第7优先)"
-    },
-    {
-     "id": "scale",
-     "name": "企业规模档",
-     "value": 0.85,
-     "weight": 0.0,
-     "contribution": 0.0,
-     "basis": "规模档 大型（体制/上市/集团客观判定）"
-    }
-   ],
-   "evidence": {
-    "source": "https://www.qcc.com/firm/5811f34841b5bb289d19dba5d4df9f3c.html",
-    "date": "2026-10-29",
-    "jobSource": "未知",
-    "jobEvidence": "未知"
-   },
-   "infer_notice": "",
-   "v42": {
-    "industry_rank_label": "榜单在列",
-    "rank_dim": "industry",
-    "rank_tier": "niche",
-    "rank_hits": [
-     {
-      "list": "2022中国民营企业500强",
-      "year": 2022,
-      "rank": 414,
-      "source_url": "https://mp.weixin.qq.com/s/zUJjQHBqdyQbhEOFMUuUTQ",
-      "confidence": "high",
-      "rank_tier": "china500",
-      "rank_dim": "scale",
-      "group_scope": "self"
-     },
-     {
-      "list": "2026年第三季度中国学习平板市场品牌销量份额（洛图科技）",
-      "year": "2026",
-      "rank": "第3（16.4%）",
-      "rank_dim": "industry",
-      "rank_tier": "niche",
-      "source_url": "https://digi.hsw.cn/system/2026/1026/178371.shtml",
-      "confidence": "medium",
-      "group_scope": "self"
-     }
-    ],
-    "industry_rank": {
-     "list": "2026年第三季度中国学习平板市场品牌销量份额（洛图科技）",
-     "year": "2026",
-     "rank": "第3（16.4%）",
-     "rank_dim": "industry",
-     "rank_tier": "niche",
-     "source_url": "https://digi.hsw.cn/system/2026/1026/178371.shtml",
-     "confidence": "medium",
-     "group_scope": "self"
-    },
-    "growth_tier": "note_only",
-    "growth_hits": [
-     {
-      "report": "好未来（学而思）2026财年业绩·媒体转述",
-      "year": "2026",
-      "metric": "同比增速",
-      "value": "33.7%",
-      "rank": "",
-      "cls": "C",
-      "source_url": "https://www.163.com/dy/article/L1SFL4OJ05390CEQ.html",
-      "confidence": "medium"
-     }
-    ],
-    "growth_evidence_url": "",
-    "growth_note": "",
-    "segment": "综合性教育品牌，覆盖素养教育（科学思维、人文创作、编程与机器人）、高中教育、国际教育、大学生服务与托管，并自研智能学习硬件（学而思学习机、智能图书）",
-    "segment_source_url": "https://www.xueersi.com/",
-    "segment_leader": "self_claim",
-    "segment_leader_source_url": "http://xpad.xueersi.com/",
-    "segment_leader_confidence": "",
-    "work_cities": [
-     "北京",
-     "上海",
-     "广州",
-     "深圳",
-     "成都",
-     "西安",
-     "重庆",
-     "武汉",
-     "沈阳",
-     "郑州",
-     "天津"
-    ],
-    "job_coverage": null,
-    "has_job_info": 1,
-    "non_enterprise": 0,
-    "job_sources": {
-     "official": [
-      "素养教师(科学思维方向)",
-      "高中主讲教师(物理)",
-      "国际语言教师(英语方向)",
-      "启明星计划竞赛教练(C++)"
-     ],
-     "platform": [],
-     "websearch": [],
-     "total": [
-      "素养教师(科学思维方向)",
-      "高中主讲教师(物理)",
-      "国际语言教师(英语方向)",
-      "启明星计划竞赛教练(C++)"
-     ]
-    },
-    "raw": {}
-   },
-   "next": "北京海量数据技术股份有限公司",
-   "rank": 106,
-   "rank_reason": "队列第 106 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
-   "nearby": [
-    "上海市滴水湖学校",
-    "北京育达东方软件科技有限公司"
    ]
   },
   {
@@ -30508,8 +27811,8 @@ const D = {
     "raw": {}
    },
    "next": "北京贝瑞和康生物技术有限公司",
-   "rank": 107,
-   "rank_reason": "队列第 107 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 96,
+   "rank_reason": "队列第 96 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "贝斯（无锡）信息系统有限公司",
     "天津南大通用数据技术股份有限公司"
@@ -30760,8 +28063,8 @@ const D = {
     "raw": {}
    },
    "next": "厦门国际信托有限公司",
-   "rank": 108,
-   "rank_reason": "队列第 108 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 97,
+   "rank_reason": "队列第 97 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "南华大学附属第一医院",
     "南京艾尔普再生医学科技股份有限公司"
@@ -31023,8 +28326,8 @@ const D = {
     "raw": {}
    },
    "next": "国电投广西核电有限公司",
-   "rank": 109,
-   "rank_reason": "队列第 109 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 98,
+   "rank_reason": "队列第 98 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "安徽国元信托有限责任公司",
     "杭州联合农村商业银行股份有限公司"
@@ -31265,8 +28568,8 @@ const D = {
     "raw": {}
    },
    "next": "天津泰达建设集团有限公司",
-   "rank": 110,
-   "rank_reason": "队列第 110 位：无对口岗位 / 优先级 1；排序分 40.0（仅 100.0% 权重生效）",
+   "rank": 99,
+   "rank_reason": "队列第 99 位：无对口岗位 / 优先级 1；排序分 40.0（仅 100.0% 权重生效）",
    "nearby": [
     "南京诺尔曼生物技术股份有限公司",
     "中建八局第一建设有限公司"
@@ -31533,8 +28836,8 @@ const D = {
     "raw": {}
    },
    "next": "小米科技有限责任公司",
-   "rank": 111,
-   "rank_reason": "队列第 111 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 100,
+   "rank_reason": "队列第 100 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "北方爆破科技有限公司",
     "中共黔西南州委组织部"
@@ -31712,8 +29015,8 @@ const D = {
    "infer_notice": "",
    "v42": {},
    "next": "山西省人民医院",
-   "rank": 112,
-   "rank_reason": "队列第 112 位：无对口岗位 / 优先级 1；排序分 0.0（仅 1.0% 权重生效）",
+   "rank": 101,
+   "rank_reason": "队列第 101 位：无对口岗位 / 优先级 1；排序分 0.0（仅 1.0% 权重生效）",
    "nearby": []
   },
   {
@@ -31924,8 +29227,8 @@ const D = {
     "raw": {}
    },
    "next": "巨人移动科技有限公司",
-   "rank": 113,
-   "rank_reason": "队列第 113 位：无对口岗位 / 优先级 1；排序分 80.0（仅 100.0% 权重生效）",
+   "rank": 102,
+   "rank_reason": "队列第 102 位：无对口岗位 / 优先级 1；排序分 80.0（仅 100.0% 权重生效）",
    "nearby": [
     "石河子大学第一附属医院",
     "南华大学附属第一医院"
@@ -32144,8 +29447,8 @@ const D = {
     "raw": {}
    },
    "next": "摩尔线程智能科技（北京）股份有限公司",
-   "rank": 114,
-   "rank_reason": "队列第 114 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 103,
+   "rank_reason": "队列第 103 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "知有无界（深圳）智能科技有限公司",
     "上海芒啾网络科技有限公司"
@@ -32417,8 +29720,8 @@ const D = {
     "raw": {}
    },
    "next": "新城控股集团股份有限公司上海分公司",
-   "rank": 115,
-   "rank_reason": "队列第 115 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 104,
+   "rank_reason": "队列第 104 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京北方华创微电子装备有限公司",
     "上海精测半导体技术有限公司"
@@ -32652,8 +29955,8 @@ const D = {
     "raw": {}
    },
    "next": "杭州龙旗科技有限公司",
-   "rank": 116,
-   "rank_reason": "队列第 116 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 105,
+   "rank_reason": "队列第 105 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": [
     "北京跃瀚科技有限责任公司",
     "中汽研汽车试验场股份有限公司"
@@ -32905,8 +30208,8 @@ const D = {
     "raw": {}
    },
    "next": "比亚迪股份有限公司",
-   "rank": 117,
-   "rank_reason": "队列第 117 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 106,
+   "rank_reason": "队列第 106 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "上海千象资产管理有限公司",
     "图灵私募基金管理（海南）有限公司"
@@ -33070,8 +30373,8 @@ const D = {
    "infer_notice": "",
    "v42": {},
    "next": "浙商证券股份有限公司",
-   "rank": 118,
-   "rank_reason": "队列第 118 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 107,
+   "rank_reason": "队列第 107 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": []
   },
   {
@@ -33324,8 +30627,8 @@ const D = {
     "raw": {}
    },
    "next": "腾讯科技（深圳）有限公司",
-   "rank": 119,
-   "rank_reason": "队列第 119 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
+   "rank": 108,
+   "rank_reason": "队列第 108 位：无对口岗位 / 优先级 1；排序分 90.0（仅 100.0% 权重生效）",
    "nearby": [
     "东方财富信息股份有限公司",
     "国元证券股份有限公司"
@@ -33497,8 +30800,8 @@ const D = {
    "infer_notice": "",
    "v42": {},
    "next": "贵州师范大学",
-   "rank": 120,
-   "rank_reason": "队列第 120 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 109,
+   "rank_reason": "队列第 109 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": []
   },
   {
@@ -33697,8 +31000,8 @@ const D = {
     "raw": {}
    },
    "next": "阿里巴巴（中国）有限公司",
-   "rank": 121,
-   "rank_reason": "队列第 121 位：无对口岗位 / 优先级 1；排序分 80.0（仅 100.0% 权重生效）",
+   "rank": 110,
+   "rank_reason": "队列第 110 位：无对口岗位 / 优先级 1；排序分 80.0（仅 100.0% 权重生效）",
    "nearby": [
     "南京中医药大学",
     "清华大学附属中学"
@@ -33880,14 +31183,14 @@ const D = {
    "infer_notice": "",
    "v42": {},
    "next": "",
-   "rank": 122,
-   "rank_reason": "队列第 122 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
+   "rank": 111,
+   "rank_reason": "队列第 111 位：无对口岗位 / 优先级 1；排序分 100.0（仅 100.0% 权重生效）",
    "nearby": []
   }
  ]
 };
 let BASE = D.rows, W0 = D.weights, PM = D.province_map || {};
-const ORDER = {hit:0, inferred:1, miss:2};
+// ORDER 已停用：名次只按排序分，岗位状态不再参与比较（见 recompute）
 const WMAP = {岗位:'industry', 行业:'industry', 职责:'scale', 阶段:'scale',
               薪资:'scale', 人数:'scale', 城市:'city', 性质:'company_type',
               作息:'city', 证据:'scale'};
@@ -33900,7 +31203,7 @@ const DIM_LABEL={city:'城市条件',home:'离家近',company_type:'企业类型
                  industry:'行业对口',scale:'企业规模档',
                  industry_status:'行业地位',growth:'成长性'};
 
-const RULES = {"city_cats": ["一线", "新一线", "其他省会", "经济发达", "交通发达", "生态友好", "其他"], "city_first": ["北京", "上海", "广州", "深圳"], "city_new1": ["成都", "杭州", "重庆", "西安", "苏州", "武汉", "南京", "天津", "郑州", "长沙", "东莞", "佛山", "宁波", "青岛", "沈阳", "合肥", "福州", "厦门", "济南", "大连"], "city_cap": ["石家庄", "太原", "呼和浩特", "长春", "哈尔滨", "南昌", "昆明", "贵阳", "兰州", "西宁", "银川", "乌鲁木齐", "南宁", "海口", "拉萨"], "city_econ": ["上海", "北京", "深圳", "广州", "重庆", "苏州", "成都", "杭州", "武汉", "南京", "天津", "宁波", "青岛", "无锡", "长沙", "郑州", "佛山", "福州", "济南", "合肥", "西安", "泉州", "南通", "东莞", "常州", "烟台", "唐山", "徐州", "大连", "温州", "沈阳", "厦门", "昆明", "绍兴", "潍坊", "石家庄", "扬州", "南昌", "盐城", "泰州", "台州", "临沂", "金华", "襄阳", "漳州", "洛阳", "南宁", "贵阳", "太原", "哈尔滨", "镇江", "济宁", "嘉兴", "珠海", "惠州", "中山", "威海", "湖州", "湛江", "遵义", "江门", "岳阳", "衡阳", "包头", "鄂尔多斯", "廊坊", "邯郸", "连云港", "淮安", "芜湖", "赣州", "沧州", "桂林", "三亚", "北海", "柳州", "汕头", "揭阳", "银川", "西宁", "乌鲁木齐", "兰州", "呼和浩特"], "city_transit": ["北京", "上海", "广州", "深圳", "成都", "重庆", "武汉", "西安", "杭州", "南京", "天津", "苏州", "郑州", "长沙", "青岛", "宁波", "无锡", "佛山", "福州", "济南", "合肥", "沈阳", "大连", "厦门", "南昌", "昆明", "贵阳", "石家庄", "太原", "哈尔滨", "长春", "南宁", "海口", "兰州", "西宁", "银川", "乌鲁木齐", "呼和浩特", "拉萨", "徐州", "洛阳", "桂林", "三亚", "烟台", "泉州", "温州", "珠海", "湛江", "北海", "丽江", "喀什", "鄂尔多斯", "潍坊", "南通", "扬州", "绍兴", "嘉兴", "金华", "台州", "惠州", "中山", "威海", "黄山", "张家界", "大理", "柳州", "汕头", "揭阳", "绵阳", "宜昌", "襄阳", "衡阳", "遵义", "芜湖", "赣州", "连云港", "盐城", "淮安", "临沂", "唐山", "秦皇岛", "张家口", "包头", "榆林", "延安", "汉中", "天水", "库尔勒", "大理"], "city_eco": ["杭州", "厦门", "昆明", "成都", "苏州", "无锡", "青岛", "威海", "珠海", "桂林", "三亚", "海口", "南宁", "贵阳", "黄山", "丽江", "湖州", "嘉兴", "绍兴", "金华", "台州", "福州", "泉州", "漳州", "深圳", "广州", "大连", "秦皇岛", "烟台", "日照", "南通", "扬州", "镇江", "盐城", "泰州", "徐州", "潍坊", "惠州", "中山", "攀枝花", "张家界", "大理", "北海", "柳州", "宜春", "景德镇", "马鞍山", "芜湖", "池州", "宣城", "衢州", "丽水", "赣州", "武夷山", "井冈山", "延安", "鄂尔多斯", "克拉玛依", "拉萨"], "PM": {"北京": "北京", "上海": "上海", "天津": "天津", "重庆": "重庆", "杭州": "浙江", "宁波": "浙江", "湖州": "浙江", "无锡": "江苏", "南京": "江苏", "苏州": "江苏", "合肥": "安徽", "济南": "山东", "青岛": "山东", "郑州": "河南", "平顶山": "河南", "武汉": "湖北", "长沙": "湖南", "西安": "陕西", "成都": "四川", "昆明": "云南", "贵阳": "贵州", "广州": "广东", "深圳": "广东", "东莞": "广东", "佛山": "广东", "珠海": "广东", "湛江": "广东", "福州": "福建", "厦门": "福建", "沈阳": "辽宁", "大连": "辽宁", "长春": "吉林", "哈尔滨": "黑龙江", "石家庄": "河北", "太原": "山西", "南昌": "江西", "南宁": "广西", "海口": "海南", "兰州": "甘肃", "西宁": "青海", "银川": "宁夏", "乌鲁木齐": "新疆", "呼和浩特": "内蒙古", "遵义": "贵州", "兴义": "贵州", "防城港": "广西", "黄山": "安徽", "花溪": "贵州", "洛隆": "西藏", "衡阳": "湖南", "盐城": "江苏", "淮安": "江苏", "诸暨": "浙江", "绍兴": "浙江", "石河子": "新疆", "镇江": "江苏", "烟台": "山东", "泉州": "福建", "温州": "浙江", "唐山": "河北", "徐州": "江苏", "嘉兴": "浙江", "台州": "浙江", "金华": "浙江", "洛阳": "河南", "襄阳": "湖北", "漳州": "福建", "南通": "江苏", "潍坊": "山东", "泰州": "江苏", "惠州": "广东", "中山": "广东", "威海": "山东", "汕头": "广东", "揭阳": "广东", "柳州": "广西", "北海": "广西", "桂林": "广西", "三亚": "海南", "丽江": "云南", "大理": "云南", "张家口": "河北", "秦皇岛": "河北", "包头": "内蒙古", "鄂尔多斯": "内蒙古", "廊坊": "河北", "邯郸": "河北", "连云港": "江苏", "芜湖": "安徽", "赣州": "江西", "沧州": "河北", "临沂": "山东", "济宁": "山东", "岳阳": "湖南", "江门": "广东", "榆林": "陕西", "延安": "陕西", "汉中": "陕西", "天水": "甘肃", "喀什": "新疆", "库尔勒": "新疆", "克拉玛依": "新疆", "绵阳": "四川", "宜昌": "湖北", "常德": "湖南", "张家界": "湖南", "马鞍山": "安徽", "宣城": "安徽", "池州": "安徽", "衢州": "浙江", "丽水": "浙江", "景德镇": "江西", "宜春": "江西", "攀枝花": "四川", "日照": "山东", "宜宾": "四川"}, "adj": {"北京": ["河北", "天津"], "天津": ["河北", "北京"], "上海": ["江苏", "浙江"], "重庆": ["四川", "湖北", "湖南", "贵州", "陕西"], "河北": ["北京", "天津", "山东", "河南", "山西", "内蒙古", "辽宁"], "山西": ["河北", "陕西", "河南", "内蒙古"], "辽宁": ["河北", "内蒙古", "吉林"], "吉林": ["辽宁", "黑龙江", "内蒙古"], "黑龙江": ["吉林", "内蒙古"], "江苏": ["山东", "安徽", "浙江", "上海"], "浙江": ["上海", "江苏", "安徽", "江西", "福建"], "安徽": ["江苏", "浙江", "江西", "湖北", "河南", "山东"], "福建": ["浙江", "江西", "广东"], "江西": ["安徽", "湖北", "湖南", "广东", "福建", "浙江"], "山东": ["河北", "河南", "安徽", "江苏"], "河南": ["河北", "山西", "陕西", "湖北", "安徽", "山东"], "湖北": ["河南", "安徽", "江西", "湖南", "陕西", "重庆"], "湖南": ["湖北", "江西", "广东", "广西", "重庆", "贵州"], "广东": ["福建", "江西", "湖南", "广西", "海南"], "广西": ["湖南", "广东", "云南", "贵州"], "海南": ["广东"], "四川": ["重庆", "贵州", "云南", "西藏", "青海", "甘肃", "陕西"], "贵州": ["四川", "重庆", "湖南", "广西", "云南"], "云南": ["四川", "贵州", "广西", "西藏"], "陕西": ["山西", "河南", "湖北", "四川", "甘肃", "宁夏", "内蒙古", "重庆"], "甘肃": ["陕西", "宁夏", "青海", "四川", "内蒙古", "新疆"], "青海": ["甘肃", "四川", "西藏", "新疆"], "宁夏": ["陕西", "甘肃", "内蒙古"], "内蒙古": ["辽宁", "吉林", "黑龙江", "河北", "山西", "陕西", "甘肃", "宁夏"], "新疆": ["甘肃", "青海", "西藏"], "西藏": ["新疆", "青海", "四川", "云南"]}, "ct_buckets": {"国央企": ["央企", "国企", "事业单位", "混合所有制"], "民企": ["民企"], "外企": ["外企"]}, "scale_tiers": {"龙头特大": 1.0, "大型": 0.85, "中型": 0.65, "中小型": 0.45, "微型": 0.3}, "industry_status_tiers": {"world500": 1.0, "china500": 0.95, "province100": 0.9, "national_leader": 0.85, "niche": 0.7}, "industry_status_floor": 0.6, "growth_tiers": {"rising_star": 1.0, "note_only": 0.7}, "growth_floor": 0.55, "city_rank_def": {"一线": 1, "新一线": 2, "其他省会": 3, "经济发达": 4, "交通发达": 5, "生态友好": 6, "其他": 7}, "ct_rank_def": {"国央企": 1, "民企": 2, "外企": 3}, "ind_rank_def": {"IT": 1, "金融": 2, "制造": 3, "建筑": 4, "医药": 5, "能源": 6, "教育": 7, "消费": 8, "未知": 9}};
+const RULES = {"city_cats": ["一线", "新一线", "其他省会", "经济发达", "交通发达", "生态友好", "其他"], "city_first": ["北京", "上海", "广州", "深圳"], "city_new1": ["成都", "杭州", "重庆", "西安", "苏州", "武汉", "南京", "天津", "郑州", "长沙", "东莞", "佛山", "宁波", "青岛", "沈阳", "合肥", "福州", "厦门", "济南", "大连"], "city_cap": ["石家庄", "太原", "呼和浩特", "长春", "哈尔滨", "南昌", "昆明", "贵阳", "兰州", "西宁", "银川", "乌鲁木齐", "南宁", "海口", "拉萨"], "city_econ": ["上海", "北京", "深圳", "广州", "重庆", "苏州", "成都", "杭州", "武汉", "南京", "天津", "宁波", "青岛", "无锡", "长沙", "郑州", "佛山", "福州", "济南", "合肥", "西安", "泉州", "南通", "东莞", "常州", "烟台", "唐山", "徐州", "大连", "温州", "沈阳", "厦门", "昆明", "绍兴", "潍坊", "石家庄", "扬州", "南昌", "盐城", "泰州", "台州", "临沂", "金华", "襄阳", "漳州", "洛阳", "南宁", "贵阳", "太原", "哈尔滨", "镇江", "济宁", "嘉兴", "珠海", "惠州", "中山", "威海", "湖州", "湛江", "遵义", "江门", "岳阳", "衡阳", "包头", "鄂尔多斯", "廊坊", "邯郸", "连云港", "淮安", "芜湖", "赣州", "沧州", "桂林", "三亚", "北海", "柳州", "汕头", "揭阳", "银川", "西宁", "乌鲁木齐", "兰州", "呼和浩特"], "city_transit": ["北京", "上海", "广州", "深圳", "成都", "重庆", "武汉", "西安", "杭州", "南京", "天津", "苏州", "郑州", "长沙", "青岛", "宁波", "无锡", "佛山", "福州", "济南", "合肥", "沈阳", "大连", "厦门", "南昌", "昆明", "贵阳", "石家庄", "太原", "哈尔滨", "长春", "南宁", "海口", "兰州", "西宁", "银川", "乌鲁木齐", "呼和浩特", "拉萨", "徐州", "洛阳", "桂林", "三亚", "烟台", "泉州", "温州", "珠海", "湛江", "北海", "丽江", "喀什", "鄂尔多斯", "潍坊", "南通", "扬州", "绍兴", "嘉兴", "金华", "台州", "惠州", "中山", "威海", "黄山", "张家界", "大理", "柳州", "汕头", "揭阳", "绵阳", "宜昌", "襄阳", "衡阳", "遵义", "芜湖", "赣州", "连云港", "盐城", "淮安", "临沂", "唐山", "秦皇岛", "张家口", "包头", "榆林", "延安", "汉中", "天水", "库尔勒", "大理"], "city_eco": ["杭州", "厦门", "昆明", "成都", "苏州", "无锡", "青岛", "威海", "珠海", "桂林", "三亚", "海口", "南宁", "贵阳", "黄山", "丽江", "湖州", "嘉兴", "绍兴", "金华", "台州", "福州", "泉州", "漳州", "深圳", "广州", "大连", "秦皇岛", "烟台", "日照", "南通", "扬州", "镇江", "盐城", "泰州", "徐州", "潍坊", "惠州", "中山", "攀枝花", "张家界", "大理", "北海", "柳州", "宜春", "景德镇", "马鞍山", "芜湖", "池州", "宣城", "衢州", "丽水", "赣州", "武夷山", "井冈山", "延安", "鄂尔多斯", "克拉玛依", "拉萨"], "PM": {"北京": "北京", "上海": "上海", "天津": "天津", "重庆": "重庆", "杭州": "浙江", "宁波": "浙江", "湖州": "浙江", "无锡": "江苏", "南京": "江苏", "苏州": "江苏", "合肥": "安徽", "济南": "山东", "青岛": "山东", "郑州": "河南", "平顶山": "河南", "武汉": "湖北", "长沙": "湖南", "西安": "陕西", "成都": "四川", "昆明": "云南", "贵阳": "贵州", "广州": "广东", "深圳": "广东", "东莞": "广东", "佛山": "广东", "珠海": "广东", "湛江": "广东", "福州": "福建", "厦门": "福建", "沈阳": "辽宁", "大连": "辽宁", "长春": "吉林", "哈尔滨": "黑龙江", "石家庄": "河北", "太原": "山西", "南昌": "江西", "南宁": "广西", "海口": "海南", "兰州": "甘肃", "西宁": "青海", "银川": "宁夏", "乌鲁木齐": "新疆", "呼和浩特": "内蒙古", "遵义": "贵州", "兴义": "贵州", "防城港": "广西", "黄山": "安徽", "花溪": "贵州", "洛隆": "西藏", "衡阳": "湖南", "盐城": "江苏", "淮安": "江苏", "诸暨": "浙江", "绍兴": "浙江", "石河子": "新疆", "镇江": "江苏", "烟台": "山东", "泉州": "福建", "温州": "浙江", "唐山": "河北", "徐州": "江苏", "嘉兴": "浙江", "台州": "浙江", "金华": "浙江", "洛阳": "河南", "襄阳": "湖北", "漳州": "福建", "南通": "江苏", "潍坊": "山东", "泰州": "江苏", "惠州": "广东", "中山": "广东", "威海": "山东", "汕头": "广东", "揭阳": "广东", "柳州": "广西", "北海": "广西", "桂林": "广西", "三亚": "海南", "丽江": "云南", "大理": "云南", "张家口": "河北", "秦皇岛": "河北", "包头": "内蒙古", "鄂尔多斯": "内蒙古", "廊坊": "河北", "邯郸": "河北", "连云港": "江苏", "芜湖": "安徽", "赣州": "江西", "沧州": "河北", "临沂": "山东", "济宁": "山东", "岳阳": "湖南", "江门": "广东", "榆林": "陕西", "延安": "陕西", "汉中": "陕西", "天水": "甘肃", "喀什": "新疆", "库尔勒": "新疆", "克拉玛依": "新疆", "绵阳": "四川", "宜昌": "湖北", "常德": "湖南", "张家界": "湖南", "马鞍山": "安徽", "宣城": "安徽", "池州": "安徽", "衢州": "浙江", "丽水": "浙江", "景德镇": "江西", "宜春": "江西", "攀枝花": "四川", "日照": "山东", "宜宾": "四川"}, "adj": {"北京": ["河北", "天津"], "天津": ["河北", "北京"], "上海": ["江苏", "浙江"], "重庆": ["四川", "湖北", "湖南", "贵州", "陕西"], "河北": ["北京", "天津", "山东", "河南", "山西", "内蒙古", "辽宁"], "山西": ["河北", "陕西", "河南", "内蒙古"], "辽宁": ["河北", "内蒙古", "吉林"], "吉林": ["辽宁", "黑龙江", "内蒙古"], "黑龙江": ["吉林", "内蒙古"], "江苏": ["山东", "安徽", "浙江", "上海"], "浙江": ["上海", "江苏", "安徽", "江西", "福建"], "安徽": ["江苏", "浙江", "江西", "湖北", "河南", "山东"], "福建": ["浙江", "江西", "广东"], "江西": ["安徽", "湖北", "湖南", "广东", "福建", "浙江"], "山东": ["河北", "河南", "安徽", "江苏"], "河南": ["河北", "山西", "陕西", "湖北", "安徽", "山东"], "湖北": ["河南", "安徽", "江西", "湖南", "陕西", "重庆"], "湖南": ["湖北", "江西", "广东", "广西", "重庆", "贵州"], "广东": ["福建", "江西", "湖南", "广西", "海南"], "广西": ["湖南", "广东", "云南", "贵州"], "海南": ["广东"], "四川": ["重庆", "贵州", "云南", "西藏", "青海", "甘肃", "陕西"], "贵州": ["四川", "重庆", "湖南", "广西", "云南"], "云南": ["四川", "贵州", "广西", "西藏"], "陕西": ["山西", "河南", "湖北", "四川", "甘肃", "宁夏", "内蒙古", "重庆"], "甘肃": ["陕西", "宁夏", "青海", "四川", "内蒙古", "新疆"], "青海": ["甘肃", "四川", "西藏", "新疆"], "宁夏": ["陕西", "甘肃", "内蒙古"], "内蒙古": ["辽宁", "吉林", "黑龙江", "河北", "山西", "陕西", "甘肃", "宁夏"], "新疆": ["甘肃", "青海", "西藏"], "西藏": ["新疆", "青海", "四川", "云南"]}, "ct_buckets": {"国央企": ["央企", "国企", "事业单位", "混合所有制"], "民企": ["民企"], "外企": ["外企"]}, "scale_tiers": {"龙头特大": 1.0, "大型": 0.85, "中型": 0.65, "中小型": 0.45, "微型": 0.3}, "industry_status_tiers": {"world500": 1.0, "global_leader": 0.9, "china500": 0.95, "province100": 0.9, "national_leader": 0.85, "niche": 0.7}, "industry_status_floor": 0.6, "growth_tiers": {"rising_star": 1.0, "note_only": 0.7}, "growth_floor": 0.55, "city_rank_def": {"一线": 1, "新一线": 2, "其他省会": 3, "经济发达": 4, "交通发达": 5, "生态友好": 6, "其他": 7}, "ct_rank_def": {"国央企": 1, "民企": 2, "外企": 3}, "ind_rank_def": {"IT": 1, "金融": 2, "制造": 3, "建筑": 4, "医药": 5, "能源": 6, "教育": 7, "消费": 8, "未知": 9}};
 function rankValue(rank,n){ if(n<=1) return 1.0; return +(1.0-(rank-1)/(n-1)*0.6).toFixed(3); }
 function cityCategories(city){
   if(!city||city==='未知'||city==='') return [];
@@ -34167,28 +31470,33 @@ function recompute(P){
     return x;
   });
   rows.sort(function(a,b){
+    // 名次只由排序分决定（用户 2026-11-13 明确要求）。
+    // 可信度 / 待核实 / 岗位状态只是展示标注，不进名次比较；
+    // 唯一例外是「现场确认不招」——那是事实层面的出局，仍顺延到队尾。
     const an=(feedback[a.name]||{}).result==='no'?1:0;
     const bn=(feedback[b.name]||{}).result==='no'?1:0;
-    return (an-bn) || (ORDER[a.state]-ORDER[b.state]) || (b.priority-a.priority)
-        || (b.score-a.score) || a.name.localeCompare(b.name);
+    return (an-bn) || (b.score-a.score)
+        || (b.priority-a.priority) || a.name.localeCompare(b.name);
   });
   rows.forEach(function(r,i){
     r.rank=i+1;
     r.next=rows[i+1]?rows[i+1].name:'';
-    r.rank_reason='队列第 '+(i+1)+' 位：'
-      +({hit:'有真实 JD 命中',inferred:'按行业推断待核实',miss:'无对口岗位'})[r.state]
-      +' / 优先级 '+r.priority+'；排序分 '+r.score+'（仅 '+r.effective_weight+'% 权重生效）';
+    r.rank_reason='第 '+(i+1)+' 位：排序分 '+r.score
+      +'（仅 '+r.effective_weight+'% 权重生效）'
+      +' / '+({hit:'有真实 JD 命中',inferred:'按行业推断待核实',miss:'无对口岗位'})[r.state];
     const fb=feedback[r.name];
-    if(fb&&fb.result==='yes') r.rank_reason+='；现场已确认招，升级为明确命中';
+    if(fb&&fb.result==='yes') r.rank_reason+='；现场已确认招，推断升级为明确命中';
     if(fb&&fb.result==='no') r.rank_reason+='；现场确认不招，已顺延（保留在队尾供核对）';
   });
   return rows;
 }
 
 /* ---------- 报告内容（复用原 CSS 类） ---------- */
+// 可信度只做「提示」，不参与名次（用户要求：低置信度、要核实都不影响排名）。
 function trustBadge(r){
-  if(r.trust==='low') return '<span style="color:#c0392b;font-weight:650">⚠ 低可信</span>';
-  if(r.trust==='medium') return '<span style="color:#b7791f">◐ 待核实</span>';
+  const n='<span style="font-size:11px;color:#8a94a6">（仅提示，不影响名次）</span>';
+  if(r.trust==='low') return '<span style="color:#c0392b;font-weight:650">⚠ 低可信</span>'+n;
+  if(r.trust==='medium') return '<span style="color:#b7791f">◐ 待核实</span>'+n;
   return '<span style="color:#0f9960">✓ 与企业端一致</span>';
 }
 function fbBadge(r){
@@ -34326,6 +31634,84 @@ function rowBrief(r, idx, P){
    + '</div></div>';
 }
 
+/* ---------- v12 硬约束：条件必须可见 ---------- */
+// 硬约束会直接删企业，删了却不说等于骗人。这里把「因你的条件删掉了哪些」摆出来。
+function hardFilterNote(){
+  var hf=D.hard_filter||{};
+  if(!hf.raw_text && !hf.dropped_count && hf.accept_no_major) return '';
+  var p=hf.parsed||{};
+  var bits=[];
+  if((p.cities||[]).length) bits.push('城市：'+p.cities.join('、'));
+  if((p.industries||[]).length) bits.push('行业：'+p.industries.join('、'));
+  if((p.exclude_natures||[]).length) bits.push('排除性质：'+p.exclude_natures.join('、'));
+  var txt=[];
+  if(hf.raw_text) txt.push('你的要求「'+e(hf.raw_text)+'」'+(bits.length?'（已理解为 '+e(bits.join('；'))+'）':''));
+  if(!hf.accept_no_major) txt.push('未接受教培类企业');
+  if(!txt.length) return '';
+  var names=(hf.dropped||[]).slice(0,6).map(function(d){return e(d.name);}).join('、');
+  var more=(hf.dropped||[]).length>6?' 等':'';
+  return '<div class="note" style="font-size:12px;margin:0 0 10px;padding:8px 10px;'
+    + 'background:#fff8e6;border-left:3px solid #d9a400;border-radius:0 5px 5px 0">'
+    + '<b>已按你的条件筛掉 '+ (hf.dropped_count||0) +' 家企业</b>：'+txt.join('，')
+    + ((hf.dropped||[]).length? '<br><span style="color:#8a94a6">排除名单：'+names+more+'</span>' : '')
+    + '<br><span style="color:#8a94a6">这是硬条件，不是降权——不满足的企业不会出现在任何排名里。</span>'
+    + '</div>';
+}
+
+/* ---------- v12 测试数据库：保存本次填写 + 排序结果 ---------- */
+function testSaveBox(rows){
+  var hf=D.hard_filter||{};
+  var hfLine=hf.raw_text
+    ? '硬约束「'+e(hf.raw_text)+'」已剔除 <b>'+hf.dropped_count+'</b> 家'
+    : '未设硬约束';
+  return '<details style="margin:18px 0 0;border-top:1px dashed #cfd6e4;padding-top:10px">'
+    + '<summary style="cursor:pointer;font-size:12px;color:#41506b">'
+    + '实验记录：把这次的填写与排序结果存入测试数据库</summary>'
+    + '<div class="note" style="font-size:12px;margin:8px 0">'
+    + '当前共 '+rows.length+' 家企业参与排名；'+hfLine
+    + '；教培类：'+(hf.accept_no_major?'已纳入':'已剔除')
+    + '<br>保存后可在库里用 SQL 对比不同条件下列表的差异，不会被后续采集覆盖。'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+    + '<input id="tst-tag" placeholder="标签：会场名 / 组别，如 南大场-A组" '
+    +   'style="flex:1;min-width:180px;padding:6px 8px;border:1px solid #cfd6e4;border-radius:5px;font-size:12px">'
+    + '<input id="tst-sid" placeholder="问卷编号（选填）" '
+    +   'style="width:130px;padding:6px 8px;border:1px solid #cfd6e4;border-radius:5px;font-size:12px">'
+    + '<button type="button" class="btn btn-p" data-test-save>保存到测试库</button>'
+    + '<span id="tst-msg" style="font-size:12px;color:#0f9960"></span>'
+    + '</div></details>';
+}
+function bindTestSave(box){
+  var btn=box.querySelector('[data-test-save]');
+  if(!btn) return;
+  btn.onclick=function(){
+    var tagEl=box.querySelector('#tst-tag'), sidEl=box.querySelector('#tst-sid');
+    var msg=box.querySelector('#tst-msg');
+    var tag=(tagEl&&tagEl.value||'').trim();
+    if(!tag){
+      if(msg){msg.style.color='#c0392b';msg.textContent='先填个标签，否则以后分不清是哪一场';}
+      return;
+    }
+    btn.disabled=true;
+    if(msg){msg.style.color='#8a94a6';msg.textContent='保存中…';}
+    fetch('/api/fair/test-save',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tag:tag,sid:(sidEl&&sidEl.value||'').trim(),top_n:12})
+    }).then(function(r){return r.json();}).then(function(d){
+      if(msg){
+        msg.style.color=d&&d.ok?'#0f9960':'#c0392b';
+        msg.textContent=d&&d.ok
+          ? ('已保存（记录 #'+d.id+'，'+d.n_rows+' 家企业）')
+          : ('保存失败：'+((d&&d.error)||'未知原因'));
+      }
+      btn.disabled=false;
+    }).catch(function(err){
+      if(msg){msg.style.color='#c0392b';msg.textContent='保存失败：连不上服务（离线模式不支持）';}
+      btn.disabled=false;
+    });
+  };
+}
+
 function render(){
   const box=document.getElementById('mres');
   if(!box) return;
@@ -34433,6 +31819,7 @@ function render(){
       + ' · 明确命中 '+D.stats.states.hit+' / 推断 '+D.stats.states.inferred
       + ' / 不对口 '+D.stats.states.miss
       + ' · 意向岗位 '+e((P.intended_jobs||[]).join('、')||'—')+'</div>'
+      + hardFilterNote()
       + '<div class="btns" style="margin:0 0 12px">'
       + '<button type="button" class="btn '+(sortMode==='queue'?'btn-p':'btn-g')
         +'" data-sort="queue">按排名</button>'
@@ -34443,12 +31830,16 @@ function render(){
       + '更多设置 / 完整信息（统计 · 权重微调 · 筛选 · 导出 · 现场进度）</summary>'
       + _infoHtml + '</details>';
   }
+  // v12 测试数据库：把本次填写与排序结果存一条记录，供现场实验分析。
+  // 只在自己跑实验时用，学生正常浏览不会误触（按钮在折叠区里，且要填标签才保存）。
+  html+=testSaveBox(rows);
   let idx=0;
+  // 排名模式不再按「命中/推断/不对口」分组渲染——那会把全局分数顺序打乱，
+  // 出现第 4 名分数低于第 5 名的情况。现在只有一条连续的榜单，名次即分数序；
+  // 岗位状态仍逐条显示在卡片上（展示，不影响名次）。
   const groups = sortMode==='booth'
     ? [['t1','按会场序列号（展位号）顺序 · 走一遍不折返 · 评分照常显示', rows]]
-    : ['hit','inferred','miss'].map(function(s){
-        const g=groupTitle(s); return [g[0],g[1],rows.filter(function(r){return r.state===s;})];
-      });
+    : [['t1','按排序分从高到低 · 可信度与岗位状态仅作提示，不影响名次', rows]];
   if(!DETAIL_NAME){
     groups.forEach(function(g){
       const rs=g[2];
@@ -34463,6 +31854,7 @@ function render(){
   box.innerHTML=html;
   // 详情页本来就是看细节的，折叠区默认展开。
   if(DETAIL_NAME) box.querySelectorAll('.jobbox details').forEach(function(d){ d.open=true; });
+  bindTestSave(box);
   setTimeout(function(){suppress=false;},60);
   box.querySelectorAll('[data-wk]').forEach(function(b){
     b.onclick=function(){

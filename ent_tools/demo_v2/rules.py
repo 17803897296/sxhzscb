@@ -307,6 +307,7 @@ DIMENSIONS = [
 # 无榜单的企业给中性地板分，不惩罚——避免系统性压低 62 家没查到榜单的公司。
 INDUSTRY_STATUS_TIERS = {
     "world500": 1.0,       # 世界500强
+    "global_leader": 0.9,  # 全球行业龙头（v4.2 有此档，此前漏配会掉到地板 0.6）
     "china500": 0.95,      # 中国500强
     "province100": 0.9,    # 省100强
     "national_leader": 0.85,  # 全国行业龙头

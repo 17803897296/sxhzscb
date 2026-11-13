@@ -35,6 +35,7 @@ import fair_ingest          # noqa: E402
 import fair_bridge          # noqa: E402
 import job_recommend        # noqa: E402
 import resume_parse         # noqa: E402
+import test_sessions        # noqa: E402  v12 测试数据库（只追加的实验日志）
 import portal               # noqa: E402  复用企业端搜索/补全接口（/api/filter、/api/lookup、/api/names）
 
 PAGE = os.path.join(ROOT, "demo", "fair.html")
@@ -199,6 +200,14 @@ class Handler(BaseHTTPRequestHandler):
             if p == "/api/fair/rebuild":
                 payload = fair_bridge.build()
                 self._json({"ok": True, "stats": payload["stats"]})
+                return
+            # v12 测试数据库：把「这次填了什么 + 排出了什么」落一条只追加的记录
+            if p == "/api/fair/test-save":
+                payload = json.load(open(PAYLOAD, encoding="utf-8"))
+                out = test_sessions.save(
+                    payload, tag=body.get("tag", ""), sid=body.get("sid", ""),
+                    note=body.get("note", ""), top_n=int(body.get("top_n") or 12))
+                self._json(out)
                 return
             self.send_error(404)
         except Exception as exc:
