@@ -21,11 +21,14 @@ import re
 import sys
 import urllib.request
 
+import cache_guard
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "data", "hard_filter_cache.json")
 
 # 常见的「不限」表述，视为不设限
-_NONE_PAT = re.compile(r"^(没有|无|不设限|暂无|随便|都行|不限|没有要求)$")
+_NONE_PAT = re.compile(
+    r"^(没有|无|不设限|暂无|随便|都行|不限|没有要求|都可以|没要求|无所谓|不限定)$")
 
 LLM_PROMPT = """把学生的硬性要求，翻译成筛选条件。只输出 JSON，不要解释。
 
@@ -45,6 +48,11 @@ LLM_PROMPT = """把学生的硬性要求，翻译成筛选条件。只输出 JSO
 3. exclude_natures：出现「不要外企」「不接受民企」这类否定，填排除的性质（外企/民企/央企/国企/事业单位）。
 4. keywords：无法归到上面三类的限定词（如「上市」「500强」）填这里。
 5. 如果学生原话是「没有限制」「都可以」这类，四个数组全部返回空。
+6. **严禁把上面给的候选列表整段照抄进数组**：只填学生原话明确点名、
+   或能凭常识明确对应的值（如「长三角」→ 上海 / 南京 / 苏州 / 杭州 等该区域内城市）。
+   没提城市就 cities 留空，没提行业就 industries 留空；
+   拿不准、无法对应到库里具体值的概念（如「上市公司」「500强」）不要塞进
+   cities / industries，可以放 keywords。
 """
 
 
@@ -54,18 +62,29 @@ def is_none(text: str) -> bool:
 
 
 def _load_cache() -> dict:
+    """只认「本版解析逻辑」写出的结果。
+
+    缓存键是学生原句，但同一句话的解析规则改过之后，旧结果就是错的
+    （比如以前把「长三角」只映射成上海）。没有指纹的旧文件一律不读。
+    """
     try:
         with open(CACHE, encoding="utf-8") as f:
-            return json.load(f)
+            obj = json.load(f)
     except Exception:
         return {}
+    if not isinstance(obj, dict) or "_cg" not in obj:
+        return {}
+    if (obj.get("_cg") or {}).get("fp") != cache_guard.code_fp(name="hard_filter"):
+        return {}
+    return obj.get("map") or {}
 
 
 def _save_cache(d: dict):
     try:
         os.makedirs(os.path.dirname(CACHE), exist_ok=True)
         with open(CACHE, "w", encoding="utf-8") as f:
-            json.dump(d, f, ensure_ascii=False, indent=1)
+            json.dump({"_cg": cache_guard.stamp("hard_filter"), "map": d},
+                      f, ensure_ascii=False, indent=1)
     except Exception:
         pass
 
@@ -112,6 +131,31 @@ def rule_parse(text: str, cities: list, industries: list) -> dict:
             "keywords": [], "note": "规则解析（模型未启用）", "mode": "rules"}
 
 
+def _validate(out: dict, cities: list, industries: list, natures: list) -> dict:
+    """只保留企业库里真实存在的值。
+
+    模型会把口语词塞错字段：实测「我只要互联网」返回 cities=['互联网']，
+    而 match() 用「城市字段包含该词」判定，结果把 145 家全删光。
+    这里做白名单 + 数量防呆，且缓存命中时也走一遍（改规则不必清缓存）。
+    """
+    def keep(vals, allowed):
+        return [v for v in (vals or []) if v and any(
+            v == a or v in a or a in v for a in allowed)]
+
+    o = dict(out or {})
+    o["cities"] = keep(o.get("cities"), cities)
+    o["industries"] = keep(o.get("industries"), industries)
+    o["exclude_natures"] = keep(o.get("exclude_natures"), natures)
+    # 模型常把候选列表照抄进数组（实测「只要上市公司」填了 26/27 个城市、
+    # 8/9 个行业）。旧阈值要求「填满全部」才拦，26 个就绕过了，导致乱删企业。
+    # 改为占比阈值：填了六成以上候选值即视为该项未设限。
+    if len(o["cities"]) >= max(3, int(len(cities) * 0.6) + 1):
+        o["cities"] = []
+    if len(o["industries"]) >= max(3, int(len(industries) * 0.6) + 1):
+        o["industries"] = []
+    return o
+
+
 def parse(text: str, cities: list, industries: list, natures: list) -> dict:
     """入口：返回结构化的硬约束条件。空/不限 -> 全空。"""
     if is_none(text):
@@ -120,7 +164,8 @@ def parse(text: str, cities: list, industries: list, natures: list) -> dict:
 
     cache = _load_cache()
     if text in cache:
-        return cache[text]
+        # 缓存里的旧判定也要过白名单，避免历史错误结果继续生效
+        return _validate(cache[text], cities, industries, natures)
 
     cfg = _env()
     key = os.environ.get("DEEPSEEK_API_KEY") or cfg.get("DEEPSEEK_API_KEY", "")
@@ -174,6 +219,8 @@ def parse(text: str, cities: list, industries: list, natures: list) -> dict:
     if out is None:
         out = rule_parse(text, cities, industries)
 
+    # 统一收口：模型结果、规则兜底、混合结果都过一遍白名单
+    out = _validate(out, cities, industries, natures)
     cache[text] = out
     _save_cache(cache)
     return out

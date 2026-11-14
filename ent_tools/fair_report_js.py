@@ -26,7 +26,7 @@ let feedback={}, sortMode='queue';          // v7：现场核实回流 + 展位�
 /* v11：完整报告是另一个页面（新标签 fair.html?detail=企业名）；列表页只显示两行摘要 */
 const DETAIL_NAME = new URLSearchParams(location.search).get('detail') || '';
 const DIM_LABEL={city:'城市条件',home:'离家近',company_type:'企业类型',
-                 industry:'行业对口',scale:'企业规模档',
+                 industry:'行业',scale:'企业规模档',
                  industry_status:'行业地位',growth:'成长性'};
 
 __RULES_JS__
@@ -46,8 +46,13 @@ function cityCategories(city){
 /* 取企业全部工作城市；没有工作城市清单时退回主城市单值 */
 function workCities(r){
   const w=(r&&r.v42&&r.v42.work_cities)||null;
-  if(w&&w.length) return w;
-  return r&&r.city?[r.city]:[];
+  const ok=function(x){ return x && String(x).trim() && String(x).trim()!=='未知'; };
+  if(w&&w.length){
+    const f=w.filter(ok);
+    if(f.length) return f;
+  }
+  const c=r&&r.city;
+  return ok(c)?[String(c).trim()]:[];
 }
 function companyTypeBucket(nature){
   const b=RULES.ct_buckets;
@@ -69,17 +74,131 @@ function classifyScale(nature,name,industry){
    采集端写库 -> fair_ingest 重建 fair_payload.json -> 报告层换掉 BASE/W0，
    实现「学生提交画像 -> 匹配端报告换一份」的跨会话闭环。
    file:// 双击时不发请求，完全离线。 */
+function showComputing(p){
+  var el=document.getElementById('recompute-note');
+  if(!el){
+    el=document.createElement('div'); el.id='recompute-note';
+    el.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:9999;'
+      +'background:#1f6feb;color:#fff;padding:9px 16px;border-radius:9px;font-size:13px;'
+      +'box-shadow:0 2px 10px rgba(0,0,0,.25);max-width:90vw;text-align:center';
+    document.body.appendChild(el);
+  }
+  el.textContent=(p&&p.note)?p.note:'正在按你的画像重算企业匹配，请稍候……';
+}
+function hideComputing(){ var el=document.getElementById('recompute-note'); if(el) el.remove(); }
+
+/* ---------- 按需语义补判：payload 没覆盖的意向，现场问一次大模型 ----------
+   payload 的 intent_semantics 只覆盖**构建时那份生效画像**的意向。学生换画像 /
+   现场新勾一个岗位后，前端拿不到映射，只能退回本地字面规则，报告里如实写
+   「本地规则判定」。这里把缺的意向发给服务端补判（每个意向 3–10 秒），拿到后
+   并进 D.intent_semantics 再重渲染。离线 / 服务不可用 / 模型超时 → 保持本地兜底，
+   不阻塞页面、不编结论。试过的意向记在 semTried 里，避免同一个意向反复打接口。 */
+let semTried={}, semNoteTimer=null;
+/* 语义服务基址。页面本身就是 8102 时用同源相对路径；从 WorkBuddy 的静态快照预览
+   （127.0.0.1:56711/static-html/…）、file:// 或别的端口打开时，相对路径会打到
+   没有这个接口的静态服务上，于是「大模型又没了」。这里一律指向本机 8102 ——
+   服务端已开 Access-Control-Allow-Origin: *，跨端口可用。 */
+const SEM_BASE=(function(){
+  try{
+    if(/^https?:$/.test(location.protocol) && location.port==='8102') return '';
+  }catch(e){}
+  return 'http://127.0.0.1:8102';
+})();
+/* 判定结果在本机存一份：换画像切回来、刷新页面都不用再等模型。 */
+const SEM_LS='fair_sem_v1:';
+function semLoad(x){
+  try{
+    const s=localStorage.getItem(SEM_LS+x);
+    if(!s) return null;
+    const v=JSON.parse(s);
+    return (v && v.via==='llm' && (v.titles||[]).length) ? v : null;
+  }catch(e){ return null; }
+}
+function semStore(x,v){ try{ localStorage.setItem(SEM_LS+x, JSON.stringify(v)); }catch(e){} }
+function semMissing(intents){
+  const out=[];
+  (intents||[]).forEach(function(x){
+    if(!x) return;
+    const m=(D.intent_semantics||{})[x];
+    if(m && m.via==='llm') return;
+    const ls=semLoad(x);
+    if(ls){ D.intent_semantics=D.intent_semantics||{}; D.intent_semantics[x]=ls; return; }
+    if(semTried[x]) return;
+    out.push(x);
+  });
+  return out;
+}
+function semNote(txt){
+  let el=document.getElementById('sem-note');
+  if(!txt){ if(el) el.remove(); return; }
+  if(!el){
+    el=document.createElement('div'); el.id='sem-note';
+    el.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:9998;'
+      +'background:#0f766e;color:#fff;padding:7px 14px;border-radius:9px;font-size:12.5px;'
+      +'box-shadow:0 2px 10px rgba(0,0,0,.2);max-width:90vw;text-align:center';
+    document.body.appendChild(el);
+  }
+  el.textContent=txt;
+  clearTimeout(semNoteTimer);
+  semNoteTimer=setTimeout(function(){ const n=document.getElementById('sem-note'); if(n) n.remove(); },9000);
+}
+function ensureSemantics(intents){
+  const miss=semMissing(intents);
+  if(!miss.length) return;
+  miss.forEach(function(x){ semTried[x]=1; });
+  semNote('正在让大模型判定：'+miss.join('、')+'（每个约 3–10 秒）');
+  function once(isRetry){
+    fetch(SEM_BASE+'/api/fair/semantics',
+          {method:'POST',headers:{'Content-Type':'application/json'},
+           body:JSON.stringify({intents:miss})})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(j){
+        const got=(j&&j.map)||{}; let n=0, names=[];
+        Object.keys(got).forEach(function(k){
+          if(got[k]&&(got[k].titles||[]).length){
+            D.intent_semantics=D.intent_semantics||{};
+            D.intent_semantics[k]=got[k]; semStore(k,got[k]); n++; names.push(k);
+          }
+        });
+        if(n){ semNote('大模型已判定：'+names.join('、')); lastSig=''; render(); }
+        else semNote('这次没问到大模型（'+((j&&j.failed&&j.failed.length)?j.failed.join('、'):'模型不可用')
+                     +'），先按本地规则判定');
+      })
+      .catch(function(){
+        if(!isRetry){ setTimeout(function(){ once(true); },900); return; }
+        /* 如实说清楚是哪一步断了，别让学生以为是模型判成了这样。 */
+        const host=SEM_BASE?SEM_BASE.split('//')[1]:location.host;
+        semNote('连不上语义服务 '+host+'：这些意向先按本地规则判定。'
+                +'要跑大模型，请在 ent_tools 目录启动 fair_server.py --port 8102');
+      });
+  }
+  once(false);
+}
+window.__ensureSemantics=ensureSemantics;
+
 function refreshFromServer(){
   if(!/^https?:$/.test(location.protocol)) return;
-  fetch('/api/fair/payload').then(function(r){return r.json();}).then(function(p){
-    if(!p || !p.rows || !p.rows.length) return;
-    D.rows=p.rows; D.weights=p.weights||D.weights; D.profile=p.profile||D.profile;
-    D.stats=p.stats||D.stats; D.sources=p.sources||D.sources;
-    if(p.active_fair_id) D.active_fair_id=p.active_fair_id;
-    if(p.province_map) PM=p.province_map;
-    BASE=D.rows; W0=D.weights;
-    lastSig=''; render();
-  }).catch(function(){});
+  var tries=0;
+  function go(){
+    fetch('/api/fair/payload').then(function(r){return r.json();}).then(function(p){
+      /* 提交画像后服务端正在按新画像重算命中/排除，前端轮询直到算完，
+         期间绝不把上一个学生的意向岗位结论当成当前结果展示。 */
+      if(p && p.computing){ showComputing(p); if(tries++<45) setTimeout(go,4000); return; }
+      hideComputing();
+      if(!p || !p.rows || !p.rows.length) return;
+      D.rows=p.rows; D.weights=p.weights||D.weights; D.profile=p.profile||D.profile;
+      D.stats=p.stats||D.stats; D.sources=p.sources||D.sources;
+      /* 提交新画像后服务端会按新的 intended_jobs 重算语义映射；
+         这里必须同步刷新，否则学生刚勾的岗位查不到映射、静默退化成字面匹配。 */
+      if(p.intent_semantics) D.intent_semantics=p.intent_semantics;
+      if(p.hard_filter) D.hard_filter=p.hard_filter;
+      if(p.active_fair_id) D.active_fair_id=p.active_fair_id;
+      if(p.province_map) PM=p.province_map;
+      BASE=D.rows; W0=D.weights;
+      lastSig=''; render();
+    }).catch(function(){ if(tries++<45) setTimeout(go,4000); });
+  }
+  go();
 }
 window.__triRefresh=refreshFromServer;
 
@@ -109,36 +228,447 @@ function saveFeedback(name,result){
    模型没覆盖到时退回字面/关键词匹配。返回 [{intent, job, via, reason}]。
    jobTitles = 企业校招公告里的真实岗位名（不是模型预生成的 matched_jobs），
    这样报告里显示的命中岗位才和采集端勾选的岗位对得上。 */
-function matchIntent(titles,intended,sem,jobTitles){
-  const KW=['供应链','数据','分析','计划','研究','量化','算法','开发','产品',
-            '运营','采购','物流','财务','销售','工程','项目','风控','交易',
-            '顾问','教师','研发','质量','管培','投资'];
+/* ---- 本地兜底匹配规则：与 ent_tools/intent_semantics.py 同一套（不含大模型）----
+   只有 payload 的语义映射没覆盖某个意向时才走这里（换学生、现场新勾岗位、模型不可用）。
+   旧版是一张 22 词表做关键词相交，会把「战略管培生」算进「供应链管培生」、
+   把「IT 数字化管培生」算进「营销管培生」；这里换成后端同源的确定性规则：
+   通用词不算证据、同职能族才算同类、销售型意向才收销售岗、学科必须一致。 */
+const MI_GEN=['专员','管培','培生','培训','训生','管理','助理','储干','干部','工程','经理','主管','储备','专工',
+  /* 「分析」「研究」不携带方向：策略分析岗 ≠ 分析仪器工程师；
+     行业研究岗 ≠ AI算法研究工程师 / 有机合成研究员。 */
+  '分析','研究'];
+/* 岗位名尾部后缀字：跨词边界的 2-gram 常以它们收尾（理岗 / 源专 / 究员），
+   只共享到这种片段时不算同职能证据。与 intent_semantics.BOUNDARY_TAIL 同源。 */
+const MI_TAIL='岗员师专士长工部科组队站店厂所司局院校';
+const MI_FAM={
+  supply:['供应链','物流','采购','寻源','仓储','关务','库存','配送','物资','PMC','备件',
+          '生产计划','物料计划','计划专员','计划管培','计划助理','综合计划','计划主管','计划岗'],
+  data:['数据分析','商业分析','经营分析','业务分析','策略分析','分析岗','量化','BI','数据科学','统计'],
+  hr:['人力资源','人力','人资','人事','招聘','薪酬','员工关系','培训专员','培训岗','培训管培',
+      '培训主管','培训经理','培训助理'],
+  fin:['财务','会计','审计','税务','核算','出纳','资金'],
+  legal:['法务','法律','合规','知识产权','诉讼'],
+  mkt:['市场','营销','品牌','推广'],
+  media:['新媒体','短视频','直播','内容运营','内容策划','公众号','小红书','抖音','B站',
+         '视频号','社媒','社交媒体','文案'],
+  quality:['质量','品质','品控','质检','质保','体系','客诉'],
+  trade:['外贸','国际贸易','进出口','海外业务','海外销售','国际业务','海外市场',
+         '国际市场营销','单证','报关','货代','船代','外销']
+};
+const MI_SALES=['销售','营销','市场','外贸','业务','客户','渠道','商务','贸易','BD','拓展'];
+const MI_SUBJ=['语文','数学','英语','物理','化学','生物','政治','历史','地理','体育','音乐',
+               '美术','信息技术','理科','文科','科学','心理健康','道德与法治'];
+const MI_GENERIC=['管培生','培训生','管理培训生','职能管培生','运营培训生','储备干部',
+                  '校招生','专员','助理','实习生','干部','管培岗'];
+/* 大类岗位名：名字里不带业务方向，只说了层级 / 身份。
+   「供应链管培生」是「管培生」，但「管培生」不是「供应链管培生」——
+   小类可以进大类，大类不能反推小类。制造业企业的管培生不一定按供应链培养。
+   与 intent_semantics.is_bare_generic 同源。 */
+const MI_BARE=['管培生','管培岗','管理培训生','培训生','校招生','储备干部','储干','干部',
+  '职能管培生','专员','助理','实习生','见习生','研究员','分析师','工程师','经理','主管',
+  '主任','组长','业务员','职员','员工','顾问','人员','人才'];
+/* 不抹 MI_GEN：「培训专员 / 培训管培生」是培训条线的岗位名，
+   抹掉「培训 / 管理」后会被当成「只写了大类」的岗位。与 Python 同源。 */
+const MI_BAREFILL=MI_BARE.concat(['岗位','岗','人员','类','方向','相关','储备'])
+  .sort(function(a,b){ return b.length-a.length; });
+/* 算方向串时再抹「管理」，与 intent_semantics._FILLER_EXTRA 逐词一致。
+   （miBareGeneric 不抹「管理」，两处词表有意不同，别合并。） */
+const MI_DIRFILL=MI_BAREFILL.concat(['管理'])
+  .sort(function(a,b){ return b.length-a.length; });
+/* 级别词是档位不是方向：「初级测试工程师」的方向就是「测试」。
+   与 intent_semantics._dir_text 同源。 */
+const MI_DIRLEV=['初级','中级','高级','资深'];
+function miDirText(t){
+  let x=String(t==null?'':t).replace(/[\s（）()\[\]【】、，,·—\-\/_]+/g,'').toLowerCase();
+  if(!x) return x;
+  MI_DIRLEV.forEach(function(w){ x=x.split(w).join(''); });
+  MI_DIRFILL.forEach(function(w){ x=x.split(w).join(''); });
+  return x;
+}
+/* 岗位名是不是比意向宽一层：「算法工程师」对「AI算法研究工程师」。
+   小类能进大类、大类不能反推小类 —— 只在「岗位方向 ⊂ 意向方向」时成立，
+   并列方向（机械设计 × 结构设计）不算更宽，保持原口径。
+   与 intent_semantics.is_wider_job 同源。 */
+function miWider(title,intent){
+  const a=miDirText(title), b=miDirText(intent);
+  if(!a||!b||a===b) return false;
+  return b.indexOf(a)>=0 && a.length<b.length;
+}
+/* 并列方向词：同属一个大类、却是两条不同职业路径的限定词。
+   换技术栈不算换方向（Java / Python / C++ 不在表内），机械/结构/电气也不在内
+   ——「机械设计工程师」和「结构设计工程师」是同一岗位的两种写法。
+   与 intent_semantics.DIR_WORDS 同源。 */
+const MI_DIRWORDS=['前端','后端','服务端','客户端','嵌入式','上位机','下位机','固件',
+  '移动端','桌面','驱动','全栈','低代码','量化','算法','数据','图像','视觉','图形','游戏',
+  'unity','unreal','大模型','ai','人工智能','测试','运维','安全','网络','通信'];
+const MI_DIRNEUTRAL=['开发','研发','软件','程序','工程师','技术','应用','系统','岗','员'];
+function miDirCore(t){
+  let x=miDirText(t);
+  MI_DIRNEUTRAL.forEach(function(w){ x=x.split(w).join(''); });
+  return {t:x, k:MI_DIRWORDS.filter(function(w){ return x.indexOf(w)>=0; })};
+}
+/* 这一对（岗位 × 意向）能不能算对口：
+   ok  算（意向没方向；或岗位没方向；或岗位方向 ⊂ 意向方向）
+   ask 值得问一句（同向但岗位更细：测试 → 电气测试 / 器件测试）
+   no  不成立（并列方向：后端 × 量化 / 前端 / 嵌入式，同大类两条路）
+   与 intent_semantics.pair_verdict 同源。 */
+function miPairVerdict(title,intent){
+  const a=miDirCore(intent), b=miDirCore(title);
+  if(!a.t||!b.t||a.t===b.t) return 'ok';
+  /* 注意方向：a=意向方向，b=岗位方向。
+     b ⊃ a → 岗位更细（测试 → 器件测试）→ ask；
+     b ⊂ a → 岗位更泛（AI算法研究 → 算法）→ ok（小类能进大类）。 */
+  if(a.t.indexOf(b.t)>=0) return 'ok';
+  if(b.t.indexOf(a.t)>=0) return 'ask';
+  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })) return 'no';
+  return 'ok';
+}
+/* 方向不一样时，不能说成「另一种说法」：写清是哪个大类下面的哪个方向。
+   与 intent_semantics._reason_by_direction 同源。 */
+function miDirReason(t,intent){
+  const a=miDirCore(intent), b=miDirCore(t);
+  if(!b.t||a.t===b.t||(a.t&&b.t.indexOf(a.t)>=0)) return '';
+  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; }))
+    return '「'+t+'」与「'+intent+'」同属一个大类但方向不同（'+b.t+' × '+a.t+'）';
+  if(!a.t) return '「'+t+'」是「'+intent+'」下的'+b.t+'方向（同一大类，不是同一细分）';
+  if(a.t&&b.t.indexOf(a.t)>=0) return '「'+t+'」的方向是'+b.t+'，比「'+intent+'」细，不是同一个岗位';
+  return '';
+}
+function miBareGeneric(t){
+  let x=String(t==null?'':t).replace(/[\s（）()\[\]【】、，,·—\-\/_]+/g,'');
+  if(!x) return false;
+  if(MI_BARE.indexOf(x)>=0) return true;
+  MI_BAREFILL.forEach(function(w){ x=x.split(w).join(''); });
+  return x.length<=1;
+}
+/* 公司业务本身就是那个细分时，大类岗位才可按对口算（供应链公司的管培生）。
+   与 intent_semantics.BIZ_EXTRA / biz_ok 同源。 */
+const MI_BIZ={supply:['物流','仓储','快递','货运','港口','航运','配送','供应链管理'],
+  fin:['证券','基金','银行','保险','期货','资管','私募','信托','金融'],
+  data:['大数据','人工智能','智能科技','算法','数据服务','信息技术'],
+  hr:['人力资源服务','人力资源'],legal:['律师事务所','法律服务'],
+  mkt:['广告','公关','传媒'],trade:['进出口','国际贸易','货代','报关'],
+  quality:['检测','认证'],media:['文化传媒','影视','广告传媒']};
+function miBizFamilies(txt){
+  const out=miFam(txt||'');
+  for(const k in MI_BIZ){
+    if(miHas(txt||'',MI_BIZ[k]) && out.indexOf(k)<0) out.push(k);
+  }
+  return out;
+}
+function miBizOk(intent,txt){
+  const fa=miFam(intent), fb=miBizFamilies(txt);
+  return fa.some(function(x){ return fb.indexOf(x)>=0; });
+}
+const MI_TECH=['工程师','研发','开发','算法','研究员','测试','工艺','设备','质检'];
+const MI_PROD=['产品经理','产品专员','产品工程师','产品岗','产品规划','产品运营'];
+const MI_OPS=['运营','企宣','公关','会展','会议策划'];
+/* 内容 / 电商 / 产品三条运营线，不是「运营管理培训生」的同类入口 */
+const MI_OPSCONTENT=['新媒体','电商','直播','短视频','内容运营','内容策划','社群',
+                     '用户运营','店铺','产品运营','公众号','小红书','抖音'];
+/* 「数据」类意向的岗位必须真的碰数据（化学分析 / 力学分析 / 质量分析 不算） */
+const MI_DATATITLE=['数据','商业分析','量化','统计','BI','策略','经营分析','算法','机器学习','数仓','报表','模型'];
+const MI_CONFLICT=['内核','测试','DBA','运维','研发','嵌入式','前端','后端','驱动','固件',
+                   '编译','工艺','设备','生产','质检','研究员','开发工程师','集成工程师',
+                   '服务工程师'];
+const MI_SOFT=['开发','研发','软件','程序','算法'];
+/* 软件细分方向入口，与 intent_semantics.DEV_TITLE_HINTS 逐词同源 */
+const MI_DEVHINT=['前端','后端','嵌入式','全栈','服务端','客户端','Java','C++','C#','Python',
+  'PHP','Unity3d','大模型应用','低代码','鸿蒙','Android','IOS','上位机','软件工程师'];
+const MI_DEV=['前端','后端','嵌入式','驱动','固件','编译','全栈','服务端','客户端','C++',
+              'Java','Python','PHP','研发','开发工程师','Unity3d','C#'];
+/* 抹掉后为空 = 意向只说了「软件 / 开发」，没限定方向。
+   与 intent_semantics._SOFT_WIDE 逐词同源。 */
+const MI_SOFTWIDE=['软件开发工程师','软件研发工程师','软件工程师','软件开发','软件研发',
+  '研发工程师','开发工程师','程序开发工程师','程序开发','程序员','工程师','软件','开发','研发','程序'];
+function miSoftBroad(t){
+  if(!miHas(t,MI_SOFT)) return false;
+  let s=String(t||'');
+  MI_SOFTWIDE.forEach(function(w){ s=s.split(w).join(''); });
+  return !s.trim();
+}
+const MI_FIN=['财务','会计','审计','税务','核算','出纳','资金'];
+/* 跨专业设计方向词：机械设计不吃 IC / 光学 / 电磁 / 逻辑 这类设计岗 */
+const MI_DESIGN=['IC','芯片','光学','光机','电磁','逻辑','物理','数字','模拟','射频','FPGA','版图','PCB'];
+/* 软件研发岗专用词：出现它们说明是写代码的岗，机械 / 电气 / 质量类意向不该收 */
+const MI_SOFTTITLE=['数据开发','AI','大模型','智能体','低代码','量化','前端','后端','全栈',
+                    'Java','Python','C++','算法','软件'];
+/* 真正做工程设计的意向：泛「研发/开发工程师」岗名可以算同类 */
+const MI_ENGDESIGN=['设计','机械','电气','电子','结构','自动化','控制','工艺','软件','算法','研发','开发'];
+
+function miHas(t,arr){ return arr.some(function(k){ return String(t).indexOf(k)>=0; }); }
+
+/* ---- 岗位层级（校招可投性）：与 ent_tools/job_level.py 同一套规则 ----
+   同一职能里「主管 / 资深 / 经理」和「管培生 / 专员」是两档人：前者带团队或有
+   年限要求，2027 届应届投不进去。五档：
+     1 实习/见习 · 2 校招初入 · 3 常规经验岗 · 4 资深/主管 · 5 管理/专家
+   应届只认 1~3 档；一条公告并列多档（「工艺工程师/主管/经理」「营销员/营销主管」）
+   取最低档——公告里既然列了工程师、营销员，应届就能投那一档。 */
+const MI_LV_CAMPUSMAX=3;
+const MI_LVNAME={0:'未识别',1:'实习/见习',2:'校招初入',3:'常规经验岗',4:'资深/主管',5:'管理/专家'};
+const MI_LV_LEAD=['总经理','副总经理','总监','首席','合伙人','董事','总裁','经理','负责人','专家','VP','CTO','CEO','CFO','COO'];
+/* 名里带「经理」但校招照招的前台业务岗 / 产品岗 */
+const MI_LV_LEADEX=['客户经理','大堂经理','值班经理','产品经理','业务经理','客户成功经理','理财经理'];
+const MI_LV_SENIOR=['资深','高级','主管','组长','班长','科长','主任','主办','督导','领班','Sr.','Senior'];
+const MI_LV_ENTRY=['管培','培训生','校招','应届','储备','储干','专员','助理','初级','专工','专责','干部','实习生'];
+const MI_LV_INTERN=['实习','见习'];
+const MI_LV_ASSIST=['助理','秘书'];
+/* 「高级」不表示资历的固定搭配（高级中学）／「主任」不表示管理岗的固定搭配（班主任） */
+const MI_LV_SENIORFALSE=['高级中学','高级技工学校','高级技校','班主任','主任委员'];
+/* 能独立成岗的收尾字：只有每段都像独立岗位名时才按「/」拆开分档。
+   反例「新市场/新项目开发经理」——斜杠分的是业务对象，拆开会把开发经理误判成常规档。 */
+const MI_LV_JOBTAIL=['员','师','生','岗','助','理','管','监','任','工','长','代表','顾问','专员','主管','经理','干部','储干','业'];
+function miRm(s,w){ return String(s).split(w).join(''); }
+function miLvHas(s,arr){ return arr.some(function(k){ return s.indexOf(k)>=0; }); }
+function miLvOne(t){
+  if(!t) return 0;
+  let scan=String(t);
+  MI_LV_SENIORFALSE.forEach(function(w){ scan=miRm(scan,w); });
+  if(MI_LV_ASSIST.some(function(w){ return t.slice(-w.length)===w; })) return 3;
+  let probe=scan;
+  MI_LV_LEADEX.forEach(function(w){ probe=miRm(probe,w); });
+  if(miLvHas(probe,MI_LV_LEAD)) return 5;
+  if(miLvHas(scan,MI_LV_SENIOR)) return 4;
+  if(miLvHas(scan,MI_LV_INTERN)) return 1;
+  if(miLvHas(scan,MI_LV_ENTRY)) return 2;
+  return 3;
+}
+function miLvSegs(t){
+  const raw=String(t).replace(/、/g,'/').split('/').filter(function(s){ return s.length>0; });
+  if(raw.length<=1) return [t];
+  const okAll=raw.every(function(s){
+    return s.length>=2 && MI_LV_JOBTAIL.some(function(w){ return s.slice(-w.length)===w; });
+  });
+  return okAll ? raw : [t];
+}
+function miLevel(t){
+  const s=String(t==null?'':t).replace(/（/g,'(').replace(/）/g,')').replace(/　/g,' ').trim();
+  if(!s) return 0;
+  let best=0;
+  miLvSegs(s).forEach(function(seg){ const lv=miLvOne(seg); if(lv && (!best || lv<best)) best=lv; });
+  return best;
+}
+/* 意向 a 能否投岗位 b：应届口径 1~3 档；意向本身是资深/管理岗时才放开到 5 档。 */
+function miLevelOk(a,b){
+  const tl=miLevel(b); if(!tl) return true;
+  const il=miLevel(a);
+  const cap=(il>=4)?5:MI_LV_CAMPUSMAX;
+  if(tl>cap) return false;
+  if(il && il<=2 && tl-il>=2) return false;
+  if(il>=4 && tl<=2) return false;
+  return true;
+}
+/* 不是岗位的写法：招聘批次名 / 专业类目名 / 事业单位招考名目 */
+const MI_LV_NONJOB=['公务员','参公人员','事业编制','专业技术人员','科学研究人员'];
+function miIsJob(t){
+  const s=String(t==null?'':t).trim();
+  if(!s) return false;
+  if(MI_LV_NONJOB.indexOf(s)>=0) return false;
+  if(s.indexOf('校园招聘')>=0) return false;
+  if(s.indexOf('届')>=0 && /\d/.test(s)) return false;
+  if(s.slice(-1)==='类' && s.length<=8) return false;
+  if(s.slice(-2)==='专业' || s.indexOf('及其自动化')>=0) return false;
+  return true;
+}
+function miGrams(s){ s=String(s||''); const o=[]; for(let i=0;i+1<s.length;i++) o.push(s.substr(i,2)); return o; }
+/* 同义写法归一：「营运」就是「运营」（营运管培生 / 营运中台管培生） */
+function miSyn(s){ return String(s||'').replace(/营运/g,'运营'); }
+function miFam(t){ const o=[]; for(const k in MI_FAM){ if(miHas(t,MI_FAM[k])) o.push(k); } return o; }
+function miShare(a,b){
+  a=miSyn(a); b=miSyn(b);
+  const g=miGrams(a).filter(function(x){ return MI_GEN.indexOf(x)<0; });
+  /* 2 字窗口会跨词边界造假共享：「风险管理岗」的「理岗」落在「施工管理岗」尾部，
+     「采购寻源专员」的「源专」落在「人力资源专员」中间。以岗位后缀字收尾的共享
+     不算证据（见 intent_semantics.BOUNDARY_TAIL）。 */
+  const shared=g.filter(function(x){ return b.indexOf(x)>=0; });
+  if(shared.some(function(x){ return MI_TAIL.indexOf(x.slice(-1))<0; })) return true;
+  if(MI_GENERIC.indexOf(a)>=0 && miGrams(a).some(function(x){ return b.indexOf(x)>=0; })) return true;
+  /* 意向本身是业务/销售型（外贸业务员、客户经理）时，「销售 xxx」就是同一类 */
+  if(miHas(a,MI_SALES) && b.indexOf('销售')>=0) return true;
+  /* 软件类意向：前端 / 后端 / 嵌入式 / 全栈 等细分方向是同一职能入口（规则 4c）。
+     与 intent_semantics.DEV_TITLE_HINTS 同源。 */
+  if(miSoftBroad(a) && miHas(b,MI_DEVHINT)) return true;
+  const fa=miFam(a), fb=miFam(b);
+  if(!fa.some(function(x){ return fb.indexOf(x)>=0; })) return false;
+  return !MI_TECH.some(function(w){ return b.indexOf(w)>=0 && a.indexOf(w)<0; });
+}
+function miRole(a,b,ignoreLevel){
+  if(MI_GENERIC.indexOf(b)>=0 && MI_GENERIC.indexOf(a)<0) return false;
+  /* 大类不能反推小类：「管培生 / 研究员 / 专员」不带方向，不能算「供应链管培生 /
+     量化研究员 / 数据分析岗」的对口证据。公司业务就是这个细分的例外，
+     由 miMatch / miAskJobs 用 miBizOk 单独放行，不在这里开口子。 */
+  if(miBareGeneric(b) && !miBareGeneric(a)) return false;
+  /* 专业名称 / 招聘批次名不是岗位（「电气工程及其自动化」「2027 届校园招聘」） */
+  if(/及其自动化|专业$/.test(b) || b.indexOf('校园招聘')>=0 || /\d{4}\s*届/.test(b)) return false;
+  const sa=MI_SUBJ.filter(function(s){ return a.indexOf(s)>=0; });
+  const sb=MI_SUBJ.filter(function(s){ return b.indexOf(s)>=0; });
+  if(sa.length && sb.length && !sa.some(function(s){ return sb.indexOf(s)>=0; })) return false;
+  const fam=miFam(a).some(function(x){ return miFam(b).indexOf(x)>=0; });
+  if(b.indexOf('销售')>=0 && !miHas(a,MI_SALES)) return false;
+  if(miHas(b,MI_PROD) && !miHas(a,['产品','市场','营销','运营'])) return false;
+  /* 数据类意向只收真的碰数据的岗位（化学分析 / 力学分析 / 质量分析 不算） */
+  if(a.indexOf('数据')>=0 && !miHas(b,MI_DATATITLE)) return false;
+  if(miHas(b,MI_OPS) && a.indexOf('运营')<0 && !fam) return false;
+  /* 运营意图不收内容 / 电商 / 产品线的运营岗（新媒体运营、电商运营、产品运营） */
+  if(a.indexOf('运营')>=0 && !miHas(a,MI_OPSCONTENT) && miHas(b,MI_OPSCONTENT)) return false;
+  if(b.indexOf('柜员')>=0 && a.indexOf('柜员')<0) return false;
+  if(b.indexOf('总监')>=0 && a.indexOf('总监')<0) return false;
+  if((b.indexOf('仓库')>=0||b.indexOf('仓管')>=0) && !miHas(a,['仓','物流','供应链','采购'])) return false;
+  if(miHas(b,MI_FIN) && !miHas(a,MI_FIN)) return false;
+  if(b.indexOf('战略')>=0 && a.indexOf('战略')<0) return false;
+  if(b.indexOf('数据库')>=0 && a.indexOf('数据库')<0) return false;
+  /* 跨专业设计岗：机械设计工程师 不吃 模拟IC / 光学 / 电磁 设计岗 */
+  if(b.indexOf('设计')>=0 && MI_DESIGN.some(function(f){ return b.indexOf(f)>=0 && a.indexOf(f)<0; })) return false;
+  /* 质量类意向：岗位名自己写着「质量」时，测试 / 研究员 是质量岗的常规叫法 */
+  const qual = a.indexOf('质量')>=0 && b.indexOf('质量')>=0;
+  const soft=miHas(a,MI_SOFT);
+  /* 制造业方向词在供应链语境下是正当同类（生产计划 / 供应链事业群管培生-设备方向），
+     孤立的生产、设备、工艺岗仍按跨职能拦掉（下面 fam 不相交）。 */
+  const supCtx = miHas(b,['计划','供应链','物流','采购','PMC']);
+  for(let i=0;i<MI_CONFLICT.length;i++){
+    const k=MI_CONFLICT[i];
+    if(b.indexOf(k)>=0 && a.indexOf(k)<0){
+      if(soft && MI_DEV.indexOf(k)>=0) continue;
+      if(qual && (k==='测试'||k==='研究员')) continue;
+      if((k==='生产'||k==='设备'||k==='工艺') && supCtx && fam) continue;
+      /* 研发 / 开发工程师：只放给真正做工程设计的意向（机械设计、电气、结构），
+         且岗位名不能是软件研发岗（数据开发 / AI / 低代码）或别的设计方向（光学 / IC）。 */
+      if((k==='研发'||k==='开发工程师') && miHas(a,['设计','工程师','研发','开发','机械','电气'])){
+        if(!soft && miHas(b,MI_SOFTTITLE)) return false;
+        if(MI_DESIGN.some(function(f){ return b.indexOf(f)>=0 && a.indexOf(f)<0; })) return false;
+        if(fam || miHas(a,MI_ENGDESIGN)) continue;
+      }
+      return false;
+    }
+  }
+  /* 层级：同一职能内「主管 / 资深 / 经理」与「管培生 / 专员」是两档人。
+     应届只认实习 / 校招初入 / 常规经验岗；更高档不算对口（企业不删、只说层级不符）。
+     ignoreLevel=true 只用于「找出被层级挡下的岗位」那一步，别的地方不要传。 */
+  if(!ignoreLevel && !miLevelOk(a,b)) return false;
+  return true;
+}
+/* 同职能、但档位比应届可投的高 —— 与 intent_semantics.level_blocked 同口径。
+   换画像时 payload 里那份是按旧画像算的，必须按当前意向重算，否则永远显示那 2 家。 */
+function miLevelBlocked(intended,titles){
+  const out=[];
+  (titles||[]).forEach(function(t){
+    if(!t || !miIsJob(t)) return;
+    const tl=miLevel(t);
+    for(let i=0;i<(intended||[]).length;i++){
+      const a=intended[i];
+      if(!a) continue;
+      if(!miRole(a,t,true) || !miShare(a,t)) continue;
+      if(!miLevelOk(a,t)){
+        out.push({job:t, intent:a, level:(MI_LVNAME[tl]||'资深/管理')});
+        break;
+      }
+      break;   // 同职能且层级也合适 → 这家有这个岗位的正常入口，不必提示
+    }
+  });
+  return out;
+}
+function miMatch(a,pool,biz){
+  for(let i=0;i<pool.length;i++){
+    const t=pool[i];
+    if(!t) continue;
+    if(t===a || t.indexOf(a)>=0 || (t.length>=4 && a.indexOf(t)>=0)) return t;
+    /* 大类岗位名：只有公司业务就是这个细分时才算对口（供应链公司的管培生），
+       否则留给 miAskJobs 变成现场提问。 */
+    if(miBareGeneric(t) && !miBareGeneric(a)){
+      if(miBizOk(a,biz)) return t;
+      continue;
+    }
+    /* 岗位名比意向宽一层（算法工程师 × AI算法研究工程师）：不算对口，
+       留给 miAskJobs 变成现场提问；除非公司业务就是这个细分。 */
+    if(miWider(t,a)){
+      if(miBizOk(a,biz)) return t;
+      continue;
+    }
+    if(miPairVerdict(t,a)==='no') continue;   /* 并列方向不算命中（后端 × 量化 / 前端） */
+    if(miRole(a,t) && miShare(a,t)) return t;
+  }
+  return null;
+}
+
+/* 大类岗位名（管培生 / 储备干部 / 研究员）：不是对口证据，但值得现场问一句。 */
+function miAskJobs(intended,titles,biz){
+  const out=[], seen={};
+  (titles||[]).forEach(function(t){
+    if(!t || seen[t] || !miIsJob(t)) return;
+    for(let i=0;i<(intended||[]).length;i++){
+      const a=intended[i];
+      if(!a || miBareGeneric(a) || miBizOk(a,biz)) continue;
+      const bare=miBareGeneric(t);
+      /* 岗位比意向宽一层（算法工程师 × AI算法研究工程师）也值得问一句 */
+      const wider=!bare && miWider(t,a) && miRole(a,t) && miShare(a,t);
+      if(!bare && !wider) continue;
+      seen[t]=1;
+      out.push({job:t, intent:a,
+        why: bare
+          ? ('岗位名只写「'+t+'」，没写业务方向；不同企业的「'+t
+             +'」按不同条线培养。现场问一句：是招「'+a+'」这个方向，还是统一轮岗后再定岗。')
+          : ('岗位名「'+t+'」只写到「'+(miDirText(t)||t)+'」这一层，比「'+a
+             +'」宽，看不出是不是这个细分方向。现场问一句：这个岗具体做「'+a+'」吗。')});
+      return;
+    }
+  });
+  return out.slice(0,3);
+}
+
+function matchIntent(titles,intended,sem,jobTitles,biz){
   const pool=((jobTitles&&jobTitles.length)?jobTitles:titles)||[];
   const out=[];
   (intended||[]).forEach(function(x){
     const m=(sem||{})[x];
     let hitJob=null, via='', reason='';
     if(m&&m.via==='llm'){
-      const exact=pool.filter(function(t){
-        return (m.titles||[]).some(function(s){ return s&&t&&(s===t||t.indexOf(s)>=0||s.indexOf(t)>=0); });
-      });
-      if(exact.length){ hitJob=exact[0]; via='llm'; reason=m.reason||'大模型判定为同类校招岗位'; }
+      /* 逐个意向岗位名匹配企业真实岗位名：模型挑出的原词 == 企业岗位名，或企业岗位名
+         完整包含该原词（s.length>=4）。禁止反向包含：否则「研究员」会被
+         「数据科学算法研究员」误判为同类，「管培生」会被「供应链事业群管培生」误判为同类。
+         命中后用该岗位名专属的 reason（模型已写明「即另一种说法」或「大模型判断二者类似工作内容」）。 */
+      const reasons=m.reasons||{};
+      let picked=null;
+      for(let k=0;k<(m.titles||[]).length;k++){
+        const s=m.titles[k];
+        const ex=pool.filter(function(t){
+          return s&&t&&(s===t||(s.length>=4&&t.indexOf(s)>=0)) && miLevelOk(x,t)
+            /* 大类岗位名（研究员 / 管培生）不能反推细分意向，除非公司业务就是该细分 */
+            && !(miBareGeneric(t) && !miBareGeneric(x) && !miBizOk(x,biz))
+            /* 比意向宽一层的岗（算法工程师 × AI算法研究工程师）也不能算命中 */
+            && !(miWider(t,x) && !miBizOk(x,biz))
+            /* 只拦并列方向（后端 × 量化 / 前端 / 嵌入式）：同大类两条路，不能顶替。
+               岗位更细（测试 → 器件测试）照旧算命中，理由里写清方向不同。 */
+            && miPairVerdict(t,x)!=='no';
+        })[0];
+        if(ex){ picked={job:ex, reason:(miDirReason(ex,x)||reasons[s]||m.reason||'大模型判定为同类校招岗位')}; break; }
+      }
+      if(picked){ hitJob=picked.job; via='llm'; reason=picked.reason; }
       else {
         // 只用「3 字以上」的专属组合词兜底，避免「运营 / 管理 / 业务」这类泛词误伤。
         const kw=pool.filter(function(t){
-          return (m.terms||[]).some(function(k){ return k&&k.length>=3&&t&&t.indexOf(k)>=0; });
+          return (m.terms||[]).some(function(k){ return k&&k.length>=3&&t&&t.indexOf(k)>=0; })
+            && miRole(x,t) && miShare(x,t) && miLevelOk(x,t)
+            /* 比意向宽一层的岗（算法工程师 × AI算法研究工程师）不能走这条兜底 */
+            && !(miWider(t,x) && !miBizOk(x,biz))
+            && miPairVerdict(t,x)!=='no';
         });
         if(kw.length){ hitJob=kw[0]; via='llm-term'; reason=m.reason||'同属一类校招岗位'; }
       }
     }
-    if(!hitJob){
-      const t=pool.filter(function(t){
-        if(t.indexOf(x)>=0||x.indexOf(t)>=0) return true;
-        const a=KW.filter(function(k){return x.indexOf(k)>=0;});
-        const b=KW.filter(function(k){return t.indexOf(k)>=0;});
-        return a.some(function(k){return b.indexOf(k)>=0;});
-      })[0];
-      if(t){ hitJob=t; via='literal'; reason='字面 / 关键词相近'; }
+    /* 该意向已有大模型判定（且判定出了同类岗位）却没匹配上时，不再走兜底：
+       否则「管培生」会因与「供应链管培生」共享「管培」二字被误判为命中。
+       兜底只用于 sem 里没覆盖到这个意向（新勾岗位 / 换学生 / 模型失败）的情况，
+       规则与后端 intent_semantics 同源，判完写明是本地规则，不冒充大模型。 */
+    const covered = m && m.via==='llm' && (m.titles||[]).length>0;
+    if(!hitJob && !covered){
+      const t=miMatch(x,pool,biz);
+      if(t){
+        hitJob=t;
+        via='rule';
+        reason=(t===x) ? '字面同名'
+          : (t.indexOf(x)>=0 ? '岗位名里含你的意向岗位名'
+             : '本地规则判定：同职能不同叫法');
+      }
     }
     if(hitJob) out.push({intent:x, job:hitJob, via:via, reason:reason});
   });
@@ -158,7 +688,18 @@ function groupTitle(s){
 /* ---------- 采集端：读学生当前画像 ---------- */
 function getProfile(){
   let p=null;
-  try { p=JSON.parse(localStorage.getItem('fair_profile')||'null'); } catch(err){}
+  /* 画像也可以直接从地址栏带进来：?p=<base64(JSON)>。
+     测试页「用这套画像看排行」走的是这条路——不写 localStorage、不依赖服务端，
+     双击本地 html 也能看（之前用绝对路径 /fair.html + localStorage，服务一停就白屏）。 */
+  try{
+    const m=/[?&]p=([^&]+)/.exec(location.search||'');
+    if(m){
+      const bin=decodeURIComponent(m[1]);
+      const txt=decodeURIComponent(escape(atob(bin)));
+      p=JSON.parse(txt);
+    }
+  }catch(err){}
+  if(!p){ try { p=JSON.parse(localStorage.getItem('fair_profile')||'null'); } catch(err){} }
   const a=(p&&p.answers)||{}, f=(p&&p.fair)||{}, id=(p&&p.identity)||{};
   let w=a.tri_weights;
   if(!w||!Object.keys(w).length) w=W0;
@@ -197,6 +738,8 @@ function calcOne(r,P){
   if(best!==null){
     const v=rankValue(best.rank, RULES.city_cats.length);
     vals.city={v:v, b:'工作城市 '+best.city+' 命中「'+best.cat+'」(你的第'+best.rank+'优先)'};
+  } else {
+    vals.city={v:0, b:'工作城市未查到，本项记 0'};
   }
   /* 离家近：遍历全部工作城市，取离家最近（得分最高）的那个工作地 */
   const home=P.home_city, wcsH=workCities(r);
@@ -213,14 +756,24 @@ function calcOne(r,P){
     });
     if(bestH!==null){
       vals.home={v:bestH.v, b:'离家最近的工作地 '+bestH.city+' / 家乡 '+home};
+    } else {
+      vals.home={v:0, b:'无有效工作城市，离家无法计算，本项记 0'};
     }
+  } else {
+    vals.home={v:0, b:'未填写家乡，离家无法计算，本项记 0'};
   }
-  /* 企业类型：国央企 / 民企 / 外企 三档排名 */
-  const b=companyTypeBucket(r.nature);
+  /* 企业类型：直接用画像对「央企/国企/民企/外企/事业单位」的真实排序。
+     旧版把 nature 归成「国央企」三桶再查画像键，桶名对不上 → 国企/央企/事业单位整维丢分 */
   const ctr=P.company_type_rank||RULES.ct_rank_def;
-  if(b&&ctr[b]!=null){
-    const v=rankValue(ctr[b], Object.keys(RULES.ct_buckets).length);
-    vals.company_type={v:v, b:'性质 '+r.nature+' → '+b+'(你的第'+ctr[b]+'优先)'};
+  const nat=String(r.nature||'').trim();
+  if(ctr[nat]!=null){
+    const v=rankValue(ctr[nat], Object.keys(ctr).length);
+    vals.company_type={v:v, b:'性质 '+nat+'（你的第'+ctr[nat]+'优先）'};
+  } else if(nat && nat!=='未知'){
+    const v=rankValue(Object.keys(ctr).length+1, Object.keys(ctr).length+1);
+    vals.company_type={v:v, b:'性质 '+nat+'（不在你的排序内，按末档）'};
+  } else {
+    vals.company_type={v:0, b:'企业性质未查到，本项记 0'};
   }
   /* 行业：对口是硬约束，这里只做排序偏好；不在列表内给中性地板分 */
   const ind=r.industry, ir=P.industry_rank||RULES.ind_rank_def;
@@ -231,31 +784,49 @@ function calcOne(r,P){
   } else {
     vals.industry={v:0.4, b:'行业 '+(ind||'未知')+'（不在你的偏好排序内）'};
   }
-  /* 规模：客观分档，不问用户 */
-  const st=r.scale_tier||classifyScale(r.nature, r.name, r.industry);
+  /* 规模：客观分档，不问用户。'未知'必须走推断（旧版被 or 短路，整维丢失） */
+  let st=r.scale_tier||'';
+  if(RULES.scale_tiers[st]==null) st=classifyScale(r.nature, r.name, r.industry);
   if(st&&RULES.scale_tiers[st]!=null){
     vals.scale={v:RULES.scale_tiers[st], b:'规模档 '+st+'（客观判定）'};
+  } else {
+    vals.scale={v:0, b:'规模档无法判定，本项记 0'};
   }
-  /* 行业地位：读 v4.2 rank_tier（500强/行业龙头等）。无公开榜单给中性地板，不惩罚 */
+  /* 行业地位 / 成长性：读 145 家增补档案（payload v42 字段）合并后的档位。
+     榜单里没有的就是 0 —— 不给中性底板分。
+     非企业主体（学校/党政/事业单位）也记 0，只在依据里写明「无第三方榜单」：
+     旧版把它们移出分母再归一，#85/#86 只剩两维、用 25 分池算分，跟别的企业不可比。 */
   const rt=(r.v42&&r.v42.rank_tier)||'';
   if(RULES.industry_status_tiers[rt]!=null){
     vals.industry_status={v:RULES.industry_status_tiers[rt],
       b:'行业地位 '+rt+'（第三方榜单/500强）'};
+  } else if(r.non_enterprise){
+    vals.industry_status={v:0, b:'非企业主体（学校/党政/事业单位），无第三方榜单，本项记 0'};
   } else {
-    vals.industry_status={v:RULES.industry_status_floor, b:'无公开榜单（中性，不扣分）'};
+    vals.industry_status={v:0, b:'无公开榜单数据，本项记 0'};
   }
-  /* 成长性：读 v4.2 growth_tier。无信号给中性地板 */
   const gt=(r.v42&&r.v42.growth_tier)||'none';
-  const gv=(RULES.growth_tiers[gt]!=null)?RULES.growth_tiers[gt]:RULES.growth_floor;
-  vals.growth={v:gv, b:'成长性 '+gt};
+  const gtw=Number(w.growth)||0;
+  if(RULES.growth_tiers[gt]!=null && gtw>0){
+    vals.growth={v:RULES.growth_tiers[gt], b:'成长性 '+gt};
+  } else if(gt==='unknown' && gtw>0){
+    vals.growth={v:0, b:'成长性未查到（记 0，不臆造）'};
+  } else if(r.non_enterprise){
+    vals.growth={v:0, b:'非企业主体，无成长类榜单，本项记 0'};
+  } else if(gtw>0){
+    vals.growth={v:0, b:'无成长性数据，本项记 0'};
+  } else {
+    vals.growth={v:0, b:'无成长性数据（本项不计分，权重已回填其他维度）'};
+  }
 
-  let pool=0; Object.keys(vals).forEach(function(k){ pool+=(Number(w[k])||0); });
-  pool=pool||1;
+  /* 分母恒为画像权重总和：漏维按 0 分计入，不再归一放大 */
   const total=Object.keys(w).reduce(function(n,k){return n+(Number(w[k])||0);},0)||100;
-  const parts=Object.keys(vals).map(function(k){
+  const parts=Object.keys(DIM_LABEL).map(function(k){
     const ww=Number(w[k])||0;
-    return {id:k, name:DIM_LABEL[k]||k, weight:ww, value:+vals[k].v.toFixed(2),
-            contribution:+(ww/pool*vals[k].v*100).toFixed(1), basis:vals[k].b};
+    const vv=vals[k]?vals[k].v:0;
+    const bb=vals[k]?vals[k].b:'本项无数据，记 0';
+    return {id:k, name:DIM_LABEL[k]||k, weight:ww, value:+vv.toFixed(2),
+            contribution:+(ww/total*vv*100).toFixed(1), basis:bb};
   });
   const score=+parts.reduce(function(n,p){return n+p.contribution;},0).toFixed(1);
 
@@ -271,17 +842,50 @@ function calcOne(r,P){
   qs.sort(function(a,b){return b.priority-a.priority;});
 
   /* 学生勾选的意向岗位 ↔ 企业真实岗位名：大模型语义判定（未覆盖时退回字面匹配） */
-  const matches=matchIntent(r.matched_jobs,P.intended_jobs,P.sem,r.job_titles);
-  return {score:score, effective_weight:+(pool/total*100).toFixed(1),
+  const matches=matchIntent(r.matched_jobs,P.intended_jobs,P.sem,r.job_titles,
+                            (r.name||'')+' '+(r.industry||'')+' '+(r.biz_scope||''));
+  return {score:score, effective_weight:+total.toFixed(1),
           parts:parts, questions:qs.slice(0,2),
           intent_hit:matches.map(function(m){return m.intent;}),
           intent_matches:matches};
 }
 
 function recompute(P){
+  /* 换了画像（本地切换测试画像 / 学生现场改勾选）时，payload 里的 state 与
+     matched_jobs 是按**上一个画像**算好冻住的。不重算就会出现「换专业后
+     明确命中还是 24 家」——分数变了、命中口径没变，是假结果。
+     这里用与后端同源的规则重算（parity 测试盯的就是这两套规则的一致性），
+     并把原因文案改成按当前意向描述，不冒用服务端结论。 */
+  const _custom = !!(P && P.fair_id && String(P.fair_id)!==String(D.active_fair_id||''));
   const rows=BASE.map(function(r){
     const c=calcOne(r,P);
     const x=Object.assign({}, r, c);
+    if(_custom){
+      const jt=(r.job_titles||[]);
+      /* 公司业务（名字 / 行业 / 主营）：判断大类岗位名（管培生）能不能算对口 */
+      const biz=(r.name||'')+' '+(r.industry||'')+' '+(r.biz_scope||'')
+        +((r.v42&&r.v42.segment)?(' '+r.v42.segment):'');
+      const hits=matchIntent(jt, P.intended_jobs||[], P.sem||{}, jt, biz);
+      const jobs=[], its=[];
+      hits.forEach(function(h){
+        if(jobs.indexOf(h.job)<0) jobs.push(h.job);
+        if(its.indexOf(h.intent)<0) its.push(h.intent);
+      });
+      x.state = jobs.length ? 'hit' : 'inferred';
+      x.matched_jobs = jobs;
+      x.intent_hit = its;
+      x.intent_matches = hits;
+      x.level_blocked = miLevelBlocked(P.intended_jobs||[], jt);
+      x.ask_jobs = miAskJobs(P.intended_jobs||[], jt, biz);
+      x.state_recalc = true;
+      if(!jobs.length){
+        const ii=(P.intended_jobs||[]).slice(0,3);
+        x.reason = '按当前画像（意向：'+(ii.join('、')||'—')
+          +((P.intended_jobs||[]).length>3?' 等':'')
+          +'）没有查到对口岗位；按行业「'+(r.industry||'未知')+'」推断，现场问一句确认。';
+        x.infer_notice = '';
+      }
+    }
     const fb=feedback[r.name];            // v7：现场核实优先于模型推断
     if(fb){
       x.feedback=fb;
@@ -301,14 +905,17 @@ function recompute(P){
     // 唯一例外是「现场确认不招」——那是事实层面的出局，仍顺延到队尾。
     const an=(feedback[a.name]||{}).result==='no'?1:0;
     const bn=(feedback[b.name]||{}).result==='no'?1:0;
-    return (an-bn) || (b.score-a.score)
-        || (b.priority-a.priority) || a.name.localeCompare(b.name);
+    // 同分并列必须给确定性次序，且与后端 rank 完全同规则：
+    // 命中 > 推断 → 展位号 → 名称。否则同分企业前后端名次会不一样。
+    const ah=a.state==='hit'?0:1, bh=b.state==='hit'?0:1;
+    return (an-bn) || (b.score-a.score) || (ah-bh)
+        || String(a.booth||'999').localeCompare(String(b.booth||'999'))
+        || a.name.localeCompare(b.name);
   });
   rows.forEach(function(r,i){
     r.rank=i+1;
     r.next=rows[i+1]?rows[i+1].name:'';
     r.rank_reason='第 '+(i+1)+' 位：排序分 '+r.score
-      +'（仅 '+r.effective_weight+'% 权重生效）'
       +' / '+({hit:'有真实 JD 命中',inferred:'按行业推断待核实',miss:'无对口岗位'})[r.state];
     const fb=feedback[r.name];
     if(fb&&fb.result==='yes') r.rank_reason+='；现场已确认招，推断升级为明确命中';
@@ -348,6 +955,11 @@ function rowHTML(r,idx,P){
       +'<span>优先级 '+q.priority+'</span></div><div class="job-req">'+e(q.q)+'</div>'
       +(q.why?'<div class="job-req">起因：'+e(q.why)+'</div>':'')+'</div>';
   }).join('')||'<div class="job-empty">无需现场核实</div>';
+  /* 大类岗位名单独成块，放在提问区：不是命中，是一句该问的话。 */
+  const askRows=(r.ask_jobs||[]).map(function(a){
+    return '<div class="job"><div class="job-h"><b>问一句：「'+e(a.job)+'」是这个方向吗</b>'
+      +'<span>大类岗位名</span></div><div class="job-req">'+e(a.why)+'</div></div>';
+  }).join('');
   const notes=(r.check_notes||[]).map(function(n){return '<div class="job-req">· '+e(n)+'</div>';}).join('');
   const notice=r.infer_notice
     ? '<div style="margin:8px 0;padding:8px 10px;background:#fdecea;border-left:3px solid #c0392b;'
@@ -355,11 +967,24 @@ function rowHTML(r,idx,P){
       +e(r.infer_notice)+'</div>' : '';
   const intentLine=(r.intent_matches&&r.intent_matches.length)
     ? '<span class="hits">岗位语义命中：'+e(r.intent_matches.map(function(m){
-        return m.job+' ↔ 你选的「'+m.intent+'」'
-          +(m.via==='literal'?'（字面近似）':'（大模型判定：'+m.reason+'）');
+        // 模型已经把「即另一种说法 / 大模型判断二者类似工作内容」写进 reason，
+        // 这类以「大模型判断 / 大模型判定」开头的就直接原样展示，避免再套一层「大模型判定：」。
+        const tail = m.via==='literal' ? '（字面近似）'
+          : m.via==='rule' ? '（'+m.reason+'）'
+          : (/^大模型(判断|判定)/.test(m.reason||'') ? '（'+m.reason+'）' : '（大模型判定：'+m.reason+'）');
+        return m.job+' ↔ 你选的「'+m.intent+'」'+tail;
       }).join('；'))+'</span>'
     : ((r.intent_hit&&r.intent_hit.length)
         ? '<span class="hits">你勾选的岗位命中：'+e(r.intent_hit.join('、'))+'</span>' : '');
+  /* 层级提示：同一职能但写着主管 / 资深 / 经理的岗位，校招投不进这一档。
+     不假装对口、也不说人家不招——企业照常留榜，给学生一句现场可问的话。 */
+  const lvb=(r.level_blocked||[]);
+  const levelLine=lvb.length
+    ? '<span class="line" style="color:#8a6d3b">层级提示：'+e(lvb.slice(0,2).map(function(x){
+        return '「'+x.job+'」属'+x.level+'档，与你选的「'+x.intent+'」不同档，校招投不进';
+      }).join('；'))+(lvb.length>2?' 等 '+lvb.length+' 个岗位':'')
+      +' · 企业照常留在榜上，可现场问是否按应届招</span>'
+    : '';
 
   /* v4.2 企业画像：行业地位(多榜) / 成长 / 细分领域 / 4 列岗位来源。
      复用现有 .job-req 样式，只往折叠区追加内容，不改页面骨架与布局。 */
@@ -379,18 +1004,25 @@ function rowHTML(r,idx,P){
     +' / 联网兜底 '+((vjs.websearch||[]).length)
     +' / 并集 '+((vjs.total||[]).length);
   const v42Block=Object.keys(v).length
-    ? '<div class="job-req"><b>企业画像（v4.2 · 仅展示，不参与打分）</b></div>'
+    ? '<div class="job-req"><b>企业画像（145 家增补档案 · 2026-11-15）</b>'
+      +'<span style="color:#8a6d3b">行业地位 / 成长性参与打分；细分、榜单明细、岗位来源只展示</span></div>'
       +'<div class="job-req">行业地位：'+e(v.industry_rank_label||'未查')
-        +(v.rank_dim?' · '+e(v.rank_dim==='industry'?'行业榜主榜':'综合规模榜主榜'):'')
-        +(v.rank_tier?' / '+e(v.rank_tier):'')+'</div>'
+        +(v.rank_tier?' / '+e(v.rank_tier)+'（'
+          +((RULES.industry_status_tiers||{})[v.rank_tier]!=null
+            ? '本项得 '+RULES.industry_status_tiers[v.rank_tier] : '—')+'）':'')
+        +(v.industry_rank_label==='不适用（非企业主体）'
+          ? ' · 学校/党政/事业单位，本项不参与打分':'' )+'</div>'
       +(vhits||'<div class="job-req">· 无榜单条目（不代表不是龙头）</div>')
       +'<div class="job-req">成长：'+e(v.growth_tier||'—')
-        +' · 细分领域：'+e(short(v.segment||'—',70))
+        +(v.growth_tier==='unknown'?'（未查到，记 0）':'')
+        +(v.growth_note?' · '+e(short(v.growth_note,90)):'')
+        +'</div>'
+      +(r.growth_flag?'<div class="job-req" style="color:#b3261e">⚠ '+e(r.growth_flag)+'</div>':'')
+      +'<div class="job-req">细分领域：'+e(short(v.segment||'—',80))
         +(v.segment_leader?' · 细分领先 '+e(v.segment_leader)
           +(v.segment_leader==='self_claim'?'（企业自述，不作认定）':''):'')
         +'</div>'
-      +'<div class="job-req">岗位来源（三步流程保留）：'+srcLine
-        +' · 覆盖 '+e(v.job_coverage||'—')+'</div>'
+      +(srcLine.indexOf('并集 0')>=0?'':'<div class="job-req">岗位来源（三步流程保留）：'+srcLine+'</div>')
     : '';
 
   return '<div class="row" id="tri-'+idx+'"'+(visitedSet[r.name]?' style="opacity:.45"':'')+'>'
@@ -402,21 +1034,33 @@ function rowHTML(r,idx,P){
    +   '<span class="line">'+e(r.rank_reason)+'</span>'
    +   (r.tour_pos?'<span class="line">会场动线第 '+r.tour_pos+' 站 · 推荐序第 '+r.rank
         +' 位（匹配分 '+r.score+' 照常显示）</span>':'')
-   +   '<span class="line">来源 '+e(short(ev.source,54))+' · '+e(ev.date)+' · 证据等级 '+e(ev.jobSource)+'</span>'
-   +   (r.hits.length?'<span class="hits">命中岗位：'+e(r.hits.join('、'))+'</span>':'')
+   +   '<span class="line">来源 '+e(short(ev.source,54))+' · '+e(ev.date)+' · 岗位来源 '+e(ev.jobSource)+'</span>'
+   +   (r.job_brief?'<span class="line" style="color:#8a6d3b">岗位情况：'+e(short(r.job_brief,160))+'</span>':'')
+   +   (r.llm_basis?'<span class="line" style="color:#1a6b4f"><b>'+e(short(r.llm_basis,240))+'</b></span>':'')
+   +   (r.hits.length?'<span class="hits">命中岗位：'+e(r.hits.join('、'))
+        +((r.hit_total||r.hits.length)>r.hits.length?' 等 '+r.hit_total+' 个（判定到此，仅列前 '+r.hits.length+' 个）':'')
+        +'</span>':'')
    +   intentLine
-   +   (r.misses.length?'<span class="misses">未对口：'+e(short(r.misses.join('、'),70))+'</span>':'')
+   +   levelLine
+   +   (r.misses.length?'<span class="misses">未对口'
+        +((r.miss_total||r.misses.length)>r.misses.length?'（示例 '+r.misses.length+'/'+r.miss_total+' 个）':'')
+        +'：'+e(short(r.misses.join('、'),70))
+        +((r.job_title_total||0)>r.misses.length+r.hits.length?' · 这家共 '+r.job_title_total+' 个岗位名，其余未逐一列出':'')
+        +'</span>':'')
    +   (r.reason?'<span class="line">对口理由：'+e(short(r.reason,90))+'</span>':'')
-   + '</div><div class="sc">'+r.score+'<em>生效权重 '+r.effective_weight+'%</em></div></div>'
+   + '</div><div class="sc">'+r.score+'<em>缺数据维度记 0</em></div></div>'
    + notice
-   + '<div class="calc"><b>算分依据（五项 100 · 按你当前画像实时重算）</b>'
-   +   '<div class="calc-sub">实际生效 '+r.effective_weight+'% 权重；未采到的维度不计分、也绝不给最低档。'
-   +     '分值只用于排序，不代表企业好坏，不与生效权重不同的企业直接可比。</div>'
+   + '<div class="calc"><b>算分依据（七项 100 · 按你当前画像实时重算）</b>'
+   +   '<div class="calc-sub">七维权重全部计入（合计 100）；缺数据的维度记 0 分，'
+   +     '既不给中性底板，也不从分母里拿掉——否则缺数据反而会把分数抬上去。'
+   +     '分值只用于排序，不代表企业好坏。</div>'
    +   '<table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px">'
    +   '<tr style="color:#7b8492"><td>维度</td><td>你的权重</td><td>档位值</td><td>贡献</td><td>依据</td></tr>'
    +   partRows+'</table></div>'
    + '<div class="jobbox"><details><summary>信息缺口 · 现场提问 · 事实校验 · 证据溯源（'+r.gaps.length+' 项缺口）</summary>'
    +   '<div class="job-req"><b>建议现场问（按当前权重 × 缺口可信度实时取前 2）</b></div>'+qRows
+   +   (askRows?'<div class="job-req"><b>大类岗位名 · 值得问一句</b>'
+        +'（名字没写方向，不能当对口证据）</div>'+askRows:'')
    +   '<div class="job-req"><b>信息缺口清单</b></div>'+gapRows
    +   '<div class="job-req"><b>企业端事实校验 '+trustBadge(r)+'</b></div>'+notes
    +   ((r.guard&&r.guard.note)?'<div class="job-req" style="color:#c0392b"><b>幻觉拦截</b>：'
@@ -450,11 +1094,34 @@ function rowBrief(r, idx, P){
   const hit=sm.slice(0,2).map(function(m){return m.job+' ↔ '+m.intent;});
   const focus=top.concat(hit.length?['岗位命中：'+hit.join('；')]:[]);
   const line2=focus.length?e(focus.join(' · ')):'按当前画像计算，暂无特别突出的命中项';
+  const basisLine=r.llm_basis
+    ? '<div class="line" style="color:#1a6b4f"><b>'+e(short(r.llm_basis,120))+'</b></div>' : '';
+  /* 层级提示要出现在列表上，不能只藏在「完整报告」里：
+     学生扫榜时就得知道「这家有同职能岗位，但写着主管/资深/经理，校招投不进」，
+     否则会把排行榜当成「这些岗位我都能投」。 */
+  const lvb=(r.level_blocked||[]);
+  const lvlLine=lvb.length
+    ? '<div class="line" style="color:#8a6d3b">⚠ 层级提示：'
+      + e(lvb.slice(0,2).map(function(x){return x.job+'（'+x.level+'）';}).join('、'))
+      + (lvb.length>2?' 等 '+lvb.length+' 个':'')
+      + ' 与「'+e(lvb[0].intent)+'」不同档，校招投不进这一档</div>'
+    : '';
+  /* 大类岗位名（管培生 / 储备干部 / 研究员）：不是对口证据，但值得问一句。
+     制造业企业的管培生不一定按供应链培养 —— 大类不能反推小类。 */
+  const avb=(r.ask_jobs||[]);
+  const askLine=avb.length
+    ? '<div class="line" style="color:#8a6d3b">💬 值得问一句：有「'
+      + e(avb.slice(0,2).map(function(x){return x.job;}).join('、'))
+      + '」但没写业务方向，问一句是否按「'+e(avb[0].intent)+'」方向培养</div>'
+    : '';
   return '<div class="row" id="tri-'+idx+'">'
    + '<div class="rowhead"><div class="nm"><b>'+e(r.name)+'</b> '+trustBadge(r)+'</div>'
-   +   '<div class="sc">'+r.score+'<em>生效权重 '+r.effective_weight+'%</em></div></div>'
+   +   '<div class="sc">'+r.score+'<em>缺数据维度记 0</em></div></div>'
    + '<div class="line">'+line1+'</div>'
    + '<div class="line">'+line2+'</div>'
+   + basisLine
+   + lvlLine
+   + askLine
    + '<div class="btns" style="margin-top:6px">'
    +   '<button type="button" class="btn btn-p" data-detail="'+e(r.name)+'">查看完整报告 →</button>'
    + '</div></div>';
@@ -462,9 +1129,11 @@ function rowBrief(r, idx, P){
 
 /* ---------- v12 硬约束：条件必须可见 ---------- */
 // 硬约束会直接删企业，删了却不说等于骗人。这里把「因你的条件删掉了哪些」摆出来。
-function hardFilterNote(){
+function hardFilterNote(custom){
   var hf=D.hard_filter||{};
-  if(!hf.raw_text && !hf.dropped_count && hf.accept_no_major) return '';
+  var em=D.excluded_miss||{};
+  var ec=D.excluded_campus||{};
+  if(!hf.raw_text && !hf.dropped_count && hf.accept_no_major && !em.count && !ec.count) return '';
   var p=hf.parsed||{};
   var bits=[];
   if((p.cities||[]).length) bits.push('城市：'+p.cities.join('、'));
@@ -473,14 +1142,26 @@ function hardFilterNote(){
   var txt=[];
   if(hf.raw_text) txt.push('你的要求「'+e(hf.raw_text)+'」'+(bits.length?'（已理解为 '+e(bits.join('；'))+'）':''));
   if(!hf.accept_no_major) txt.push('未接受教培类企业');
-  if(!txt.length) return '';
+  if(!txt.length && !em.count && !ec.count) return '';
   var names=(hf.dropped||[]).slice(0,6).map(function(d){return e(d.name);}).join('、');
   var more=(hf.dropped||[]).length>6?' 等':'';
+  var condLine=txt.length
+    ? '<b>已按你的条件筛掉 '+ (hf.dropped_count||0) +' 家企业</b>：'+txt.join('，')
+    : '';
+  var missLine=em.count
+    ? '<br><b>已排除 '+em.count+' 家岗位不对口的企业</b>（模型判定不对口；0 岗与推断待核实的企业仍保留，「没查到」不等于「不招」）'
+    : '';
+  var campusLine=ec.count
+    ? '<br><b>已排除 '+ec.count+' 家校招公告里没有对口岗位的企业</b>（校招公告岗位齐全，不必去现场碰运气；其他来源不保证齐全的仍保留并提示现场确认）'
+    : '';
   return '<div class="note" style="font-size:12px;margin:0 0 10px;padding:8px 10px;'
     + 'background:#fff8e6;border-left:3px solid #d9a400;border-radius:0 5px 5px 0">'
-    + '<b>已按你的条件筛掉 '+ (hf.dropped_count||0) +' 家企业</b>：'+txt.join('，')
+    + condLine + missLine + campusLine
     + ((hf.dropped||[]).length? '<br><span style="color:#8a94a6">排除名单：'+names+more+'</span>' : '')
     + '<br><span style="color:#8a94a6">这是硬条件，不是降权——不满足的企业不会出现在任何排名里。</span>'
+    + (custom ? '<br><span style="color:#b7791f">注意：这份「已排除」名单是服务端按库内画像'
+        + e(D.active_fair_id||'') + '预筛的，切换本地测试画像不会重算；'
+        + '它只决定谁不进榜，不影响榜内企业的分数与名次。</span>' : '')
     + '</div>';
 }
 
@@ -492,11 +1173,12 @@ function testSaveBox(rows){
     : '未设硬约束';
   return '<details style="margin:18px 0 0;border-top:1px dashed #cfd6e4;padding-top:10px">'
     + '<summary style="cursor:pointer;font-size:12px;color:#41506b">'
-    + '实验记录：把这次的填写与排序结果存入测试数据库</summary>'
+    + '实验记录：保存本次填写与排序结果 / 查看并删除历史记录</summary>'
     + '<div class="note" style="font-size:12px;margin:8px 0">'
     + '当前共 '+rows.length+' 家企业参与排名；'+hfLine
     + '；教培类：'+(hf.accept_no_major?'已纳入':'已剔除')
-    + '<br>保存后可在库里用 SQL 对比不同条件下列表的差异，不会被后续采集覆盖。'
+    + '<br>测试跑出来的记录可逐条删除，只保留真人跑的；删除不影响企业库和画像。'
+    + ' <a href="/tests.html" target="_blank" style="color:#2563eb">打开独立测试记录页 →</a>'
     + '</div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
     + '<input id="tst-tag" placeholder="标签：会场名 / 组别，如 南大场-A组" '
@@ -505,11 +1187,76 @@ function testSaveBox(rows){
     +   'style="width:130px;padding:6px 8px;border:1px solid #cfd6e4;border-radius:5px;font-size:12px">'
     + '<button type="button" class="btn btn-p" data-test-save>保存到测试库</button>'
     + '<span id="tst-msg" style="font-size:12px;color:#0f9960"></span>'
-    + '</div></details>';
+    + '</div>'
+    + '<div id="tst-list" style="margin-top:10px"></div>'
+    + '</details>';
 }
 function bindTestSave(box){
   var btn=box.querySelector('[data-test-save]');
   if(!btn) return;
+  var list=box.querySelector('#tst-list');
+
+  // 历史记录列表：逐条查看「填了什么 / 排出了什么」，逐条删除测试脏数据
+  function loadList(){
+    if(!list) return;
+    list.innerHTML='<span style="font-size:12px;color:#8a94a6">读取记录中…</span>';
+    fetch('/api/fair/test-list?limit=50').then(function(r){return r.json();}).then(function(d){
+      var items=(d&&d.items)||[];
+      if(!items.length){ list.innerHTML='<div class="note" style="font-size:12px">暂无测试记录。</div>'; return; }
+      var h='<div style="font-size:12px;color:#41506b;margin:4px 0 6px">共 '+items.length+' 条（最新在前）</div>'
+        + '<div style="max-height:280px;overflow:auto;border:1px solid #e2e7f0;border-radius:6px">';
+      items.forEach(function(it){
+        h+='<div style="display:flex;gap:8px;align-items:center;padding:6px 8px;border-bottom:1px solid #eef1f6;font-size:12px;flex-wrap:wrap">'
+          + '<span style="color:#8a94a6;min-width:30px">#'+it.id+'</span>'
+          + '<span style="color:#8a94a6;min-width:118px">'+e(it.created_at)+'</span>'
+          + '<b style="min-width:120px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+e(it.tag||'未命名')+'</b>'
+          + '<span style="min-width:100px">'+e(it.major||'—')+'</span>'
+          + '<span style="color:#8a94a6">'+it.n_rows+' 家</span>'
+          + (it.hard_filter?'<span style="color:#b7791f" title="'+e(it.hard_filter)+'">硬约束</span>':'')
+          + '<button type="button" class="btn btn-g" data-test-view="'+it.id+'">查看</button>'
+          + '<button type="button" class="btn btn-g" data-test-del="'+it.id+'" style="color:#c0392b;border-color:#e6b3b3">删除</button>'
+          + '</div>'
+          + '<div id="tst-detail-'+it.id+'" style="display:none;padding:8px 10px;background:#f7f9fc;font-size:12px;line-height:1.7"></div>';
+      });
+      h+='</div>';
+      list.innerHTML=h;
+      list.querySelectorAll('[data-test-view]').forEach(function(b){
+        b.onclick=function(){
+          var pane=list.querySelector('#tst-detail-'+b.dataset.testView);
+          if(!pane) return;
+          if(pane.style.display!=='none'){ pane.style.display='none'; return; }
+          pane.style.display='block'; pane.textContent='读取中…';
+          fetch('/api/fair/test-detail?id='+b.dataset.testView).then(function(r){return r.json();}).then(function(dd){
+            var it=(dd&&dd.item)||{}, top=it.top||[];
+            pane.innerHTML='<div><b>输入</b>：专业 '+e(it.major||'—')
+              +'；权重 '+e(JSON.stringify(it.weights||{}))+'</div>'
+              +'<div>意向岗位 '+e((it.intended||[]).join('、')||'—')
+              +'；硬约束 '+e(it.hard_filter||'无')+'</div>'
+              +'<div style="margin-top:4px"><b>输出前 '+top.length+' 名</b>：'
+              + top.map(function(t,i){ return (i+1)+'. '+e(t.name)+' ('+t.score+')'; }).join('　')
+              +'</div>'
+              +'<div>硬约束剔除 '+((it.dropped||[]).length)+' 家；备注 '+e(it.note||'—')+'</div>';
+          }).catch(function(){ pane.textContent='读取失败'; });
+        };
+      });
+      list.querySelectorAll('[data-test-del]').forEach(function(b){
+        b.onclick=function(){
+          var id=b.dataset.testDel;
+          if(!window.confirm('确定删除测试记录 #'+id+'？删除后不可恢复，真人跑的记录请保留。')) return;
+          b.disabled=true;
+          fetch('/api/fair/test-delete',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({id:id})}).then(function(r){return r.json();}).then(function(dd){
+            if(dd&&dd.ok){ loadList(); }
+            else { b.disabled=false; window.alert('删除失败：'+((dd&&dd.error)||'未知原因')); }
+          }).catch(function(){ b.disabled=false; window.alert('删除失败：连不上服务'); });
+        };
+      });
+    }).catch(function(){
+      if(list) list.innerHTML='<span style="font-size:12px;color:#c0392b">读取失败（离线模式不支持）</span>';
+    });
+  }
+  loadList();
+
   btn.onclick=function(){
     var tagEl=box.querySelector('#tst-tag'), sidEl=box.querySelector('#tst-sid');
     var msg=box.querySelector('#tst-msg');
@@ -530,6 +1277,7 @@ function bindTestSave(box){
           ? ('已保存（记录 #'+d.id+'，'+d.n_rows+' 家企业）')
           : ('保存失败：'+((d&&d.error)||'未知原因'));
       }
+      if(d&&d.ok) loadList();
       btn.disabled=false;
     }).catch(function(err){
       if(msg){msg.style.color='#c0392b';msg.textContent='保存失败：连不上服务（离线模式不支持）';}
@@ -542,7 +1290,16 @@ function render(){
   const box=document.getElementById('mres');
   if(!box) return;
   const P=getProfile();
-  const rows=recompute(P).filter(function(r){
+  /* 当前画像的意向若不在 payload 的语义映射里（换画像 / 现场新勾），
+     先让服务端补判；拿不到就用本地规则兜底，不阻塞首屏。 */
+  ensureSemantics(P.intended_jobs);
+  const allRows=recompute(P);
+  /* 换画像后 payload 里的 hit/inferred 统计是按旧画像的，这里按当前结果重数 */
+  const _hitN=allRows.filter(function(r){return r.state==='hit';}).length;
+  const _infN=allRows.filter(function(r){return r.state==='inferred';}).length;
+  const _customNow=!!(P.fair_id && D.active_fair_id
+                      && String(P.fair_id)!==String(D.active_fair_id));
+  const rows=allRows.filter(function(r){
     if(filter==='high') return r.trust==='high';
     if(filter==='infer') return r.state==='inferred';
     if(filter==='low') return r.trust==='low';
@@ -561,9 +1318,27 @@ function render(){
   const live=P.is_session?'<span style="color:#0f9960">● 已接入本次采集画像 '+e(P.fair_id)+'</span>'
                       :(P.is_server?'<span style="color:#0f9960">● 正在使用服务端最近一次采集的画像 '+e(P.fair_id)+'（本标签页未走采集流程，结果已按该画像算好）</span>'
                       :'<span style="color:#b7791f">○ 尚未生成画像，正在用默认画像演示</span>');
+  // 缓存体检：payload 里带着每一项结论是不是「本版代码」算出来的。
+  // 以前改完规则忘了清缓存，页面照旧显示旧结论且完全看不出来；现在摆在明面上。
+  const _cacheNote=(function(){
+    const cs=D.cache_status||{}, ks=Object.keys(cs);
+    if(!ks.length) return '';
+    const ok=ks.filter(function(k){return cs[k].ok;}).length;
+    const bad=ks.filter(function(k){return !cs[k].ok;});
+    return '<b>缓存体检</b>：'+ks.length+' 项，本版代码生成 '+ok+' 项'
+      +(bad.length ? '；<span style="color:#b7791f">需注意：'+bad.map(function(k){
+          return k+'（'+cs[k].why+'）';}).join('；')+'</span>'
+        : '；全部与当前代码一致')+'<br>';
+  })();
   const _infoHtml='<div class="note" style="background:#eff4ff;border:1px solid #d6e4ff;border-radius:8px;'
     +'padding:9px 12px;margin:0 0 14px;font-size:12px;line-height:1.8">'
     +'<b>三端协调报告 · v7 现场回流 / 展位动线</b>　'+live+'<br>'
+    +(_customNow
+      ? '<span style="color:#b7791f">⚠ 当前画像来自浏览器本地（'+e(P.fair_id)+'），'
+        +'<b>分数、岗位命中/层级提示已按这套画像重算</b>；企业理由、现场提问、'
+        +'缺口说明仍是服务端「'+e(D.active_fair_id)+'」那份，只作展示。'
+        +'要跑完整链路（含大模型重判命中）请把这套 JSON 提交到 /api/fair/profile。</span><br>'
+      : '')
     +'写库：'+(P.saved_to_db
         ? '✓ 本次画像已写入 careersafari.db（'+e(P.db_fair_id)+'），匹配端已按它重建'
         : (P.db_fair_id ? '库内生效画像 '+e(P.db_fair_id)+'；本次会话尚未提交新画像'
@@ -573,8 +1348,10 @@ function render(){
       +' / 权重 '+Object.keys(P.weights).map(function(k){return k+':'+P.weights[k];}).join('、')+'<br>'
     +'企业端：'+e(D.sources['企业端'])+'<br>匹配端：'+e(D.sources['匹配端'])
       +'；结论已与企业端 JD / 行业做事实校验<br>'
-    +'共 '+D.stats.companies+' 家 / '+D.stats.jobs+' 条岗位；明确命中 '+D.stats.states.hit
-      +' · 推断 '+D.stats.states.inferred+' · 不对口 '+D.stats.states.miss
+    +_cacheNote
+    +'共 '+D.stats.companies+' 家 / '+D.stats.jobs+' 条岗位；明确命中 '+_hitN
+      +' · 推断 '+_infN
+      +(_customNow?'（按当前画像重算）':'')
       +'；校验 高 '+(D.stats.trust&&D.stats.trust.high||0)+' / 中 '
       +(D.stats.trust&&D.stats.trust.medium||0)+' / 低 '+(D.stats.trust&&D.stats.trust.low||0)
       +'；已拦截可疑岗位名 '+(D.stats.masked_job_names||0)+' 个、证据等级纠错 '
@@ -587,14 +1364,23 @@ function render(){
       +Math.max(0,rows.length-visited)+' 家待看。点卡片里的按钮会同步推进。'
     +'</div>'
     +'<div class="note" style="font-size:12px;margin:0 0 10px">'
-    +'<b>五项权重微调</b>（改完立即重算，不必回采集端重新生成画像）：'
-    + Object.keys(P.weights).map(function(k){
+    +'<b>各维权重微调</b>（改完立即重算，不必回采集端重新生成画像）：'
+    + Object.keys(P.weights).filter(function(k){
+        // 数据不可用的维度（当前是成长性）不参与微调：调它只会让分数虚降。
+        return !(D.weights_disabled&&D.weights_disabled[k]);
+      }).map(function(k){
         return '<span style="display:inline-block;margin:0 10px 0 0">'
           +e(DIM_LABEL[k]||k)+' <b>'+P.weights[k]+'</b> '
           +'<button type="button" class="btn btn-g" data-wk="'+k+'" data-wd="-5">−5</button> '
           +'<button type="button" class="btn btn-g" data-wk="'+k+'" data-wd="5">+5</button></span>';
       }).join('')
-    + ' <button type="button" class="btn btn-g" data-wreset="1">恢复画像权重</button></div>'
+    + ' <button type="button" class="btn btn-g" data-wreset="1">恢复画像权重</button>'
+    + (D.weights_disabled&&Object.keys(D.weights_disabled).length
+        ? '<div class="note" style="font-size:12px;margin:6px 0 0">'
+          + Object.keys(D.weights_disabled).map(function(k){
+              return '<b>'+e(DIM_LABEL[k]||k)+'</b>：'+e(D.weights_disabled[k]);}).join('<br>')
+          + '</div>' : '')
+    + '</div>'
     +'<div class="btns" style="margin:0 0 12px">'
     + [['all','全部'],['high','只看高可信'],['infer','只看推断待核实'],['low','只看校验异常']]
         .map(function(x){return '<button type="button" class="btn '+(filter===x[0]?'btn-p':'btn-g')
@@ -642,10 +1428,12 @@ function render(){
   }else{
     html='<div class="note" style="font-size:12px;margin:0 0 10px"><b>共 '
       + D.stats.companies+' 家 / '+D.stats.jobs+' 条岗位</b>　'+live
-      + ' · 明确命中 '+D.stats.states.hit+' / 推断 '+D.stats.states.inferred
-      + ' / 不对口 '+D.stats.states.miss
+      + ' · 明确命中 '+_hitN+' / 推断 '+_infN
+      /* 不在榜里的「不对口」不参与排名（硬过滤直接剔掉），没有可显示的计数；
+         原来取 D.stats.states.miss 会渲染成 undefined。换画像后按当前结果重数。 */
+      + (_customNow?'（按当前画像重算）':'')
       + ' · 意向岗位 '+e((P.intended_jobs||[]).join('、')||'—')+'</div>'
-      + hardFilterNote()
+      + hardFilterNote(_customNow)
       + '<div class="btns" style="margin:0 0 12px">'
       + '<button type="button" class="btn '+(sortMode==='queue'?'btn-p':'btn-g')
         +'" data-sort="queue">按排名</button>'
@@ -654,6 +1442,10 @@ function render(){
       + '</div>'
       + '<details style="margin:0 0 12px"><summary style="cursor:pointer;font-size:12px">'
       + '更多设置 / 完整信息（统计 · 权重微调 · 筛选 · 导出 · 现场进度）</summary>'
+      // 演示/验收常要换一套画像看效果，入口放这里：学生正常浏览不会碰到。
+      + '<div style="font-size:12px;margin:8px 0 10px">换个身份看效果：'
+      + '<a href="/test_users.html" target="_blank">测试数据（3 套随机画像）</a>'
+      + ' · <a href="/tests.html" target="_blank">测试记录</a></div>'
       + _infoHtml + '</details>';
   }
   // v12 测试数据库：把本次填写与排序结果存一条记录，供现场实验分析。

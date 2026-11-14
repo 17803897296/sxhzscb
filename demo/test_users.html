@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>测试用户 · 3 套随机画像</title>
+<style>
+:root{--ink:#16181d;--muted:#6b7280;--line:#e6e8ec;--bg:#f5f6f8;--card:#fff;
+      --blue:#2f5bd3;--green:#0f7b57}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+ font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.app{max-width:940px;margin:0 auto;padding:32px 20px 64px}
+h1{font-size:22px;margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 22px;font-size:13.5px}
+.note{background:#fff8e6;border:1px solid #f0d9a8;color:#7a5a12;border-radius:10px;
+ padding:11px 14px;font-size:13px;margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+ padding:18px 20px;margin:0 0 16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.card header{margin-bottom:12px}
+.who{display:flex;align-items:center;gap:10px;font-size:16px}
+.tag{font:11px/1 ui-monospace,Menlo,monospace;color:var(--muted);
+ background:#f1f3f6;border-radius:6px;padding:4px 7px}
+.meta{color:var(--muted);font-size:13px;margin-top:3px}
+.row{display:flex;gap:12px;padding:7px 0;border-top:1px dashed var(--line)}
+.k{flex:0 0 74px;color:var(--muted);font-size:13px}
+.v{flex:1;min-width:0}
+.chip{display:inline-block;background:#eef3ff;color:#26418f;border-radius:999px;
+ padding:2px 9px;margin:0 6px 6px 0;font-size:12.5px}
+.dim{color:var(--muted);font-size:12px}
+.bars{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}
+.bar{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.bl{flex:0 0 68px;color:#4b5563}
+.bt{flex:1;height:6px;background:#eef0f4;border-radius:3px;overflow:hidden}
+.bt i{display:block;height:100%;background:#8aa4e8;border-radius:3px}
+.bv{flex:0 0 26px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+button{font:inherit;font-size:13px;border:1px solid var(--line);background:#fff;
+ color:var(--ink);border-radius:8px;padding:7px 13px;cursor:pointer}
+button:hover{border-color:#c9cfda}
+button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+button.primary:hover{background:#284fbe}
+button.ghost{color:var(--muted)}
+.raw{display:none;margin:12px 0 0;background:#0f1115;color:#d7dce5;border-radius:10px;
+ padding:14px;font:12px/1.55 ui-monospace,Menlo,monospace;max-height:320px;overflow:auto}
+.raw.on{display:block}
+.foot{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+button.warn{border-color:#f0d9a8;background:#fffaf0;color:#8a6d3b}
+button.warn:hover{background:#fff4dd}
+.st{font-size:12.5px;color:#8a6d3b;margin-top:8px;min-height:0;line-height:1.6}
+.st:empty{display:none}
+.hint{color:var(--muted);font-size:12.5px;margin-top:18px;line-height:1.8}
+code{background:#eceff4;border-radius:4px;padding:1px 5px;font-size:12px}
+</style></head><body><div class="app">
+<h1>测试用户 · 3 套随机画像</h1>
+<p class="sub">由 <code>ent_tools/gen_test_users.py</code> 生成，专业 / 老家 / 意向岗位 / 排序偏好 / 权重各不相同，用来验收「换一个学生会怎样」。</p>
+<div class="note">点击「用这套画像打开排行」会把画像写进本浏览器 localStorage 再跳转 <code>/fair.html</code>；测试完点底部「清空画像」即可回到服务端当前画像（李炳成）。画像只存在本地，不写库。</div>
+
+  <section class="card" data-uid="FAIR-TEST-U1">
+    <header>
+      <div class="who"><b>测试用户 A（药学）</b><span class="tag">FAIR-TEST-U1</span></div>
+      <div class="meta">药学 · 老家 太原 · 期望入职 2027 年 7 月</div>
+    </header>
+    <div class="row"><span class="k">意向岗位</span><div class="v"><span class="chip">原料药质量研究员</span><span class="chip">医学专员</span><span class="chip">药品注册专员</span><span class="chip">药物分析研究员</span><span class="chip">医学信息沟通专员</span></div></div>
+    <div class="row"><span class="k">偏好排序</span><div class="v">
+      城市 1=新一线 · 企业类型 1=民企 · 行业 1=医药
+      <span class="dim">（只列第 1 优先，其余按默认顺序）</span></div></div>
+    <div class="row"><span class="k">七维权重</span><div class="v bars"><div class="bar"><span class="bl">行业</span><span class="bt"><i style="width:29.0%"></i></span><span class="bv">29</span></div><div class="bar"><span class="bl">离家近</span><span class="bt"><i style="width:24.0%"></i></span><span class="bv">24</span></div><div class="bar"><span class="bl">成长性</span><span class="bt"><i style="width:17.0%"></i></span><span class="bv">17</span></div><div class="bar"><span class="bl">企业类型</span><span class="bt"><i style="width:12.0%"></i></span><span class="bv">12</span></div><div class="bar"><span class="bl">企业规模档</span><span class="bt"><i style="width:8.0%"></i></span><span class="bv">8</span></div><div class="bar"><span class="bl">城市条件</span><span class="bt"><i style="width:5.0%"></i></span><span class="bv">5</span></div><div class="bar"><span class="bl">行业地位</span><span class="bt"><i style="width:5.0%"></i></span><span class="bv">5</span></div></div></div>
+    <div class="acts">
+      <button class="primary" onclick="useUser(0)">用这套画像打开排行 →</button>
+      <button onclick="copyJson(0, this)">复制 JSON</button>
+      <button class="ghost" onclick="toggleJson(0)">看原始数据</button>
+      <button class="warn" onclick="realRun(0)">提交入库，跑完整链路</button>
+    </div>
+    <div class="st" id="real-0"></div>
+    <pre class="raw" id="raw-0">{
+  &quot;document_type&quot;: &quot;fair_profile&quot;,
+  &quot;document_version&quot;: &quot;1.1.0&quot;,
+  &quot;schema_version&quot;: &quot;1.1&quot;,
+  &quot;generated_at&quot;: &quot;2026-11-15T02:30:00+08:00&quot;,
+  &quot;fair_id&quot;: &quot;FAIR-TEST-U1&quot;,
+  &quot;collector&quot;: {
+    &quot;version&quot;: &quot;0.2.0&quot;,
+    &quot;engine&quot;: &quot;test-user-generator&quot;
+  },
+  &quot;privacy&quot;: {
+    &quot;contact_masked&quot;: true,
+    &quot;storage&quot;: &quot;浏览器 localStorage（测试用，不写库）&quot;
+  },
+  &quot;consent&quot;: {
+    &quot;match&quot;: true
+  },
+  &quot;identity&quot;: {
+    &quot;name&quot;: &quot;测试用户 A（药学）&quot;,
+    &quot;major&quot;: &quot;药学&quot;,
+    &quot;degree&quot;: &quot;本科&quot;,
+    &quot;school&quot;: &quot;测试院校&quot;,
+    &quot;graduation_year&quot;: &quot;2027&quot;
+  },
+  &quot;fair&quot;: {
+    &quot;event_date&quot;: &quot;2026-11-20&quot;,
+    &quot;target_stage&quot;: &quot;2027 届&quot;,
+    &quot;stage_detail&quot;: &quot;应届校招&quot;,
+    &quot;flagship_experience&quot;: &quot;&quot;,
+    &quot;target_company_types&quot;: [
+      &quot;民企&quot;
+    ],
+    &quot;home_city&quot;: &quot;太原&quot;
+  },
+  &quot;profile&quot;: {
+    &quot;skills&quot;: [
+      &quot;临床数据管理&quot;,
+      &quot;GCP 法规&quot;,
+      &quot;药理学&quot;,
+      &quot;HPLC&quot;
+    ],
+    &quot;values&quot;: {
+      &quot;salary&quot;: 71,
+      &quot;stability&quot;: 100,
+      &quot;growth&quot;: 100,
+      &quot;autonomy&quot;: 98,
+      &quot;impact&quot;: 73,
+      &quot;balance&quot;: 41
+    }
+  },
+  &quot;answers&quot;: {
+    &quot;intended_jobs&quot;: [
+      &quot;原料药质量研究员&quot;,
+      &quot;医学专员&quot;,
+      &quot;药品注册专员&quot;,
+      &quot;药物分析研究员&quot;,
+      &quot;医学信息沟通专员&quot;
+    ],
+    &quot;tri_weights&quot;: {
+      &quot;industry&quot;: 29,
+      &quot;home&quot;: 24,
+      &quot;company_type&quot;: 12,
+      &quot;growth&quot;: 17,
+      &quot;city&quot;: 5,
+      &quot;scale&quot;: 8,
+      &quot;industry_status&quot;: 5
+    },
+    &quot;direction_interest&quot;: &quot;原料药质量研究员&quot;,
+    &quot;region&quot;: &quot;太原&quot;,
+    &quot;timeline&quot;: &quot;2027 年 7 月入职&quot;,
+    &quot;major_fit&quot;: &quot;专业对口优先&quot;,
+    &quot;values&quot;: {
+      &quot;salary&quot;: 71,
+      &quot;stability&quot;: 100,
+      &quot;growth&quot;: 100,
+      &quot;autonomy&quot;: 98,
+      &quot;impact&quot;: 73,
+      &quot;balance&quot;: 41
+    },
+    &quot;skills&quot;: [
+      &quot;临床数据管理&quot;,
+      &quot;GCP 法规&quot;,
+      &quot;药理学&quot;,
+      &quot;HPLC&quot;
+    ],
+    &quot;city_rank&quot;: {
+      &quot;新一线&quot;: 1,
+      &quot;其他省会&quot;: 2,
+      &quot;一线&quot;: 3,
+      &quot;经济发达&quot;: 4,
+      &quot;交通发达&quot;: 5,
+      &quot;生态友好&quot;: 6,
+      &quot;其他&quot;: 7
+    },
+    &quot;company_type_rank&quot;: {
+      &quot;民企&quot;: 1,
+      &quot;央企&quot;: 2,
+      &quot;国企&quot;: 3,
+      &quot;事业单位&quot;: 4,
+      &quot;外企&quot;: 5
+    },
+    &quot;industry_rank&quot;: {
+      &quot;医药&quot;: 1,
+      &quot;IT&quot;: 2,
+      &quot;金融&quot;: 3,
+      &quot;制造&quot;: 4,
+      &quot;建筑&quot;: 5,
+      &quot;能源&quot;: 6,
+      &quot;教育&quot;: 7,
+      &quot;消费&quot;: 8
+    },
+    &quot;hard_filter&quot;: &quot;&quot;,
+    &quot;accept_no_major&quot;: false
+  },
+  &quot;resume&quot;: {
+    &quot;uploaded&quot;: false,
+    &quot;extraction&quot;: {}
+  },
+  &quot;quality&quot;: {
+    &quot;score&quot;: 86,
+    &quot;level&quot;: &quot;可直接进入匹配&quot;,
+    &quot;missing&quot;: [],
+    &quot;warnings&quot;: [
+      &quot;测试画像：由 gen_test_users.py 随机生成，不代表真实学生&quot;
+    ]
+  },
+  &quot;summary&quot;: {
+    &quot;headline&quot;: &quot;太原 · 药学 · 应届校招&quot;,
+    &quot;traits&quot;: [
+      &quot;意向岗位：原料药质量研究员、医学专员、药品注册专员、药物分析研究员、医学信息沟通专员&quot;,
+      &quot;偏好排序（1=最优先）：城市 新一线 / 类型 民企 / 行业 医药&quot;,
+      &quot;老家城市：太原&quot;,
+      &quot;技能：临床数据管理、GCP 法规、药理学、HPLC&quot;
+    ]
+  },
+  &quot;notes&quot;: [
+    &quot;测试画像，仅用于验收排行与匹配逻辑&quot;
+  ],
+  &quot;downstream&quot;: {
+    &quot;match_ready&quot;: true
+  }
+}</pre>
+  </section>
+  <section class="card" data-uid="FAIR-TEST-U2">
+    <header>
+      <div class="who"><b>测试用户 B（工程造价）</b><span class="tag">FAIR-TEST-U2</span></div>
+      <div class="meta">工程造价 · 老家 宁波 · 期望入职 2027 年 7 月</div>
+    </header>
+    <div class="row"><span class="k">意向岗位</span><div class="v"><span class="chip">商务造价岗</span><span class="chip">结构工程师</span><span class="chip">EHS安全工程师</span><span class="chip">施工管理岗</span><span class="chip">施工员</span></div></div>
+    <div class="row"><span class="k">偏好排序</span><div class="v">
+      城市 1=新一线 · 企业类型 1=央企 · 行业 1=建筑
+      <span class="dim">（只列第 1 优先，其余按默认顺序）</span></div></div>
+    <div class="row"><span class="k">七维权重</span><div class="v bars"><div class="bar"><span class="bl">行业</span><span class="bt"><i style="width:32.0%"></i></span><span class="bv">32</span></div><div class="bar"><span class="bl">企业类型</span><span class="bt"><i style="width:24.0%"></i></span><span class="bv">24</span></div><div class="bar"><span class="bl">离家近</span><span class="bt"><i style="width:24.0%"></i></span><span class="bv">24</span></div><div class="bar"><span class="bl">城市条件</span><span class="bt"><i style="width:12.0%"></i></span><span class="bv">12</span></div><div class="bar"><span class="bl">成长性</span><span class="bt"><i style="width:6.0%"></i></span><span class="bv">6</span></div><div class="bar"><span class="bl">行业地位</span><span class="bt"><i style="width:2.0%"></i></span><span class="bv">2</span></div></div></div>
+    <div class="acts">
+      <button class="primary" onclick="useUser(1)">用这套画像打开排行 →</button>
+      <button onclick="copyJson(1, this)">复制 JSON</button>
+      <button class="ghost" onclick="toggleJson(1)">看原始数据</button>
+      <button class="warn" onclick="realRun(1)">提交入库，跑完整链路</button>
+    </div>
+    <div class="st" id="real-1"></div>
+    <pre class="raw" id="raw-1">{
+  &quot;document_type&quot;: &quot;fair_profile&quot;,
+  &quot;document_version&quot;: &quot;1.1.0&quot;,
+  &quot;schema_version&quot;: &quot;1.1&quot;,
+  &quot;generated_at&quot;: &quot;2026-11-15T02:30:00+08:00&quot;,
+  &quot;fair_id&quot;: &quot;FAIR-TEST-U2&quot;,
+  &quot;collector&quot;: {
+    &quot;version&quot;: &quot;0.2.0&quot;,
+    &quot;engine&quot;: &quot;test-user-generator&quot;
+  },
+  &quot;privacy&quot;: {
+    &quot;contact_masked&quot;: true,
+    &quot;storage&quot;: &quot;浏览器 localStorage（测试用，不写库）&quot;
+  },
+  &quot;consent&quot;: {
+    &quot;match&quot;: true
+  },
+  &quot;identity&quot;: {
+    &quot;name&quot;: &quot;测试用户 B（工程造价）&quot;,
+    &quot;major&quot;: &quot;工程造价&quot;,
+    &quot;degree&quot;: &quot;本科&quot;,
+    &quot;school&quot;: &quot;测试院校&quot;,
+    &quot;graduation_year&quot;: &quot;2027&quot;
+  },
+  &quot;fair&quot;: {
+    &quot;event_date&quot;: &quot;2026-11-20&quot;,
+    &quot;target_stage&quot;: &quot;2027 届&quot;,
+    &quot;stage_detail&quot;: &quot;应届校招&quot;,
+    &quot;flagship_experience&quot;: &quot;&quot;,
+    &quot;target_company_types&quot;: [
+      &quot;央企&quot;
+    ],
+    &quot;home_city&quot;: &quot;宁波&quot;
+  },
+  &quot;profile&quot;: {
+    &quot;skills&quot;: [
+      &quot;广联达&quot;,
+      &quot;BIM&quot;,
+      &quot;AutoCAD&quot;,
+      &quot;测量放线&quot;
+    ],
+    &quot;values&quot;: {
+      &quot;salary&quot;: 100,
+      &quot;stability&quot;: 100,
+      &quot;growth&quot;: 67,
+      &quot;autonomy&quot;: 83,
+      &quot;impact&quot;: 54,
+      &quot;balance&quot;: 19
+    }
+  },
+  &quot;answers&quot;: {
+    &quot;intended_jobs&quot;: [
+      &quot;商务造价岗&quot;,
+      &quot;结构工程师&quot;,
+      &quot;EHS安全工程师&quot;,
+      &quot;施工管理岗&quot;,
+      &quot;施工员&quot;
+    ],
+    &quot;tri_weights&quot;: {
+      &quot;industry&quot;: 32,
+      &quot;company_type&quot;: 24,
+      &quot;home&quot;: 24,
+      &quot;scale&quot;: 0,
+      &quot;city&quot;: 12,
+      &quot;growth&quot;: 6,
+      &quot;industry_status&quot;: 2
+    },
+    &quot;direction_interest&quot;: &quot;商务造价岗&quot;,
+    &quot;region&quot;: &quot;宁波&quot;,
+    &quot;timeline&quot;: &quot;2027 年 7 月入职&quot;,
+    &quot;major_fit&quot;: &quot;专业对口优先&quot;,
+    &quot;values&quot;: {
+      &quot;salary&quot;: 100,
+      &quot;stability&quot;: 100,
+      &quot;growth&quot;: 67,
+      &quot;autonomy&quot;: 83,
+      &quot;impact&quot;: 54,
+      &quot;balance&quot;: 19
+    },
+    &quot;skills&quot;: [
+      &quot;广联达&quot;,
+      &quot;BIM&quot;,
+      &quot;AutoCAD&quot;,
+      &quot;测量放线&quot;
+    ],
+    &quot;city_rank&quot;: {
+      &quot;新一线&quot;: 1,
+      &quot;一线&quot;: 2,
+      &quot;其他省会&quot;: 3,
+      &quot;经济发达&quot;: 4,
+      &quot;交通发达&quot;: 5,
+      &quot;其他&quot;: 6,
+      &quot;生态友好&quot;: 7
+    },
+    &quot;company_type_rank&quot;: {
+      &quot;央企&quot;: 1,
+      &quot;国企&quot;: 2,
+      &quot;民企&quot;: 3,
+      &quot;外企&quot;: 4,
+      &quot;事业单位&quot;: 5
+    },
+    &quot;industry_rank&quot;: {
+      &quot;建筑&quot;: 1,
+      &quot;IT&quot;: 2,
+      &quot;金融&quot;: 3,
+      &quot;制造&quot;: 4,
+      &quot;能源&quot;: 5,
+      &quot;医药&quot;: 6,
+      &quot;教育&quot;: 7,
+      &quot;消费&quot;: 8
+    },
+    &quot;hard_filter&quot;: &quot;&quot;,
+    &quot;accept_no_major&quot;: false
+  },
+  &quot;resume&quot;: {
+    &quot;uploaded&quot;: false,
+    &quot;extraction&quot;: {}
+  },
+  &quot;quality&quot;: {
+    &quot;score&quot;: 86,
+    &quot;level&quot;: &quot;可直接进入匹配&quot;,
+    &quot;missing&quot;: [],
+    &quot;warnings&quot;: [
+      &quot;测试画像：由 gen_test_users.py 随机生成，不代表真实学生&quot;
+    ]
+  },
+  &quot;summary&quot;: {
+    &quot;headline&quot;: &quot;宁波 · 工程造价 · 应届校招&quot;,
+    &quot;traits&quot;: [
+      &quot;意向岗位：商务造价岗、结构工程师、EHS安全工程师、施工管理岗、施工员&quot;,
+      &quot;偏好排序（1=最优先）：城市 新一线 / 类型 央企 / 行业 建筑&quot;,
+      &quot;老家城市：宁波&quot;,
+      &quot;技能：广联达、BIM、AutoCAD、测量放线&quot;
+    ]
+  },
+  &quot;notes&quot;: [
+    &quot;测试画像，仅用于验收排行与匹配逻辑&quot;
+  ],
+  &quot;downstream&quot;: {
+    &quot;match_ready&quot;: true
+  }
+}</pre>
+  </section>
+  <section class="card" data-uid="FAIR-TEST-U3">
+    <header>
+      <div class="who"><b>测试用户 C（能源与动力工程）</b><span class="tag">FAIR-TEST-U3</span></div>
+      <div class="meta">能源与动力工程 · 老家 成都 · 期望入职 2027 年 7 月</div>
+    </header>
+    <div class="row"><span class="k">意向岗位</span><div class="v"><span class="chip">新能源开发工程师</span><span class="chip">电气设计工程师</span><span class="chip">热动集控工程师</span><span class="chip">电气工程师</span></div></div>
+    <div class="row"><span class="k">偏好排序</span><div class="v">
+      城市 1=新一线 · 企业类型 1=国企 · 行业 1=能源
+      <span class="dim">（只列第 1 优先，其余按默认顺序）</span></div></div>
+    <div class="row"><span class="k">七维权重</span><div class="v bars"><div class="bar"><span class="bl">行业</span><span class="bt"><i style="width:34.0%"></i></span><span class="bv">34</span></div><div class="bar"><span class="bl">城市条件</span><span class="bt"><i style="width:22.0%"></i></span><span class="bv">22</span></div><div class="bar"><span class="bl">企业类型</span><span class="bt"><i style="width:19.0%"></i></span><span class="bv">19</span></div><div class="bar"><span class="bl">行业地位</span><span class="bt"><i style="width:9.0%"></i></span><span class="bv">9</span></div><div class="bar"><span class="bl">企业规模档</span><span class="bt"><i style="width:8.0%"></i></span><span class="bv">8</span></div><div class="bar"><span class="bl">离家近</span><span class="bt"><i style="width:8.0%"></i></span><span class="bv">8</span></div></div></div>
+    <div class="acts">
+      <button class="primary" onclick="useUser(2)">用这套画像打开排行 →</button>
+      <button onclick="copyJson(2, this)">复制 JSON</button>
+      <button class="ghost" onclick="toggleJson(2)">看原始数据</button>
+      <button class="warn" onclick="realRun(2)">提交入库，跑完整链路</button>
+    </div>
+    <div class="st" id="real-2"></div>
+    <pre class="raw" id="raw-2">{
+  &quot;document_type&quot;: &quot;fair_profile&quot;,
+  &quot;document_version&quot;: &quot;1.1.0&quot;,
+  &quot;schema_version&quot;: &quot;1.1&quot;,
+  &quot;generated_at&quot;: &quot;2026-11-15T02:30:00+08:00&quot;,
+  &quot;fair_id&quot;: &quot;FAIR-TEST-U3&quot;,
+  &quot;collector&quot;: {
+    &quot;version&quot;: &quot;0.2.0&quot;,
+    &quot;engine&quot;: &quot;test-user-generator&quot;
+  },
+  &quot;privacy&quot;: {
+    &quot;contact_masked&quot;: true,
+    &quot;storage&quot;: &quot;浏览器 localStorage（测试用，不写库）&quot;
+  },
+  &quot;consent&quot;: {
+    &quot;match&quot;: true
+  },
+  &quot;identity&quot;: {
+    &quot;name&quot;: &quot;测试用户 C（能源与动力工程）&quot;,
+    &quot;major&quot;: &quot;能源与动力工程&quot;,
+    &quot;degree&quot;: &quot;本科&quot;,
+    &quot;school&quot;: &quot;测试院校&quot;,
+    &quot;graduation_year&quot;: &quot;2027&quot;
+  },
+  &quot;fair&quot;: {
+    &quot;event_date&quot;: &quot;2026-11-20&quot;,
+    &quot;target_stage&quot;: &quot;2027 届&quot;,
+    &quot;stage_detail&quot;: &quot;应届校招&quot;,
+    &quot;flagship_experience&quot;: &quot;&quot;,
+    &quot;target_company_types&quot;: [
+      &quot;国企&quot;
+    ],
+    &quot;home_city&quot;: &quot;成都&quot;
+  },
+  &quot;profile&quot;: {
+    &quot;skills&quot;: [
+      &quot;电力系统分析&quot;,
+      &quot;PLC&quot;,
+      &quot;AutoCAD&quot;,
+      &quot;继电保护&quot;
+    ],
+    &quot;values&quot;: {
+      &quot;salary&quot;: 77,
+      &quot;stability&quot;: 59,
+      &quot;growth&quot;: 7,
+      &quot;autonomy&quot;: 35,
+      &quot;impact&quot;: 57,
+      &quot;balance&quot;: 96
+    }
+  },
+  &quot;answers&quot;: {
+    &quot;intended_jobs&quot;: [
+      &quot;新能源开发工程师&quot;,
+      &quot;电气设计工程师&quot;,
+      &quot;热动集控工程师&quot;,
+      &quot;电气工程师&quot;
+    ],
+    &quot;tri_weights&quot;: {
+      &quot;industry&quot;: 34,
+      &quot;city&quot;: 22,
+      &quot;company_type&quot;: 19,
+      &quot;scale&quot;: 8,
+      &quot;home&quot;: 8,
+      &quot;growth&quot;: 0,
+      &quot;industry_status&quot;: 9
+    },
+    &quot;direction_interest&quot;: &quot;新能源开发工程师&quot;,
+    &quot;region&quot;: &quot;成都&quot;,
+    &quot;timeline&quot;: &quot;2027 年 7 月入职&quot;,
+    &quot;major_fit&quot;: &quot;专业对口优先&quot;,
+    &quot;values&quot;: {
+      &quot;salary&quot;: 77,
+      &quot;stability&quot;: 59,
+      &quot;growth&quot;: 7,
+      &quot;autonomy&quot;: 35,
+      &quot;impact&quot;: 57,
+      &quot;balance&quot;: 96
+    },
+    &quot;skills&quot;: [
+      &quot;电力系统分析&quot;,
+      &quot;PLC&quot;,
+      &quot;AutoCAD&quot;,
+      &quot;继电保护&quot;
+    ],
+    &quot;city_rank&quot;: {
+      &quot;新一线&quot;: 1,
+      &quot;一线&quot;: 2,
+      &quot;其他省会&quot;: 3,
+      &quot;经济发达&quot;: 4,
+      &quot;交通发达&quot;: 5,
+      &quot;其他&quot;: 6,
+      &quot;生态友好&quot;: 7
+    },
+    &quot;company_type_rank&quot;: {
+      &quot;国企&quot;: 1,
+      &quot;央企&quot;: 2,
+      &quot;民企&quot;: 3,
+      &quot;事业单位&quot;: 4,
+      &quot;外企&quot;: 5
+    },
+    &quot;industry_rank&quot;: {
+      &quot;能源&quot;: 1,
+      &quot;金融&quot;: 2,
+      &quot;IT&quot;: 3,
+      &quot;制造&quot;: 4,
+      &quot;建筑&quot;: 5,
+      &quot;医药&quot;: 6,
+      &quot;教育&quot;: 7,
+      &quot;消费&quot;: 8
+    },
+    &quot;hard_filter&quot;: &quot;&quot;,
+    &quot;accept_no_major&quot;: false
+  },
+  &quot;resume&quot;: {
+    &quot;uploaded&quot;: false,
+    &quot;extraction&quot;: {}
+  },
+  &quot;quality&quot;: {
+    &quot;score&quot;: 86,
+    &quot;level&quot;: &quot;可直接进入匹配&quot;,
+    &quot;missing&quot;: [],
+    &quot;warnings&quot;: [
+      &quot;测试画像：由 gen_test_users.py 随机生成，不代表真实学生&quot;
+    ]
+  },
+  &quot;summary&quot;: {
+    &quot;headline&quot;: &quot;成都 · 能源与动力工程 · 应届校招&quot;,
+    &quot;traits&quot;: [
+      &quot;意向岗位：新能源开发工程师、电气设计工程师、热动集控工程师、电气工程师&quot;,
+      &quot;偏好排序（1=最优先）：城市 新一线 / 类型 国企 / 行业 能源&quot;,
+      &quot;老家城市：成都&quot;,
+      &quot;技能：电力系统分析、PLC、AutoCAD、继电保护&quot;
+    ]
+  },
+  &quot;notes&quot;: [
+    &quot;测试画像，仅用于验收排行与匹配逻辑&quot;
+  ],
+  &quot;downstream&quot;: {
+    &quot;match_ready&quot;: true
+  }
+}</pre>
+  </section>
+<div class="foot">
+  <button onclick="clearUser()">清空本地画像，回到服务端画像</button>
+  <button class="warn" onclick="restoreActive()">恢复提交前的库内画像</button>
+  <button onclick="location.href='/fair.html'">直接打开排行页（用现有画像）</button>
+</div>
+<p class="hint">
+原文件：<code>ent_tools/data/test_users/u1.json ~ u3.json</code>（完整 fair_profile 文档）<br>
+也可以 <code>POST /api/fair/profile</code>，body 为 <code>{"document": &lt;那三份 JSON 之一&gt;}</code>，服务端会落库并重建 payload。<br>
+换一批随机：<code>python -X utf8 gen_test_users.py --seed 7</code> 然后 <code>python -X utf8 build_test_users_page.py</code>。
+</p>
+</div>
+<script>
+const USERS = [{"document_type": "fair_profile", "document_version": "1.1.0", "schema_version": "1.1", "generated_at": "2026-11-15T02:30:00+08:00", "fair_id": "FAIR-TEST-U1", "collector": {"version": "0.2.0", "engine": "test-user-generator"}, "privacy": {"contact_masked": true, "storage": "浏览器 localStorage（测试用，不写库）"}, "consent": {"match": true}, "identity": {"name": "测试用户 A（药学）", "major": "药学", "degree": "本科", "school": "测试院校", "graduation_year": "2027"}, "fair": {"event_date": "2026-11-20", "target_stage": "2027 届", "stage_detail": "应届校招", "flagship_experience": "", "target_company_types": ["民企"], "home_city": "太原"}, "profile": {"skills": ["临床数据管理", "GCP 法规", "药理学", "HPLC"], "values": {"salary": 71, "stability": 100, "growth": 100, "autonomy": 98, "impact": 73, "balance": 41}}, "answers": {"intended_jobs": ["原料药质量研究员", "医学专员", "药品注册专员", "药物分析研究员", "医学信息沟通专员"], "tri_weights": {"industry": 29, "home": 24, "company_type": 12, "growth": 17, "city": 5, "scale": 8, "industry_status": 5}, "direction_interest": "原料药质量研究员", "region": "太原", "timeline": "2027 年 7 月入职", "major_fit": "专业对口优先", "values": {"salary": 71, "stability": 100, "growth": 100, "autonomy": 98, "impact": 73, "balance": 41}, "skills": ["临床数据管理", "GCP 法规", "药理学", "HPLC"], "city_rank": {"新一线": 1, "其他省会": 2, "一线": 3, "经济发达": 4, "交通发达": 5, "生态友好": 6, "其他": 7}, "company_type_rank": {"民企": 1, "央企": 2, "国企": 3, "事业单位": 4, "外企": 5}, "industry_rank": {"医药": 1, "IT": 2, "金融": 3, "制造": 4, "建筑": 5, "能源": 6, "教育": 7, "消费": 8}, "hard_filter": "", "accept_no_major": false}, "resume": {"uploaded": false, "extraction": {}}, "quality": {"score": 86, "level": "可直接进入匹配", "missing": [], "warnings": ["测试画像：由 gen_test_users.py 随机生成，不代表真实学生"]}, "summary": {"headline": "太原 · 药学 · 应届校招", "traits": ["意向岗位：原料药质量研究员、医学专员、药品注册专员、药物分析研究员、医学信息沟通专员", "偏好排序（1=最优先）：城市 新一线 / 类型 民企 / 行业 医药", "老家城市：太原", "技能：临床数据管理、GCP 法规、药理学、HPLC"]}, "notes": ["测试画像，仅用于验收排行与匹配逻辑"], "downstream": {"match_ready": true}}, {"document_type": "fair_profile", "document_version": "1.1.0", "schema_version": "1.1", "generated_at": "2026-11-15T02:30:00+08:00", "fair_id": "FAIR-TEST-U2", "collector": {"version": "0.2.0", "engine": "test-user-generator"}, "privacy": {"contact_masked": true, "storage": "浏览器 localStorage（测试用，不写库）"}, "consent": {"match": true}, "identity": {"name": "测试用户 B（工程造价）", "major": "工程造价", "degree": "本科", "school": "测试院校", "graduation_year": "2027"}, "fair": {"event_date": "2026-11-20", "target_stage": "2027 届", "stage_detail": "应届校招", "flagship_experience": "", "target_company_types": ["央企"], "home_city": "宁波"}, "profile": {"skills": ["广联达", "BIM", "AutoCAD", "测量放线"], "values": {"salary": 100, "stability": 100, "growth": 67, "autonomy": 83, "impact": 54, "balance": 19}}, "answers": {"intended_jobs": ["商务造价岗", "结构工程师", "EHS安全工程师", "施工管理岗", "施工员"], "tri_weights": {"industry": 32, "company_type": 24, "home": 24, "scale": 0, "city": 12, "growth": 6, "industry_status": 2}, "direction_interest": "商务造价岗", "region": "宁波", "timeline": "2027 年 7 月入职", "major_fit": "专业对口优先", "values": {"salary": 100, "stability": 100, "growth": 67, "autonomy": 83, "impact": 54, "balance": 19}, "skills": ["广联达", "BIM", "AutoCAD", "测量放线"], "city_rank": {"新一线": 1, "一线": 2, "其他省会": 3, "经济发达": 4, "交通发达": 5, "其他": 6, "生态友好": 7}, "company_type_rank": {"央企": 1, "国企": 2, "民企": 3, "外企": 4, "事业单位": 5}, "industry_rank": {"建筑": 1, "IT": 2, "金融": 3, "制造": 4, "能源": 5, "医药": 6, "教育": 7, "消费": 8}, "hard_filter": "", "accept_no_major": false}, "resume": {"uploaded": false, "extraction": {}}, "quality": {"score": 86, "level": "可直接进入匹配", "missing": [], "warnings": ["测试画像：由 gen_test_users.py 随机生成，不代表真实学生"]}, "summary": {"headline": "宁波 · 工程造价 · 应届校招", "traits": ["意向岗位：商务造价岗、结构工程师、EHS安全工程师、施工管理岗、施工员", "偏好排序（1=最优先）：城市 新一线 / 类型 央企 / 行业 建筑", "老家城市：宁波", "技能：广联达、BIM、AutoCAD、测量放线"]}, "notes": ["测试画像，仅用于验收排行与匹配逻辑"], "downstream": {"match_ready": true}}, {"document_type": "fair_profile", "document_version": "1.1.0", "schema_version": "1.1", "generated_at": "2026-11-15T02:30:00+08:00", "fair_id": "FAIR-TEST-U3", "collector": {"version": "0.2.0", "engine": "test-user-generator"}, "privacy": {"contact_masked": true, "storage": "浏览器 localStorage（测试用，不写库）"}, "consent": {"match": true}, "identity": {"name": "测试用户 C（能源与动力工程）", "major": "能源与动力工程", "degree": "本科", "school": "测试院校", "graduation_year": "2027"}, "fair": {"event_date": "2026-11-20", "target_stage": "2027 届", "stage_detail": "应届校招", "flagship_experience": "", "target_company_types": ["国企"], "home_city": "成都"}, "profile": {"skills": ["电力系统分析", "PLC", "AutoCAD", "继电保护"], "values": {"salary": 77, "stability": 59, "growth": 7, "autonomy": 35, "impact": 57, "balance": 96}}, "answers": {"intended_jobs": ["新能源开发工程师", "电气设计工程师", "热动集控工程师", "电气工程师"], "tri_weights": {"industry": 34, "city": 22, "company_type": 19, "scale": 8, "home": 8, "growth": 0, "industry_status": 9}, "direction_interest": "新能源开发工程师", "region": "成都", "timeline": "2027 年 7 月入职", "major_fit": "专业对口优先", "values": {"salary": 77, "stability": 59, "growth": 7, "autonomy": 35, "impact": 57, "balance": 96}, "skills": ["电力系统分析", "PLC", "AutoCAD", "继电保护"], "city_rank": {"新一线": 1, "一线": 2, "其他省会": 3, "经济发达": 4, "交通发达": 5, "其他": 6, "生态友好": 7}, "company_type_rank": {"国企": 1, "央企": 2, "民企": 3, "事业单位": 4, "外企": 5}, "industry_rank": {"能源": 1, "金融": 2, "IT": 3, "制造": 4, "建筑": 5, "医药": 6, "教育": 7, "消费": 8}, "hard_filter": "", "accept_no_major": false}, "resume": {"uploaded": false, "extraction": {}}, "quality": {"score": 86, "level": "可直接进入匹配", "missing": [], "warnings": ["测试画像：由 gen_test_users.py 随机生成，不代表真实学生"]}, "summary": {"headline": "成都 · 能源与动力工程 · 应届校招", "traits": ["意向岗位：新能源开发工程师、电气设计工程师、热动集控工程师、电气工程师", "偏好排序（1=最优先）：城市 新一线 / 类型 国企 / 行业 能源", "老家城市：成都", "技能：电力系统分析、PLC、AutoCAD、继电保护"]}, "notes": ["测试画像，仅用于验收排行与匹配逻辑"], "downstream": {"match_ready": true}}];
+function useUser(i){
+  /* 画像用地址栏带走（base64），同时写一份 localStorage 备用。
+     以前是 location.href='/fair.html'：绝对路径 + 只靠 localStorage，
+     服务一停就白屏 / 退回采集问卷。相对路径 + URL 传参后，
+     双击本地 html 也能直接看排行，不需要 8102。 */
+  const enc = btoa(unescape(encodeURIComponent(JSON.stringify(USERS[i]))));
+  try{ localStorage.setItem('fair_profile', JSON.stringify(USERS[i])); }catch(e){}
+  location.href = 'fair.html?report=1&p=' + encodeURIComponent(enc);
+}
+function copyJson(i, btn){
+  const t = JSON.stringify(USERS[i], null, 2);
+  const done = ()=>{ const o=btn.textContent; btn.textContent='已复制'; setTimeout(()=>btn.textContent=o,1200); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done).catch(()=>fallback());
+  } else fallback();
+  function fallback(){
+    const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand('copy'); done(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+function toggleJson(i){
+  const el=document.getElementById('raw-'+i); el.classList.toggle('on');
+}
+function clearUser(){
+  try{ localStorage.removeItem('fair_profile'); }catch(e){}
+  location.href = '/fair.html';
+}
+
+/* ---- 完整链路：提交入库 → 服务端按新画像重算命中（调大模型）→ 跳报告 ----
+   会替换库内「生效画像」（生产演示用的那份），提交前把原画像备份到本浏览器，
+   点底部「恢复提交前的库内画像」可以提交回去。约 1~3 分钟，会消耗模型调用。 */
+async function realRun(i){
+  if(!confirm('会用这套画像替换库内生效画像，并调用大模型重算全部企业的岗位命中（约 1–3 分钟）。提交前会自动把原画像备份到本浏览器，可一键恢复。继续？')) return;
+  const box=document.getElementById('real-'+i);
+  box.textContent='读取当前生效画像，做备份…';
+  try{
+    const a=await fetch('/api/fair/active-profile').then(x=>x.json());
+    if(a && a.document) localStorage.setItem('fair_prev_active_profile', JSON.stringify(a.document));
+  }catch(e){}
+  box.textContent='提交画像…';
+  let j={};
+  try{
+    j=await fetch('/api/fair/profile',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({document:USERS[i]})
+    }).then(x=>x.json());
+  }catch(e){ box.textContent='提交失败：'+e; return; }
+  box.textContent='已提交（'+(j.fair_id||USERS[i].fair_id)+'），后台重算中…';
+  const t0=Date.now();
+  const timer=setInterval(async function(){
+    try{
+      const p=await fetch('/api/fair/payload').then(x=>x.json());
+      if(p && p.ok!==false && !p.computing){
+        clearInterval(timer);
+        try{ localStorage.setItem('fair_profile', JSON.stringify(USERS[i])); }catch(e){}
+        box.textContent='重算完成，正在打开报告…';
+        location.href='fair.html?report=1&p='+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(USERS[i])))));
+        return;
+      }
+      box.textContent='后台重算中…已 '+(Math.round((Date.now()-t0)/1000))+' 秒'
+        +(p && p.profile ? '（'+p.profile+'）' : '');
+    }catch(e){}
+    if(Date.now()-t0>300000){
+      clearInterval(timer);
+      box.textContent='超过 5 分钟还没完成：去看服务端日志（可能模型超时）。库里已换成测试画像。';
+    }
+  },4000);
+}
+async function restoreActive(){
+  const raw=localStorage.getItem('fair_prev_active_profile');
+  if(!raw){ alert('没有备份：这个浏览器还没提交过测试画像。'); return; }
+  if(!confirm('把库内生效画像恢复成提交测试画像之前的那一份？同样要重算 1–3 分钟。')) return;
+  try{
+    await fetch('/api/fair/profile',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({document:JSON.parse(raw)})
+    });
+    alert('已提交恢复，后台重算中（1–3 分钟）。完成后刷新 /fair.html。');
+  }catch(e){ alert('恢复失败：'+e); }
+}
+</script></body></html>

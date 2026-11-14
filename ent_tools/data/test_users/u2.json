@@ -1,0 +1,142 @@
+{
+  "document_type": "fair_profile",
+  "document_version": "1.1.0",
+  "schema_version": "1.1",
+  "generated_at": "2026-11-15T02:30:00+08:00",
+  "fair_id": "FAIR-TEST-U2",
+  "collector": {
+    "version": "0.2.0",
+    "engine": "test-user-generator"
+  },
+  "privacy": {
+    "contact_masked": true,
+    "storage": "浏览器 localStorage（测试用，不写库）"
+  },
+  "consent": {
+    "match": true
+  },
+  "identity": {
+    "name": "测试用户 B（工程造价）",
+    "major": "工程造价",
+    "degree": "本科",
+    "school": "测试院校",
+    "graduation_year": "2027"
+  },
+  "fair": {
+    "event_date": "2026-11-20",
+    "target_stage": "2027 届",
+    "stage_detail": "应届校招",
+    "flagship_experience": "",
+    "target_company_types": [
+      "央企"
+    ],
+    "home_city": "宁波"
+  },
+  "profile": {
+    "skills": [
+      "广联达",
+      "BIM",
+      "AutoCAD",
+      "测量放线"
+    ],
+    "values": {
+      "salary": 100,
+      "stability": 100,
+      "growth": 67,
+      "autonomy": 83,
+      "impact": 54,
+      "balance": 19
+    }
+  },
+  "answers": {
+    "intended_jobs": [
+      "商务造价岗",
+      "结构工程师",
+      "EHS安全工程师",
+      "施工管理岗",
+      "施工员"
+    ],
+    "tri_weights": {
+      "industry": 32,
+      "company_type": 24,
+      "home": 24,
+      "scale": 0,
+      "city": 12,
+      "growth": 6,
+      "industry_status": 2
+    },
+    "direction_interest": "商务造价岗",
+    "region": "宁波",
+    "timeline": "2027 年 7 月入职",
+    "major_fit": "专业对口优先",
+    "values": {
+      "salary": 100,
+      "stability": 100,
+      "growth": 67,
+      "autonomy": 83,
+      "impact": 54,
+      "balance": 19
+    },
+    "skills": [
+      "广联达",
+      "BIM",
+      "AutoCAD",
+      "测量放线"
+    ],
+    "city_rank": {
+      "新一线": 1,
+      "一线": 2,
+      "其他省会": 3,
+      "经济发达": 4,
+      "交通发达": 5,
+      "其他": 6,
+      "生态友好": 7
+    },
+    "company_type_rank": {
+      "央企": 1,
+      "国企": 2,
+      "民企": 3,
+      "外企": 4,
+      "事业单位": 5
+    },
+    "industry_rank": {
+      "建筑": 1,
+      "IT": 2,
+      "金融": 3,
+      "制造": 4,
+      "能源": 5,
+      "医药": 6,
+      "教育": 7,
+      "消费": 8
+    },
+    "hard_filter": "",
+    "accept_no_major": false
+  },
+  "resume": {
+    "uploaded": false,
+    "extraction": {}
+  },
+  "quality": {
+    "score": 86,
+    "level": "可直接进入匹配",
+    "missing": [],
+    "warnings": [
+      "测试画像：由 gen_test_users.py 随机生成，不代表真实学生"
+    ]
+  },
+  "summary": {
+    "headline": "宁波 · 工程造价 · 应届校招",
+    "traits": [
+      "意向岗位：商务造价岗、结构工程师、EHS安全工程师、施工管理岗、施工员",
+      "偏好排序（1=最优先）：城市 新一线 / 类型 央企 / 行业 建筑",
+      "老家城市：宁波",
+      "技能：广联达、BIM、AutoCAD、测量放线"
+    ]
+  },
+  "notes": [
+    "测试画像，仅用于验收排行与匹配逻辑"
+  ],
+  "downstream": {
+    "match_ready": true
+  }
+}

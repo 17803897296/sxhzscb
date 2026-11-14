@@ -1,0 +1,142 @@
+{
+  "document_type": "fair_profile",
+  "document_version": "1.1.0",
+  "schema_version": "1.1",
+  "generated_at": "2026-11-15T02:30:00+08:00",
+  "fair_id": "FAIR-TEST-U1",
+  "collector": {
+    "version": "0.2.0",
+    "engine": "test-user-generator"
+  },
+  "privacy": {
+    "contact_masked": true,
+    "storage": "浏览器 localStorage（测试用，不写库）"
+  },
+  "consent": {
+    "match": true
+  },
+  "identity": {
+    "name": "测试用户 A（药学）",
+    "major": "药学",
+    "degree": "本科",
+    "school": "测试院校",
+    "graduation_year": "2027"
+  },
+  "fair": {
+    "event_date": "2026-11-20",
+    "target_stage": "2027 届",
+    "stage_detail": "应届校招",
+    "flagship_experience": "",
+    "target_company_types": [
+      "民企"
+    ],
+    "home_city": "太原"
+  },
+  "profile": {
+    "skills": [
+      "临床数据管理",
+      "GCP 法规",
+      "药理学",
+      "HPLC"
+    ],
+    "values": {
+      "salary": 71,
+      "stability": 100,
+      "growth": 100,
+      "autonomy": 98,
+      "impact": 73,
+      "balance": 41
+    }
+  },
+  "answers": {
+    "intended_jobs": [
+      "原料药质量研究员",
+      "医学专员",
+      "药品注册专员",
+      "药物分析研究员",
+      "医学信息沟通专员"
+    ],
+    "tri_weights": {
+      "industry": 29,
+      "home": 24,
+      "company_type": 12,
+      "growth": 17,
+      "city": 5,
+      "scale": 8,
+      "industry_status": 5
+    },
+    "direction_interest": "原料药质量研究员",
+    "region": "太原",
+    "timeline": "2027 年 7 月入职",
+    "major_fit": "专业对口优先",
+    "values": {
+      "salary": 71,
+      "stability": 100,
+      "growth": 100,
+      "autonomy": 98,
+      "impact": 73,
+      "balance": 41
+    },
+    "skills": [
+      "临床数据管理",
+      "GCP 法规",
+      "药理学",
+      "HPLC"
+    ],
+    "city_rank": {
+      "新一线": 1,
+      "其他省会": 2,
+      "一线": 3,
+      "经济发达": 4,
+      "交通发达": 5,
+      "生态友好": 6,
+      "其他": 7
+    },
+    "company_type_rank": {
+      "民企": 1,
+      "央企": 2,
+      "国企": 3,
+      "事业单位": 4,
+      "外企": 5
+    },
+    "industry_rank": {
+      "医药": 1,
+      "IT": 2,
+      "金融": 3,
+      "制造": 4,
+      "建筑": 5,
+      "能源": 6,
+      "教育": 7,
+      "消费": 8
+    },
+    "hard_filter": "",
+    "accept_no_major": false
+  },
+  "resume": {
+    "uploaded": false,
+    "extraction": {}
+  },
+  "quality": {
+    "score": 86,
+    "level": "可直接进入匹配",
+    "missing": [],
+    "warnings": [
+      "测试画像：由 gen_test_users.py 随机生成，不代表真实学生"
+    ]
+  },
+  "summary": {
+    "headline": "太原 · 药学 · 应届校招",
+    "traits": [
+      "意向岗位：原料药质量研究员、医学专员、药品注册专员、药物分析研究员、医学信息沟通专员",
+      "偏好排序（1=最优先）：城市 新一线 / 类型 民企 / 行业 医药",
+      "老家城市：太原",
+      "技能：临床数据管理、GCP 法规、药理学、HPLC"
+    ]
+  },
+  "notes": [
+    "测试画像，仅用于验收排行与匹配逻辑"
+  ],
+  "downstream": {
+    "match_ready": true
+  }
+}

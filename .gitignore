@@ -28,3 +28,12 @@ desktop.ini
 *.bak_*
 ent_tools/data/hard_filter_cache.json
 ent_tools/test_photos/
+
+# 本地改动前快照 / 临时脚本产物（每次改动都会生成，不该进版本库）
+_bak_*/
+_tmp*/
+_tmp_resume_test/
+ent_tools/_stale_cache/
+ent_tools/data/_stale_cache/
+ent_tools/.runtime/
+ent_tools/.env.*.bak_*

@@ -1,0 +1,141 @@
+{
+  "document_type": "fair_profile",
+  "document_version": "1.1.0",
+  "schema_version": "1.1",
+  "generated_at": "2026-11-15T02:30:00+08:00",
+  "fair_id": "FAIR-TEST-U3",
+  "collector": {
+    "version": "0.2.0",
+    "engine": "test-user-generator"
+  },
+  "privacy": {
+    "contact_masked": true,
+    "storage": "浏览器 localStorage（测试用，不写库）"
+  },
+  "consent": {
+    "match": true
+  },
+  "identity": {
+    "name": "测试用户 C（能源与动力工程）",
+    "major": "能源与动力工程",
+    "degree": "本科",
+    "school": "测试院校",
+    "graduation_year": "2027"
+  },
+  "fair": {
+    "event_date": "2026-11-20",
+    "target_stage": "2027 届",
+    "stage_detail": "应届校招",
+    "flagship_experience": "",
+    "target_company_types": [
+      "国企"
+    ],
+    "home_city": "成都"
+  },
+  "profile": {
+    "skills": [
+      "电力系统分析",
+      "PLC",
+      "AutoCAD",
+      "继电保护"
+    ],
+    "values": {
+      "salary": 77,
+      "stability": 59,
+      "growth": 7,
+      "autonomy": 35,
+      "impact": 57,
+      "balance": 96
+    }
+  },
+  "answers": {
+    "intended_jobs": [
+      "新能源开发工程师",
+      "电气设计工程师",
+      "热动集控工程师",
+      "电气工程师"
+    ],
+    "tri_weights": {
+      "industry": 34,
+      "city": 22,
+      "company_type": 19,
+      "scale": 8,
+      "home": 8,
+      "growth": 0,
+      "industry_status": 9
+    },
+    "direction_interest": "新能源开发工程师",
+    "region": "成都",
+    "timeline": "2027 年 7 月入职",
+    "major_fit": "专业对口优先",
+    "values": {
+      "salary": 77,
+      "stability": 59,
+      "growth": 7,
+      "autonomy": 35,
+      "impact": 57,
+      "balance": 96
+    },
+    "skills": [
+      "电力系统分析",
+      "PLC",
+      "AutoCAD",
+      "继电保护"
+    ],
+    "city_rank": {
+      "新一线": 1,
+      "一线": 2,
+      "其他省会": 3,
+      "经济发达": 4,
+      "交通发达": 5,
+      "其他": 6,
+      "生态友好": 7
+    },
+    "company_type_rank": {
+      "国企": 1,
+      "央企": 2,
+      "民企": 3,
+      "事业单位": 4,
+      "外企": 5
+    },
+    "industry_rank": {
+      "能源": 1,
+      "金融": 2,
+      "IT": 3,
+      "制造": 4,
+      "建筑": 5,
+      "医药": 6,
+      "教育": 7,
+      "消费": 8
+    },
+    "hard_filter": "",
+    "accept_no_major": false
+  },
+  "resume": {
+    "uploaded": false,
+    "extraction": {}
+  },
+  "quality": {
+    "score": 86,
+    "level": "可直接进入匹配",
+    "missing": [],
+    "warnings": [
+      "测试画像：由 gen_test_users.py 随机生成，不代表真实学生"
+    ]
+  },
+  "summary": {
+    "headline": "成都 · 能源与动力工程 · 应届校招",
+    "traits": [
+      "意向岗位：新能源开发工程师、电气设计工程师、热动集控工程师、电气工程师",
+      "偏好排序（1=最优先）：城市 新一线 / 类型 国企 / 行业 能源",
+      "老家城市：成都",
+      "技能：电力系统分析、PLC、AutoCAD、继电保护"
+    ]
+  },
+  "notes": [
+    "测试画像，仅用于验收排行与匹配逻辑"
+  ],
+  "downstream": {
+    "match_ready": true
+  }
+}

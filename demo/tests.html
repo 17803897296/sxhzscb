@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>双选会助手 · 测试记录管理</title>
+<style>
+  :root{--bg:#f5f7fb;--card:#fff;--line:#e2e7f0;--text:#1f2a3d;--muted:#7a869c;--blue:#2563eb;--red:#c0392b;--amber:#b7791f}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 60px}
+  h1{font-size:22px;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:6px;padding:6px 13px;font-size:13px;cursor:pointer}
+  .btn:hover{border-color:var(--blue);color:var(--blue)}
+  .btn-p{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn-p:hover{background:#1d4ed8;color:#fff}
+  .btn-d{color:var(--red);border-color:#eecaca}
+  .btn-d:hover{border-color:var(--red);color:var(--red)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .stats{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--muted)}
+  .stats b{color:var(--text);font-size:16px;margin-right:4px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{background:#f8fafd;color:var(--muted);font-weight:600;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  .tag{font-weight:650;color:var(--text)}
+  .muted{color:var(--muted)}
+  .chip{display:inline-block;background:#fff5e6;color:var(--amber);border-radius:4px;padding:1px 6px;font-size:11px;margin-left:6px}
+  .ops{white-space:nowrap}
+  .detail{background:#f7f9fc;padding:14px 18px;font-size:12.5px;line-height:1.8;border-bottom:1px solid var(--line)}
+  .detail h4{margin:0 0 6px;font-size:13px}
+  .detail .kv{color:var(--muted);word-break:break-all}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+  .msg{font-size:13px;color:var(--muted)}
+  .msg.ok{color:#0f9960}.msg.err{color:var(--red)}
+  a{color:var(--blue);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>测试记录管理</h1>
+  <p class="sub">每次跑完采集端问卷后保存的「填了什么 + 排出了什么」。测试跑出来的记录可以直接删，只留真人跑的。</p>
+
+  <div class="bar">
+    <button class="btn btn-p" id="btn-refresh">刷新列表</button>
+    <button class="btn btn-d" id="btn-clean">清理测试记录</button>
+    <a class="btn" href="/fair.html?report=1">← 回到排行报告</a>
+    <span class="msg" id="msg"></span>
+  </div>
+
+  <div class="stats" id="stats">读取中…</div>
+  <div class="card" id="card"><div class="empty">读取中…</div></div>
+</div>
+
+<script>
+(function(){
+  var $ = function(s){ return document.querySelector(s); };
+  var card=$('#card'), stats=$('#stats'), msg=$('#msg');
+  function say(t,cls){ msg.textContent=t||''; msg.className='msg '+(cls||''); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function api(path,data){
+    var opt = data ? {method:'POST',headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify(data)} : {};
+    return fetch(path,opt).then(function(r){ return r.json(); });
+  }
+  // 只清「看起来是测试」的记录：sid 以 TEST 开头，或标签含测试/临时/脏数据/自编
+  function isTest(it){
+    var sid=String(it.sid||'').toUpperCase();
+    var tag=String(it.tag||'');
+    return sid.indexOf('TEST')===0 || /测试|临时|脏数据|自编|回归/.test(tag);
+  }
+
+  function render(items){
+    if(!items.length){
+      card.innerHTML='<div class="empty">还没有测试记录。到报告页底部「实验记录」区保存一条，或跑一次全流程。</div>';
+      return;
+    }
+    var h='<table><thead><tr><th>#</th><th>时间</th><th>标签</th><th>专业</th>'
+      +'<th>硬约束</th><th>企业数</th><th>编号</th><th>操作</th></tr></thead><tbody>';
+    items.forEach(function(it){
+      h+='<tr>'
+        +'<td class="muted">#'+it.id+'</td>'
+        +'<td class="muted">'+esc(it.created_at)+'</td>'
+        +'<td><span class="tag">'+esc(it.tag||'未命名')+'</span>'
+          +(isTest(it)?'<span class="chip">测试</span>':'')+'</td>'
+        +'<td>'+esc(it.major||'—')+'</td>'
+        +'<td>'+(it.hard_filter?esc(it.hard_filter):'<span class="muted">无</span>')+'</td>'
+        +'<td>'+it.n_rows+' 家</td>'
+        +'<td class="muted">'+esc(it.sid||'—')+'</td>'
+        +'<td class="ops"><button class="btn" data-view="'+it.id+'">查看</button> '
+        +'<button class="btn btn-d" data-del="'+it.id+'">删除</button></td>'
+        +'</tr>'
+        +'<tr id="d-'+it.id+'" style="display:none"><td colspan="8" style="padding:0">'
+        +'<div class="detail" data-pane="'+it.id+'">读取中…</div></td></tr>';
+    });
+    h+='</tbody></table>';
+    card.innerHTML=h;
+
+    card.querySelectorAll('[data-view]').forEach(function(b){
+      b.onclick=function(){
+        var tr=$('#d-'+b.dataset.view), pane=card.querySelector('[data-pane="'+b.dataset.view+'"]');
+        if(!tr) return;
+        if(tr.style.display!=='none'){ tr.style.display='none'; return; }
+        tr.style.display=''; pane.textContent='读取中…';
+        api('/api/fair/test-detail?id='+b.dataset.view).then(function(d){
+          var it=(d&&d.item)||{}, top=it.top||[], dropped=it.dropped||[];
+          pane.innerHTML='<h4>输入 · 学生填了什么</h4>'
+            +'<div class="kv">专业：'+esc(it.major||'—')+'　｜　生效画像：'+esc(it.fair_id||'—')+'</div>'
+            +'<div class="kv">七维权重：'+esc(JSON.stringify(it.weights||{}))+'</div>'
+            +'<div class="kv">意向岗位：'+esc((it.intended||[]).join('、')||'—')+'</div>'
+            +'<div class="kv">硬约束：'+esc(it.hard_filter||'无')+'　｜　教培：'
+              +(it.accept_no_major?'已纳入':'已剔除')+'</div>'
+            +'<h4 style="margin-top:10px">输出 · 系统排出了什么（前 '+top.length+' 名）</h4>'
+            +'<div>'+ (top.length?top.map(function(t){
+                return esc((t.rank!=null?t.rank+'· ':'')+t.name+'（'+t.score+'）');
+              }).join('　') : '<span class="muted">无</span>') +'</div>'
+            +'<div class="kv">硬约束/教培剔除 '+dropped.length+' 家　｜　备注：'+esc(it.note||'—')+'</div>';
+        }).catch(function(){ pane.textContent='读取失败'; });
+      };
+    });
+
+    card.querySelectorAll('[data-del]').forEach(function(b){
+      b.onclick=function(){
+        var id=b.dataset.del;
+        if(!confirm('确定删除测试记录 #'+id+'？删除后不可恢复，真人跑的记录请保留。')) return;
+        b.disabled=true;
+        api('/api/fair/test-delete',{id:id}).then(function(d){
+          if(d&&d.ok){ say('已删除 #'+id,'ok'); load(); }
+          else { b.disabled=false; say('删除失败：'+((d&&d.error)||'未知原因'),'err'); }
+        }).catch(function(){ b.disabled=false; say('删除失败：连不上服务','err'); });
+      };
+    });
+  }
+
+  function load(){
+    say('读取中…');
+    api('/api/fair/test-list?limit=100').then(function(d){
+      var items=(d&&d.items)||[];
+      var nTest=items.filter(isTest).length;
+      stats.innerHTML='共 <b>'+items.length+'</b> 条记录　·　其中疑似测试 <b>'+nTest+'</b> 条'
+        +'　·　真人跑的 <b>'+(items.length-nTest)+'</b> 条'
+        +'　<span class="muted">（数据来自 '+esc(location.host)+' 上的 careersafari.db）</span>';
+      render(items);
+      say('已加载 '+items.length+' 条','ok');
+    }).catch(function(){
+      stats.textContent='读取失败';
+      card.innerHTML='<div class="empty">连不上服务。请确认 8102 已启动。</div>';
+      say('连不上服务','err');
+    });
+  }
+
+  $('#btn-refresh').onclick=load;
+  $('#btn-clean').onclick=function(){
+    api('/api/fair/test-list?limit=100').then(function(d){
+      var items=((d&&d.items)||[]).filter(isTest);
+      if(!items.length){ say('没有需要清理的测试记录','ok'); return; }
+      if(!confirm('将删除 '+items.length+' 条测试记录：\n'
+        + items.map(function(x){return '  #'+x.id+' '+x.tag;}).join('\n')
+        + '\n\n真人记录不会动。确定继续？')) return;
+      var left=items.length, failed=0;
+      say('清理中…');
+      items.forEach(function(it){
+        api('/api/fair/test-delete',{id:it.id}).then(function(r){
+          if(!(r&&r.ok)) failed++;
+        }).catch(function(){ failed++; }).then(function(){
+          left--;
+          if(left===0){ say('清理完成，失败 '+failed+' 条',failed?'err':'ok'); load(); }
+        });
+      });
+    });
+  };
+  load();
+})();
+</script>
+</body>
+</html>

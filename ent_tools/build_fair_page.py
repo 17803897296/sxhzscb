@@ -108,11 +108,11 @@ def patch_fair_js(js):
       after(value, a) { a.direction_interest = value; },
       reset(a) { a.direction_interest = ''; },
     }),"""
-    NEW_DIR = """    fairStep('internship', '做过哪些实习？写岗位或方向就行，也可以留空。', {
+    NEW_DIR = """    fairStep('internship', '做过哪些实习 / 竞赛 / 论文？写岗位、项目或方向就行，也可以留空。', {
       allowCustom: true,
       optional: true,
-      placeholder: '比如：软件工程 / 数据分析 / 运筹优化，做过几个写几个',
-      hint: '自由填写，原样记录，交给匹配模型判断你和对口岗位的相关度；不套任何岗位族。想跳过就输入「跳过」。',
+      placeholder: '比如：供应链实习 / 美赛 Finalist / 本科论文《…》，做过几个写几个',
+      hint: '自由填写，原样记录；这段会直接喂给后面的岗位推荐模型。不套任何岗位族，想跳过就输入「跳过」。',
       after(value, a) { a.direction_interest = value; },
       reset(a) { a.direction_interest = ''; },
     }),"""
@@ -128,11 +128,17 @@ def patch_fair_js(js):
         js = js[:rg_start] + js[rg_end:]
         edits.append("删除期望城市（想去哪个城市）步骤")
 
-    # 插入「岗位推荐」步骤：按专业/实习给候选岗位，学生勾选 -> intended_jobs[]
-    fs_anchor = "function fairSteps() {\n  return [\n"
-    if fs_anchor in js:
-        js = js.replace(fs_anchor, fs_anchor + "    jobRecommendStep(),\n", 1)
-        edits.append("插入岗位推荐步骤")
+    # v13：岗位推荐不再插进 fairSteps() 数组开头（那样会排在「实习/竞赛/论文」之前，
+    # 大模型拿不到经历信息）。改由 buildFlow 在经历题与教培题之后 push。
+    _flow_anchor = "  fairSteps().forEach(step => flow.push(step));\n"
+    if _flow_anchor not in js:
+        raise RuntimeError("buildFlow 的 fairSteps forEach 定位没找到，无法调整岗位推荐顺序")
+    js = js.replace(_flow_anchor,
+        _flow_anchor
+        + "  /* v13：先问完经历和教培接受度，再让大模型据此推荐岗位 */\n"
+        + "  flow.push(noMajorAcceptStep());\n"
+        + "  flow.push(jobRecommendStep());\n", 1)
+    edits.append("教培接受度与岗位推荐移到实习/竞赛/论文之后、大模型推荐之前")
 
     # ③ 删除「最晚什么时候落地」整步
     tl_start = js.find("    fairStep('timeline',")
@@ -206,6 +212,13 @@ def patch_fair_js(js):
     if _old_accept in js:
         js = js.replace(_old_accept, _new_accept, 1)
         edits.append("简历上传放开图片格式（jpg/png/webp/bmp）")
+    #    只放开 accept 不够：学生看不到「能传照片」就不传，功能等于不存在。
+    #    这里把提示文案补一句，和 accept 一起改，避免只改了后端没人知道。
+    _old_sub = "带上简历我会直接读出学校、专业、项目经历，只再问你 4 个问题；没有简历也能聊。"
+    _new_sub = _old_sub + "手机拍的简历照片（jpg / png）也能传，会先转成文字再解析。"
+    if _old_sub in js and "简历照片" not in js:
+        js = js.replace(_old_sub, _new_sub, 1)
+        edits.append("简历上传提示补充「支持照片」说明")
 
     # ③f v12（2026-11-13 用户要求）：两类硬约束问答。
     #   ① hard_filter：自由填空，如「只要南京的工作」「只看互联网」。
@@ -221,9 +234,8 @@ def patch_fair_js(js):
         raise RuntimeError("buildFlow 的 industryRankStep 定位没找到，无法插入硬约束步骤")
     js = js.replace(_use,
         _use
-        + "  /* v12：硬约束（自由填空）与教培接受度，排在排序追问之后 */\n"
-        + "  flow.push(hardFilterStep());\n"
-        + "  flow.push(noMajorAcceptStep());\n", 1)
+        + "  /* v12：硬约束（自由填空）排在排序追问之后；教培接受度已提前到岗位推荐之前 */\n"
+        + "  flow.push(hardFilterStep());\n", 1)
     # 两个 step 以函数形式定义，避免再往数组字面量里塞内容。
     _step_defs = (
         "function hardFilterStep() {\n"
@@ -312,7 +324,7 @@ questionnaire["value_dimensions"] = [
     ["city", "城市条件（一线 / 新一线 / 省会 / 其他）"],
     ["home", "离家近"],
     ["company_type", "企业类型（央企 / 国企 / 民企 / 外企）"],
-    ["industry", "行业对口"],
+    ["industry", "行业"],
     ["scale", "企业规模档"],
     ["industry_status", "行业地位（500强 / 行业龙头）"],
     ["growth", "成长性（高速成长企业）"],
@@ -555,7 +567,7 @@ window.fetch = function (url, opts) {
        不再把任何上传都替换成 DEMO_RESUME 那份「管科 + 供应链实习」固定示例。 */
     if (FAIR_ONLINE) return _realFetch.call(window, url, opts);
     return _resp({ ok: false,
-      error: '离线双击模式无法解析简历；请用 http://127.0.0.1:8102/fair.html 打开本页，或选「没有简历，直接聊」' });
+      error: '离线双击模式无法解析简历；请用 统一入口首页（/） 打开本页，或选「没有简历，直接聊」' });
   }
   if (u.indexOf("/api/fair/profile") >= 0) {
     let body = {};
@@ -662,45 +674,67 @@ function _jobRecommendRules(major, exps, skills, exclude) {
   const pool = fresh.length >= 6 ? fresh
     : fresh.concat(out.filter(function(c) { return excl.has(c.title); }));
   return { ok: true, mode: "rules", candidates: pool.slice(0, 6),
-           notice: "离线（双击）模式：未调用模型，下面是本地规则推荐；想让模型按你的经历生成，请用 http://127.0.0.1:8102/fair.html 打开本页。" };
+           notice: "离线（双击）模式：未调用模型，下面是本地规则推荐；想让模型按你的经历生成，请用 统一入口首页（/） 打开本页。" };
 }
 
 function jobRecommendStep() {
   return {
     id: 'job-recommend', kind: 'card',
-    ask: '根据你说的专业和实习，我先给几个今年校招能投的岗位，勾几个最想去的；不满意可以换一批。',
+    ask: '根据你说的专业和实习 / 竞赛 / 论文，我先给几个今年校招能投的岗位，勾几个最想去的；不满意可以换一批。',
     async render() {
       const a = state.answers;
       const major = (a.identity && a.identity.major) || a.major || '';
       const r0 = state.resume || {};
-      const exps = (r0.experiences || (r0.extraction && r0.extraction.experiences) || [])
-        .map(function(x) { return (x && x.text) || x || ''; }).filter(Boolean);
-      const skills = (r0.skills || (r0.extraction && r0.extraction.skills) || [])
-        .map(function(x) { return (x && x.name) || x || ''; }).filter(Boolean);
-      const basis = exps.length ? exps.join('；') : (major ? major + ' 的核心课程' : '尚未提供专业/实习');
-      let cands = [], tag = '', notice = '';
-      const shown = [];
-      async function load(exclude) {
+      const rx = r0.extraction || {};
+      /* v14：实习 / 竞赛 / 论文分开取，模型才能分别用上；兼容两种简历结构 */
+      function bag(k) {
+        return (r0[k] || rx[k] || []).map(function(x) {
+          return (x && (x.text || x.name || x.title)) || x || '';
+        }).filter(Boolean);
+      }
+      const internships = bag('experiences');
+      const competitions = bag('competitions');
+      const papers = bag('papers');
+      const skills = bag('skills');
+      // v13：问卷里刚填的「实习 / 竞赛 / 论文」也并进去，题不白问
+      const typed = String(a.direction_interest || '').trim();
+      if (typed && typed !== '跳过' && internships.indexOf(typed) < 0) internships.push(typed);
+      const allExps = internships.concat(competitions, papers);
+      const basis = allExps.length ? allExps.join('；') : (major ? major + ' 的核心课程' : '尚未提供经历');
+      // 教培题排在推荐之前，这里能直接读到学生是否接受「不限专业」岗位
+      const acceptNoMajor = (a.accept_no_major === true);
+      let cands = [], tag = '', notice = '', tierLabel = '', curTier = 0;
+      const shown = [];               // 历次展示过的岗位名，跨层也不重复
+      async function load() {
         let r;
         try {
           r = await (await fetch('/api/fair/recommend-jobs', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ major: major, experiences: exps, skills: skills, exclude: exclude })
+            body: JSON.stringify({
+              major: major, internships: internships, competitions: competitions,
+              papers: papers, skills: skills, shown: shown, tier: curTier,
+              accept_no_major: acceptNoMajor
+            })
           })).json();
         } catch (e) { r = null; }
         if (!r || !r.ok || !(r.candidates || []).length) {
-          r = _jobRecommendRules(major, exps, skills, exclude);
+          const rr = _jobRecommendRules(major, allExps, skills, shown);
+          r = { ok: true, mode: 'rules', candidates: rr.candidates || [],
+                tier: curTier, tier_label: '离线规则（双击模式）', notice: rr.notice };
         }
+        if (typeof r.tier === 'number') curTier = r.tier;
+        tierLabel = r.tier_label || tierLabel;
         cands = r.candidates || [];
         tag = (r.mode === 'llm') ? '（模型生成 · 校招口径）'
             : (FAIR_ONLINE ? '（规则兜底 · 校招口径）' : '（离线规则 · 双击模式）');
         notice = r.notice || '点一个岗位看推荐依据。';
       }
-      await load([]);
+      await load();
       const html = '<div class="chat-card">' +
         '<div class="cc-title">推荐岗位 <span id="job-tag">' + esc(tag) + '</span></div>' +
         (FAIR_ONLINE ? '' :
-          '<div class="cc-sub" style="color:#b45309">你现在是双击打开（离线模式），推荐不调模型。想让模型按你的专业和实习生成，请用 <b>http://127.0.0.1:8102/fair.html</b> 打开本页。</div>') +
+          '<div class="cc-sub" style="color:#b45309">你现在是双击打开（离线模式），推荐不调模型。想让模型按你的专业和实习生成，请用 <b>统一入口首页（/）</b> 打开本页。</div>') +
+        '<div class="cc-sub" id="job-tier" style="color:#2563eb;font-weight:600"></div>' +
         '<div class="cc-sub">依据：' + esc(basis) + '。都是校招可投的具体岗位名；勾了才算数，不会写进任何企业资料。</div>' +
         '<div class="cc-chips" id="job-cands"></div>' +
         '<div class="cc-sub muted" id="job-why"></div>' +
@@ -720,6 +754,8 @@ function jobRecommendStep() {
             return '<button type="button" class="chip" data-i="' + i + '" title="' + esc(c.why || '') + '">' + esc(c.title) + '</button>';
           }).join('') || '<span class="muted">这一批没有更多岗位了，可以直接手写。</span>';
           root.querySelector('#job-tag').textContent = tag;
+          var tierEl = root.querySelector('#job-tier');
+          if (tierEl) tierEl.textContent = tierLabel ? ('当前口径：' + tierLabel) : '';
           whyBox.textContent = notice;
           chipsBox.querySelectorAll('[data-i]').forEach(function(b) {
             const c = cands[+b.dataset.i];
@@ -735,8 +771,8 @@ function jobRecommendStep() {
         paint();
         root.querySelector('[data-act="refresh"]').onclick = async function() {
           cands.forEach(function(c) { if (c && c.title && shown.indexOf(c.title) < 0) shown.push(c.title); });
-          whyBox.textContent = '正在换一批…';
-          await load(shown.slice(-40));
+          whyBox.textContent = '正在换一批（本层看完会自动放宽）…';
+          await load();
           paint();
         };
         root.querySelector('[data-act="skip"]').onclick = function() { done({ skipped: true, value: [] }); };
@@ -1617,13 +1653,13 @@ window.__mountMatch = function(doc){
       } catch (e) {
         report.failed = true;
         const firstFail = (i === 0 && gotTotal === 0);
-        report.error = firstFail ? "连不上本地服务 127.0.0.1:8102（第一批就失败）" : "中途失败，本地服务可能断了";
+        report.error = firstFail ? "连不上本地服务 本地服务（第一批就失败）" : "中途失败，本地服务可能断了";
         report.finished = true;
         updateSearchReport(report);
         if (firstFail) {
-          stat.innerHTML = "⚠️ 连不上本地服务 <b>127.0.0.1:8102</b>（联网搜索必须连它）。<br>"
+          stat.innerHTML = "⚠️ 连不上本地服务 <b>本地服务</b>（联网搜索必须连它）。<br>"
             + "请先在 ent_tools 目录运行 <code>python -X utf8 fair_server.py</code>，"
-            + "再用 <b>http://127.0.0.1:8102/fair.html</b> 打开本页重试。<br>"
+            + "再用 <b>统一入口首页（/）</b> 打开本页重试。<br>"
             + "（走「填完画像直接出报告」的对话流程可离线看结果，那份用的是内置数据。）";
           btn.disabled = false; btn.textContent = "重试";
         } else {

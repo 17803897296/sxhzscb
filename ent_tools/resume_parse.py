@@ -112,6 +112,34 @@ OCR_PROMPT = (
 )
 
 
+def _vision_cfg() -> tuple:
+    """视觉模型单独一套配置，与文本模型解耦。
+
+    2026-11-15 踩过的坑：文本模型从智谱切到 DeepSeek 官方后，这里仍拿
+    `DEEPSEEK_BASE_URL` 去打 `glm-4v-flash`，而 DeepSeek 官方没有多模态模型，
+    每次传照片都是 HTTP 400 —— 「简历照片识别」就这么静默失效了。
+    现在优先读 `VISION_*`；只有老配置（base 不是 deepseek.com）才回退
+    `DEEPSEEK_*`，绝不把文本模型的地址错当视觉地址用。
+    """
+    cfg = _env_cfg()
+
+    def g(*names):
+        for n in names:
+            v = os.environ.get(n) or cfg.get(n)
+            if v and str(v).strip():
+                return str(v).strip()
+        return ""
+
+    key = g("VISION_API_KEY")
+    base = g("VISION_BASE_URL")
+    model = g("VISION_MODEL") or "glm-4v-flash"
+    if not key or not base:
+        dk, db = g("DEEPSEEK_API_KEY"), g("DEEPSEEK_BASE_URL")
+        if dk and db and "deepseek.com" not in db:
+            key, base = key or dk, base or db
+    return key, base, model
+
+
 def ocr_image(data: bytes) -> tuple:
     """图片 -> 文字。走智谱 GLM-4V 系列视觉模型（标准库实现，无需第三方 SDK）。
 
@@ -119,17 +147,12 @@ def ocr_image(data: bytes) -> tuple:
     绝不返回占位文本让学生以为解析成功了。
     """
     warnings = []
-    cfg = _env_cfg()
-    key = os.environ.get("DEEPSEEK_API_KEY") or cfg.get("DEEPSEEK_API_KEY", "")
-    base = (os.environ.get("DEEPSEEK_BASE_URL") or cfg.get("DEEPSEEK_BASE_URL")
-            or "https://open.bigmodel.cn/api/paas/v4")
-    if not key:
-        warnings.append("没有配置视觉模型密钥，无法识别图片；请改传 .docx / .txt，"
-                        "或把简历另存为文字版再上传")
+    key, base, model = _vision_cfg()
+    if not key or not base:
+        warnings.append("没有配置视觉模型（VISION_API_KEY / VISION_BASE_URL），"
+                        "图片简历无法识别；请改传 .docx / .txt，或把简历另存为文字版再上传")
         return "", warnings, "image-no-key"
 
-    model = (os.environ.get("DEEPSEEK_VL_MODEL") or cfg.get("DEEPSEEK_VL_MODEL")
-             or "glm-4v-flash")
     b64 = base64.b64encode(data).decode("ascii")
     payload = {
         "model": model,
@@ -234,12 +257,29 @@ def parse_fields(text: str):
     put("school", school, "学校字段 / 高校名称")
 
     major = _first(r"(?:专业|所学专业|研究方向)\s*[:：]\s*([^\n，,；;]{2,20})", text)
+    # 「XX专业」结尾的行（通常在教育经历）比全文关键词可靠。
+    # 全文扫 KNOWN_MAJORS 会把「协调举办管理科学与工程学术论坛」当成专业，
+    # 这类误命中会一路污染画像和岗位推荐，必须先把范围压到教育经历区。
+    edu_zone = "\n".join(text.splitlines()[:30])
+    majors_all = []
+    if not major:
+        for line in edu_zone.splitlines():
+            s = line.strip()
+            if re.search(r"论坛|讲座|协会|学会|大赛|竞赛|课程|协调|负责|策划", s):
+                continue
+            for mm in re.finditer(r"([\u4e00-\u9fa5A-Za-z0-9（）()·]{2,24})专业", s):
+                v = mm.group(1).strip("，,、:： ")
+                if 2 <= len(v) <= 24 and v not in majors_all:
+                    majors_all.append(v)
+        if majors_all:
+            # 教育经历按时间顺序写，最后一条通常是最高学历
+            major = majors_all[-1]
     if not major:
         for m in sorted(KNOWN_MAJORS, key=len, reverse=True):
-            if m in text:
+            if m in edu_zone:
                 major = m
                 break
-    put("major", major, "专业字段 / 已知专业名")
+    put("major", major, "专业字段 / 教育经历「…专业」行")
 
     degree = _first(r"(博士研究生|硕士研究生|本科生|博士|硕士|本科|大专)", text)
     put("degree", degree, "学历关键词")
@@ -257,7 +297,20 @@ def parse_fields(text: str):
         m = re.search(r"(20\d{2})\s*届", text)
         if m:
             grad = m.group(1) + " 届"
-    put("graduation", grad.strip() if grad else "", "毕业时间")
+    if not grad:
+        # 教育经历写成「2022.09-2026.06 武汉」「2026.09-2029.06 南京」时，
+        # 取最后一段的结束年月（最高学历毕业时间），否则会把本科毕业年份
+        # 当成求职届别，推荐出完全不对的校招批次。
+        # 只认「教育经历」到「实习经历」之间的日期行。用整个 edu_zone 会把
+        # 竞赛「2024.12-2025.01」当成毕业时间，届别直接错两年。
+        seg = re.search(r"教育经历([\s\S]{0,900}?)(?:实习经历|项目经历|工作经历|校园活动)", text)
+        zone = seg.group(1) if seg else "\n".join(text.splitlines()[:15])
+        spans = re.findall(
+            r"20\d{2}\s*[.\-/年]\s*\d{1,2}\s*[-–—~至]\s*"
+            r"(20\d{2})\s*[.\-/年]\s*(\d{1,2})", zone)
+        if spans:
+            grad = spans[-1][0] + "." + spans[-1][1].zfill(2)
+    put("graduation", grad.strip() if grad else "", "毕业时间 / 最高学历结束年月")
 
     # 手机号：真实简历常写成 138-0000-1234 / 138 0000 1234 / +86 138...，
     # 允许分隔符与 +86 前缀，统一存成 11 位纯数字。
@@ -384,7 +437,13 @@ def _llm_enhance(text: str, base: dict):
         data = json.loads(m.group(0)) if m else {}
         for k, _ in FIELDS:
             if not base["fields"][k]["value"] and data.get(k):
-                base["fields"][k] = {"value": str(data[k]), "source": "resume_llm",
+                v = str(data[k]).strip()
+                # 模型常把 GPA 行的「3/30」当年级、把任意数字当毕业时间，先做值域校验
+                if k == "grade" and not re.search(r"研|博|大[一二三四]|年级|届|硕士|博士|本科", v):
+                    continue
+                if k == "graduation" and not re.search(r"20\d{2}", v):
+                    continue
+                base["fields"][k] = {"value": v, "source": "resume_llm",
                                      "evidence": "大模型补全"}
         for key2, bucket in (("competitions", "competitions"), ("papers", "papers"),
                              ("certificates", "certificates")):
@@ -430,6 +489,17 @@ def parse_resume(filename: str, data: bytes, use_llm: bool = False) -> dict:
         "papers": sec["papers"], "certificates": sec["certificates"],
         "warnings": warnings, "llm": {},
     }
+    # 教育经历里出现过的所有「…专业」，本科 + 硕士都留着，避免只留一个口径。
+    edu_majors = []
+    for line in "\n".join(text.splitlines()[:30]).splitlines():
+        s = line.strip()
+        if re.search(r"论坛|讲座|协会|学会|大赛|竞赛|课程|协调|负责|策划", s):
+            continue
+        for mm in re.finditer(r"([\u4e00-\u9fa5A-Za-z0-9（）()·]{2,24})专业", s):
+            v = mm.group(1).strip("，,、:： ")
+            if v and v not in edu_majors:
+                edu_majors.append(v)
+    out["education_majors"] = edu_majors
     if use_llm:
         out, llm = _llm_enhance(text, out)
         out["llm"] = llm

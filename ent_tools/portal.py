@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -414,21 +415,43 @@ def fetch_js(url, timeout=35, budget=8000):
             pass
 
 
+# Bing 对并发请求很敏感：并发一高就返回「汉字字典」这类降级结果
+# （查"科伦药业 招聘"会返回「科（汉语汉字）_百度百科」）。串行 + 最小间隔，
+# 并且识别出降级结果后立刻重试一次。
+_BING_LOCK = threading.Lock()
+_BING_LAST = [0.0]
+_BING_GAP = 0.45
+_DEGRADED = re.compile(r"汉语|汉典|字典|的意思|_百度百科|百科_")
+
+
+def _degraded(hits):
+    return bool(hits) and all(_DEGRADED.search((h.get("title") or "")) for h in hits)
+
+
 def bing(q, n=5):
-    try:
-        html = fetch("https://cn.bing.com/search?q=" + urllib.parse.quote(q))
-    except Exception:
-        return []
     out = []
-    for m in re.finditer(r'<li class="b_algo".*?</li>', html, re.S):
-        block = m.group(0)
-        link = re.search(r'<h2>\s*<a[^>]+href="([^"]+)"', block)
-        title = re.search(r"<h2>(.*?)</h2>", block, re.S)
-        if link:
-            out.append({"url": link.group(1),
-                        "title": re.sub(r"<[^>]+>", "", title.group(1)).strip() if title else ""})
-        if len(out) >= n:
-            break
+    for attempt in (1, 2):
+        with _BING_LOCK:
+            gap = time.time() - _BING_LAST[0]
+            if gap < _BING_GAP:
+                time.sleep(_BING_GAP - gap)
+            try:
+                html = fetch("https://cn.bing.com/search?q=" + urllib.parse.quote(q))
+            except Exception:
+                html = ""
+            _BING_LAST[0] = time.time()
+        out = []
+        for m in re.finditer(r'<li class="b_algo".*?</li>', html, re.S):
+            block = m.group(0)
+            link = re.search(r'<h2>\s*<a[^>]+href="([^"]+)"', block)
+            title = re.search(r"<h2>(.*?)</h2>", block, re.S)
+            if link:
+                out.append({"url": link.group(1),
+                            "title": re.sub(r"<[^>]+>", "", title.group(1)).strip() if title else ""})
+            if len(out) >= n:
+                break
+        if out and not _degraded(out):
+            return out
     return out
 
 
@@ -460,8 +483,10 @@ def is_auth(url):
 
 
 def short_name(name):
-    """全称太长，Bing 匹配不到。去掉括号和公司后缀取核心词。"""
+    """全称太长，Bing 匹配不到。去掉括号、分公司、公司后缀取核心词。"""
     s = re.sub(r"[（(].*?[)）]", "", name).strip()
+    # 「…有限公司上海分公司」要连城市一起剥掉，否则会剩下「…有限公司上海」这种非企业名。
+    s = re.sub(r"(?:股份有限公司|有限责任公司|有限公司|集团)?(?:[^公司]{2,8})?(?:分公司|分行)$", "", s)
     for suf in ("股份有限公司", "有限责任公司", "有限公司", "集团有限公司",
                 "股份公司", "集团", "公司"):
         if s.endswith(suf) and len(s) > len(suf) + 1:
@@ -470,26 +495,61 @@ def short_name(name):
     return s.strip()
 
 
+REGION_PREFIX = ("北京", "上海", "天津", "重庆", "河北", "山西", "辽宁", "吉林",
+                 "黑龙江", "江苏", "浙江", "安徽", "福建", "江西", "山东", "河南",
+                 "湖北", "湖南", "广东", "广西", "海南", "四川", "贵州", "云南",
+                 "陕西", "甘肃", "青海", "宁夏", "新疆", "内蒙古", "西藏",
+                 # 地级市前缀同样常见：「南京新东方…」不剥「南京」就搜不到
+                 "南京", "苏州", "无锡", "常州", "南通", "徐州", "盐城", "扬州",
+                 "镇江", "泰州", "杭州", "宁波", "温州", "嘉兴", "绍兴", "金华",
+                 "深圳", "广州", "东莞", "佛山", "珠海", "中山", "武汉", "宜昌",
+                 "成都", "绵阳", "西安", "青岛", "济南", "烟台", "潍坊", "合肥",
+                 "芜湖", "长沙", "株洲", "郑州", "洛阳", "厦门", "福州", "泉州",
+                 "大连", "沈阳", "长春", "哈尔滨", "昆明", "南昌", "贵阳", "太原",
+                 "石家庄", "兰州", "乌鲁木齐", "呼和浩特", "海口", "南宁", "柳州")
+
+
+INDUSTRY_TAIL = re.compile(
+    r"(?:文化艺术|文化传播|文化|艺术|教育|科技|信息|技术|网络|集团|股份|控股|实业|"
+    r"发展|智能|电子|生物|医药|药业|数据|软件|系统|服务|咨询|管理|贸易|商贸|"
+    r"建设|工程|置业|地产|传媒|广告|医疗|健康|药房|连锁|餐饮|酒店|旅游|物流|"
+    r"环保|新能源|材料|机械|电气|自动化|仪器|化工|食品|投资|资产)$")
+
+
 def brand_names(name):
-    """企业全称 -> 多个搜索名：全称、短名、去掉行业词的品牌名。
+    """企业全称 -> 多个搜索名：短名、去地名、核心品牌、全称。
     例：腾讯科技（上海）有限公司 -> 腾讯科技 / 腾讯
         京东方科技集团股份有限公司 -> 京东方科技集团 / 京东方
         杭州银行股份有限公司上海分行 -> 杭州银行
+        四川科伦药业股份有限公司 -> 四川科伦药业 / 科伦药业
+        南京新东方文化艺术发展有限公司 -> 南京新东方文化艺术 / 新东方
+    后两个很关键：「四川科伦药业」在 Bing 上召回不到，去掉「四川」就命中官网校招系统；
+        「南京新东方文化艺术发展」召回不到，退到品牌词「新东方」才有招聘结果。
     """
     short = short_name(name)
-    s = re.sub(r"(?:上海|北京|深圳|广州|南京|杭州|苏州|成都|武汉|西安|天津|重庆|"
-               r"合肥|长沙|郑州|济南|青岛|厦门|福州|无锡|常州|东莞|佛山|宁波|"
-               r"昆明|南昌|贵阳|太原|石家庄|沈阳|大连|哈尔滨|长春|兰州|海口)"
-               r"(?:分行|分公司)$", "", short)
-    s = re.sub(r"(?:分行|分公司)$", "", s)
-    s = re.sub(r"(?:股份有限公司|有限责任公司|有限公司|集团有限公司|集团|公司)$", "", s)
-    brand = re.sub(r"(?:(?:科技|信息|技术|网络|集团|股份|控股|实业|发展|智能|"
-                   r"电子|生物|医药|数据|软件|系统|服务))+$", "", s)
     out = []
-    for v in (short, brand, name):
-        v = v.strip()
+
+    def push(v):
+        v = (v or "").strip()
         if v and v not in out:
             out.append(v)
+
+    push(short)
+    # 先去地名前缀，再剥行业词：顺序反了会停在「南京新东方」而不是「新东方」
+    base = short
+    for r in REGION_PREFIX:
+        if base.startswith(r) and len(base) - len(r) >= 3:
+            base = base[len(r):]
+            push(base)
+            break
+    core = base
+    for _ in range(4):
+        m = INDUSTRY_TAIL.search(core)
+        if not m or len(core) - len(m.group(0)) < 3:
+            break
+        core = core[: m.start()]
+    push(core)
+    push(name)
     return out
 
 
@@ -508,17 +568,22 @@ def pages_for(name):
             strong.append(v)
 
     queries = []
-    for v in variants:
-        for tail in ("校园招聘", "招聘", "人才招聘"):
+    for v in variants[:3]:
+        for tail in ("校园招聘", "招聘"):
             q = '"%s" %s' % (v, tail)
             if q not in queries:
                 queries.append(q)
 
+    # 中文长名在 Bing 上经常零召回（返回字词解释），此时 zh_search 会自动补 360：
+    # 360 的结果块自带 data-mdurl，能直接拿到智联/猎聘/BOSS 的真实地址。
+    import zh_search
+
+    keys = [name, short_name(name)] + variants
     seen_urls = set()
     results = []
     for query in queries:
         try:
-            found = bing(query, n=6)
+            found = zh_search.search(query, n=6, keys=keys, want=2)
         except Exception:
             continue
         for r in found:
@@ -537,7 +602,7 @@ def pages_for(name):
 
     # 招聘/职位/校招字样越多的结果越先试
     results.sort(key=lambda r: -r.get("_hint", 0))
-    results = results[:18]
+    results = results[:12]
 
     general = []
     general_jobs = []
@@ -551,8 +616,11 @@ def pages_for(name):
         title = r.get("title", "")
         job_score = sum(1 for k in JOB_ACCEPT if k in text)
         # 普通 HTTP 拿不到正文时，用本机 Edge/Chrome 无头渲染 JS（每家最多试 3 个候选）
+        # 招聘聚合站（智联/猎聘/BOSS）也走渲染：它们服务端能给一部分正文，
+        # 剩下的岗位列表在 JS 里，不渲染就只能看到公司简介。
         url_hint = any(h in url.lower() for h in
-                       ("job", "career", "zhaopin", "recruit", "hr", "campus", "join", "zhiye"))
+                       ("job", "career", "zhaopin", "recruit", "hr", "campus", "join", "zhiye")) \
+            or is_agg(url)
         if JS_RENDER and url_hint and (len(text) < 300 or job_score < 2) and js_tries < 3:
             js_tries += 1
             js_text = strip_html(fetch_js(url, timeout=18, budget=6000))
@@ -582,12 +650,19 @@ def pages_for(name):
 
 
 def page_matches(text, title, url, strong, variants):
-    """强匹配：全称/短名；品牌匹配：只允许非招聘聚合站。"""
+    """强匹配：全称/短名；品牌匹配：只允许非招聘聚合站。
+
+    招聘站的页面标题常只写品牌名（「华海药业招聘信息-2026年最新-智联招聘」），
+    只认全称/短名会把整批招聘站页面拒掉。所以聚合站放宽到品牌词，
+    但要求页面确实是招聘页（出现 招聘/职位/岗位/薪资），避免误认。
+    """
     if any(sn in text or sn in title for sn in strong):
         return True
+    hit = any(v in text or v in title for v in variants)
     if is_agg(url):
-        return False
-    return any(v in text or v in title for v in variants)
+        return hit and any(k in (text[:2000] + " " + title)
+                           for k in ("招聘", "职位", "岗位", "薪资"))
+    return hit
 
 
 def guess_nature(text):
@@ -731,17 +806,19 @@ def build(name):
                 "jobs": [], "jobSource": "未知", "jobEvidence": "未知",
                 "source": "未知", "date": "未知", "note": "没抓到页面"}
 
-    # 先走模型；失败或证据对不上就退回规则
+    # 先走模型；失败或证据对不上就退回规则。免费模型偶尔读超时，
+    # 立即重试一次（不 sleep，避免拖慢并行队列），仍失败才退规则。
     if MODEL_ON:
-        try:
-            raw = enrich.call_model(name, text, MODEL_ON["key"], MODEL_ON["base"], MODEL_ON["model"])
-            entry = enrich.build_entry(name, raw, text, source)
-            entry["id"] = "web-" + str(abs(hash(name)) % 10 ** 8)
-            entry.pop("text", None)
-            entry["note"] = "大模型抽取 · " + MODEL_ON["model"]
-            return entry
-        except Exception as exc:
-            sys.stderr.write("  model fail %s: %s\n" % (name[:16], str(exc)[:60]))
+        for attempt in (1, 2):
+            try:
+                raw = enrich.call_model(name, text, MODEL_ON["key"], MODEL_ON["base"], MODEL_ON["model"])
+                entry = enrich.build_entry(name, raw, text, source)
+                entry["id"] = "web-" + str(abs(hash(name)) % 10 ** 8)
+                entry.pop("text", None)
+                entry["note"] = "大模型抽取 · " + MODEL_ON["model"]
+                return entry
+            except Exception as exc:
+                sys.stderr.write("  model fail %s(%d/2): %s\n" % (name[:16], attempt, str(exc)[:60]))
 
     city = guess_city(text, name)
     jobs, stage = extract_jobs(text, city)

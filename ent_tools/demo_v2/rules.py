@@ -217,7 +217,10 @@ def company_type_bucket(nature):
             return b
     return None
 # 默认排名：国央企 > 民企 > 外企
-COMPANY_TYPE_RANK_DEFAULT = {"国央企": 1, "民企": 2, "外企": 3}
+# 默认排名：央企 > 国企 > 民企 > 外企 > 事业单位（5 档，与画像采集端的排序追问一致）
+# 2026-11-15 修 bug：这里曾是「国央企/民企/外企」三桶默认，而画像存的是 5 档原值键，
+# 桶名对不上 → 国企/央企/事业单位整维算不出分。现在统一用 nature 原值当键。
+COMPANY_TYPE_RANK_DEFAULT = {"央企": 1, "国企": 2, "民企": 3, "外企": 4, "事业单位": 5}
 
 # 离家近：粗分档（契约已有 home_city）
 HOME_TIER = {"同城": 1.0, "同省": 0.8, "邻省": 0.6, "其他": 0.3}
@@ -297,30 +300,65 @@ DIMENSIONS = [
     {"id": "city", "name": "城市条件", "kind": "tiered", "default": 18},
     {"id": "home", "name": "离家近", "kind": "tiered", "default": 14},
     {"id": "company_type", "name": "企业类型", "kind": "tiered", "default": 16},
-    {"id": "industry", "name": "行业对口", "kind": "category", "default": 14},
+    {"id": "industry", "name": "行业", "kind": "category", "default": 14},
     {"id": "scale", "name": "企业规模档", "kind": "tiered", "default": 14},
     {"id": "industry_status", "name": "行业地位（500强/行业龙头）", "kind": "tiered", "default": 12},
     {"id": "growth", "name": "成长性", "kind": "tiered", "default": 12},
 ]
 
 # 行业地位：读 v4.2 rank_tier（含规模榜 world500/china500/province100 与行业榜 national_leader/niche）。
-# 无榜单的企业给中性地板分，不惩罚——避免系统性压低 62 家没查到榜单的公司。
+# 2026-11-15 用户口径：**榜单里没有的挂 0**，不再给中性地板分。
+# 理由：这批企业 v4.2 覆盖率只有 22/145，给地板等于白送 10 分，15 分权重实际没有区分度。
 INDUSTRY_STATUS_TIERS = {
-    "world500": 1.0,       # 世界500强
-    "global_leader": 0.9,  # 全球行业龙头（v4.2 有此档，此前漏配会掉到地板 0.6）
-    "china500": 0.95,      # 中国500强
-    "province100": 0.9,    # 省100强
-    "national_leader": 0.85,  # 全国行业龙头
-    "niche": 0.7,          # 细分领域领先
+    # 2026-11-15 增补档案把行业族/体量族**合并成三档**（rank_dim 统一 merged，
+    # 接入端只读 rank_tier）。global_leader 是合并后的顶层，等价于原世界500强。
+    "global_leader": 1.0,     # 全球级（原 global_leader + world500）
+    "world500": 1.0,          # 世界500强（旧 v4.2 口径，保留兼容）
+    "china500": 0.95,         # 中国500强（旧口径）
+    "province100": 0.9,       # 省100强（旧口径，合并档里归 niche）
+    "national_leader": 0.85,  # 全国级行业龙头（原 national_leader + china500）
+    "niche": 0.7,             # 细分·区域级（原 niche + province100）
 }
-INDUSTRY_STATUS_FLOOR = 0.6  # 无榜单/未查到 → 中性地板（不参与惩罚，仅略低于有榜企业）
+INDUSTRY_STATUS_FLOOR = 0.0  # 无榜单/未查到 → 0（不臆造、不留情面）
 
 # 成长性：读 v4.2 growth_tier。
 GROWTH_TIERS = {
     "rising_star": 1.0,    # 高速成长（有明确成长证据）
     "note_only": 0.7,      # 仅有成长备注（弱证据）
 }
-GROWTH_FLOOR = 0.55       # 无成长信号 → 中性地板
+GROWTH_FLOOR = 0.0        # 无成长信号 → 0
+
+# 2026-11-15 01:1x：成长性**正常参与打分**（默认开启）。
+# 曾一度被我擅自关掉（GROWTH_ENABLED=False，把 5 分回填其它维度），用户明确否决：
+# 「谁让你落地把成长性退出的」——口径是「没数据就记 0」，不是「没数据就把这一维去掉」。
+# 实测覆盖（仅作记录，不构成关停理由）：v4.2 118 家里 39 家有信号（24 rising_star +
+# 15 note_only），但这 118 家与本次双选会 145 家只有 22 家重名，22 家里 16 家被
+# 「岗位不对口」剔除，榜上只剩 6 家且 growth_tier 全为 none → 当前榜单 0/86 有分。
+# 要改善只能按参会名单补采，不许改权重把它「藏」起来。
+GROWTH_ENABLED = True
+
+
+def rebalance_weights(w):
+    """把「已关闭维度」的权重按比例回填给其余维度，合计仍为 100。
+
+    只处理 GROWTH_ENABLED=False 时的 growth。保留 growth:0 这个键，
+    前端才知道「这一维存在但不计分」，而不是当作不存在。
+    """
+    w = {k: float(v or 0) for k, v in (w or {}).items()}
+    if GROWTH_ENABLED or not w.get("growth"):
+        return w
+    rest = {k: v for k, v in w.items() if k != "growth" and v > 0}
+    s = sum(rest.values())
+    if s <= 0:
+        w["growth"] = 0.0
+        return w
+    out = {k: round(v / s * 100, 1) for k, v in rest.items()}
+    diff = round(100 - sum(out.values()), 1)      # 四舍五入误差补给最大项
+    if diff:
+        top = max(out, key=lambda k: out[k])
+        out[top] = round(out[top] + diff, 1)
+    out["growth"] = 0.0
+    return out
 
 # 行业偏好：列出「有该岗位的行业」让用户排序（对口是硬约束，这里只做排序偏好）
 # 默认排名（可在采集端改）：IT > 金融 > 制造 > 建筑 > 医药 > 能源 > 教育 > 消费

@@ -24,7 +24,10 @@ import argparse
 import json
 import os
 import sys
+import threading
+import time
 import traceback
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -37,9 +40,71 @@ import job_recommend        # noqa: E402
 import resume_parse         # noqa: E402
 import test_sessions        # noqa: E402  v12 测试数据库（只追加的实验日志）
 import portal               # noqa: E402  复用企业端搜索/补全接口（/api/filter、/api/lookup、/api/names）
+import match_fill           # noqa: E402  提交画像后按新画像重算 llm_match（hit/inferred/miss）
+import intent_semantics     # noqa: E402  按需补判意向岗位语义（换画像 / 现场新勾岗位）
 
 PAGE = os.path.join(ROOT, "demo", "fair.html")
 PAYLOAD = os.path.join(HERE, "data", "fair_payload.json")
+
+
+def _payload_titles():
+    """payload 里出现过的全部企业岗位名，给按需语义补判当候选池用。"""
+    try:
+        with open(PAYLOAD, encoding="utf-8") as f:
+            p = json.load(f)
+    except Exception:
+        return []
+    out = set()
+    for r in p.get("rows") or []:
+        for t in (r.get("job_titles") or []):
+            if t:
+                out.add(str(t).strip())
+        for t in (r.get("matched_jobs") or []):
+            if t:
+                out.add(str(t).strip())
+    return sorted(out)
+
+
+# ---- 提交画像后按新画像重算 llm_match（hit/inferred/miss）----
+# 这是「画像影响命中/排除判定」的关键闭环：之前 llm_match 是某次全量重算冻结的
+# 旧画像结论，换学生后只重算分数、不重算命中，导致报告里出现上一个学生的意向岗位。
+# 现在提交画像即后台跑 match_fill --force，跑完再 build()，前端轮询拿到新报告。
+_RECOMPUTE = {"busy": False, "started": None, "done": None,
+              "error": None, "profile": None, "lock": threading.Lock()}
+_SEM_LOCK = threading.Lock()      # 同一时刻只跑一次语义补判，避免并发重复调模型
+
+
+def _recompute_worker():
+    with _RECOMPUTE["lock"]:
+        _RECOMPUTE["busy"] = True
+        try:
+            _RECOMPUTE["started"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            _RECOMPUTE["error"] = None
+            _companies, _llm, _raw = fair_bridge.read_db()
+            _prof = fair_bridge.profile_from(_raw)
+            _RECOMPUTE["profile"] = "%s / 意向 %s" % (
+                _prof.get("major"), "、".join(_prof.get("intended_jobs") or []))
+            match_fill.fill(force=True, batch=8, workers=5, profile=_prof)
+            fair_bridge.build()
+            _RECOMPUTE["done"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        except Exception as e:                       # 失败不写半截结论；llm_match 保持上次良好状态
+            _RECOMPUTE["error"] = "%s: %s" % (type(e).__name__, str(e)[:200])
+            traceback.print_exc()
+        finally:
+            _RECOMPUTE["busy"] = False
+
+
+def _trigger_recompute():
+    """已有重算在跑就跳过，避免并发写 llm_match / payload。"""
+    with _RECOMPUTE["lock"]:
+        if _RECOMPUTE["busy"]:
+            return False
+        threading.Thread(target=_recompute_worker, daemon=True).start()
+        return True
+
+
+def _recompute_busy():
+    return _RECOMPUTE["busy"]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -99,8 +164,26 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         p = self.path.split("?")[0]
         try:
-            if p in ("/", "/fair.html", "/index.html"):
+            # 统一入口：一个网址里用三个标签页串起问卷 / 报告 / 测试记录
+            if p in ("/", "/portal.html", "/index.html"):
+                with open(os.path.join(ROOT, "demo", "portal.html"), "rb") as f:
+                    self._bytes(f.read(), "text/html; charset=utf-8")
+                return
+            # demo 目录下的其它静态页（展位排行快照 / 样例 / 演练页）：
+            # 只放行 demo/ 下的单层 .html 文件，不接受带目录的路径，防穿越。
+            if p.endswith(".html") and p.count("/") == 1:
+                cand = os.path.join(ROOT, "demo", p.lstrip("/"))
+                if os.path.isfile(cand):
+                    with open(cand, "rb") as f:
+                        self._bytes(f.read(), "text/html; charset=utf-8")
+                    return
+            if p == "/fair.html":
                 with open(PAGE, "rb") as f:
+                    self._bytes(f.read(), "text/html; charset=utf-8")
+                return
+            # 独立的测试记录管理页：查看 / 删除 / 批量清理测试脏数据
+            if p in ("/tests", "/tests.html"):
+                with open(os.path.join(ROOT, "demo", "tests.html"), "rb") as f:
                     self._bytes(f.read(), "text/html; charset=utf-8")
                 return
             if p == "/api/fair/health":
@@ -128,6 +211,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"ok": True, "items": fair_ingest.read_feedback()})
                 return
             if p == "/api/fair/payload":
+                # 提交画像后正在按新画像重算命中/排除，先告诉前端「计算中」去轮询，
+                # 不要返回旧 payload（否则学生会看到上一个学生的意向岗位结论）。
+                if _recompute_busy():
+                    self._json({"ok": False, "computing": True,
+                                "started": _RECOMPUTE.get("started"),
+                                "profile": _RECOMPUTE.get("profile"),
+                                "note": "正在按你的画像重算全部企业的岗位匹配（约 1–3 分钟），请稍候……"})
+                    return
                 if not os.path.exists(PAYLOAD):
                     fair_bridge.build()
                 else:
@@ -143,6 +234,17 @@ class Handler(BaseHTTPRequestHandler):
                         fair_bridge.build()
                 with open(PAYLOAD, "rb") as f:
                     self._bytes(f.read(), "application/json; charset=utf-8")
+                return
+            # v12 测试记录：列表 / 单条详情（供页面查看与清理）
+            if p == "/api/fair/test-list":
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                limit = int((q.get("limit") or ["50"])[0])
+                self._json({"ok": True, "items": test_sessions.listing(limit=limit)})
+                return
+            if p == "/api/fair/test-detail":
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                rid = int((q.get("id") or ["0"])[0])
+                self._json({"ok": True, "item": test_sessions.detail(rid)})
                 return
             self.send_error(404)
         except Exception as exc:
@@ -178,10 +280,28 @@ class Handler(BaseHTTPRequestHandler):
                 out = portal.api_lookup(body)
                 self._json(out, 200)
                 return
+            # ---- 按需补判意向岗位语义 ----
+            # payload 里的 intent_semantics 只覆盖构建时那份生效画像。学生换画像、
+            # 现场新勾一个岗位后，前端拿不到映射就只能退回本地字面规则、报告里写
+            # 「本地规则判定」。这里按意向补一次大模型判定，判完写独立缓存。
+            if p == "/api/fair/semantics":
+                intents = body.get("intents")
+                if not intents and body.get("intent"):
+                    intents = [body.get("intent")]
+                with _SEM_LOCK:
+                    out = intent_semantics.live_map(
+                        intents or [], body.get("titles") or _payload_titles())
+                out["ok"] = True
+                self._json(out, 200)
+                return
             # ---- 原有 fair 接口 ----
             if p == "/api/fair/profile":
                 doc = body.get("document") or body
-                out = fair_ingest.save_profile(doc, rebuild=True)
+                # rebuild=False：先只写库并置为生效画像，避免用旧 llm_match 生成一份
+                # 假报告；真正的重建在后台重算命中后由 _recompute_worker 完成。
+                out = fair_ingest.save_profile(doc, rebuild=False)
+                _trigger_recompute()
+                out["recomputing"] = True
                 self._json(out)
                 return
             if p == "/api/fair/feedback":
@@ -191,10 +311,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(out)
                 return
             if p == "/api/fair/recommend-jobs":
+                # v14：实习 / 竞赛 / 论文分开传，换一批按层级逐步放宽
                 out = job_recommend.recommend(
-                    body.get("major", ""), body.get("experiences", []),
-                    body.get("skills", []), body.get("use_llm", True),
-                    body.get("exclude") or [])
+                    body.get("major", ""),
+                    internships=body.get("internships") or [],
+                    competitions=body.get("competitions") or [],
+                    papers=body.get("papers") or [],
+                    skills=body.get("skills") or [],
+                    use_llm=body.get("use_llm", True),
+                    shown=body.get("shown") or body.get("exclude") or [],
+                    tier=body.get("tier", 0),
+                    accept_no_major=bool(body.get("accept_no_major")),
+                    experiences=body.get("experiences") or [])
                 self._json(out)
                 return
             if p == "/api/fair/rebuild":
@@ -208,6 +336,10 @@ class Handler(BaseHTTPRequestHandler):
                     payload, tag=body.get("tag", ""), sid=body.get("sid", ""),
                     note=body.get("note", ""), top_n=int(body.get("top_n") or 12))
                 self._json(out)
+                return
+            # 按 id 删除单条测试记录；不做批量清空，避免误删真人数据
+            if p == "/api/fair/test-delete":
+                self._json(test_sessions.delete(body.get("id")))
                 return
             self.send_error(404)
         except Exception as exc:

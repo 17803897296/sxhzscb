@@ -10,7 +10,9 @@
 
 与 fair_profiles 的区别：
   fair_profiles 只保留一份「当前生效画像」，会被覆盖；
-  test_sessions 是**只追加**的实验日志，永不覆盖，用来做前后对比。
+  test_sessions 是只追加的实验日志，用来做前后对比。
+  允许按 id 删除单条（测试跑出来的脏数据要能清掉，只留真人记录），
+  但不提供「一键清空」，避免误删。
 """
 from __future__ import annotations
 
@@ -120,5 +122,20 @@ def detail(sid_id: int, db=DB) -> dict:
             except Exception:
                 out[k] = None
         return out
+    finally:
+        con.close()
+
+
+def delete(session_id: int, db=DB) -> dict:
+    """按 id 删除一条测试记录。只删指定 id，绝不批量清空。"""
+    try:
+        rid = int(session_id)
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "记录 id 不合法"}
+    con = connect(db)
+    try:
+        cur = con.execute("DELETE FROM test_sessions WHERE id=?", (rid,))
+        con.commit()
+        return {"ok": True, "deleted": cur.rowcount, "id": rid}
     finally:
         con.close()

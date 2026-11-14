@@ -18,7 +18,12 @@ JOB_KEYS = ("title", "requirements", "headcount", "urgency", "group", "salary")
 NATURE = {"央企", "国企", "民企", "外企", "合资", "事业单位", UNKNOWN}
 INDUSTRY = {"制造", "医药", "IT", "金融", "建筑", "能源", "消费", "物流", "教育", "政府事业", "其他", UNKNOWN}
 URGENCY = {"高", "中", "低", UNKNOWN}
-JOB_SOURCE = {"校招公告", "社招信息", "主营业务推测", UNKNOWN}
+# v17：联网搜索得到的岗位记录标 websearch；「主营业务推测」只作为历史遗留值保留，
+# 新数据一律不再产生（只搜到业务介绍 → 未知 + jobs 空）。
+# v18：无具体岗企业再分两档，均由匹配端大模型按学生意向岗位判断：
+#   未知1 = 有粗略业务描述但无岗位公告；未知2 = 联网检索仍无岗位。
+JOB_SOURCE = {"校招公告", "社招信息", "websearch", "主营业务推测",
+              "未知1", "未知2", UNKNOWN}
 CACHE_KEYS = set(COMPANY_KEYS) - {"id"} | {"text"}
 
 

@@ -24,8 +24,58 @@ import sqlite3
 import sys
 import time
 from collections import Counter
+from decimal import Decimal, ROUND_HALF_UP
+
+
+def _clean_jobs(jobs):
+    """只留真实岗位名：招聘批次名 / 专业类目名 / 招考名目不是岗位。
+
+    真实数据里混进来的噪声：「2027 届校园招聘」（批次名）、「机械类」「材化类」
+    （专业类目）、「公务员」「科学研究人员」（事业单位招考名目）。它们既不该
+    出现在「本家岗位」里，也不该算进 N 岗，更不该被当成对口证据。
+    """
+    out = []
+    for j in (jobs or []):
+        t = str(j.get("title") or "").strip()
+        if t and job_level.is_job_title(t):
+            out.append(j)
+    return out
+
+
+def _round(x, n=1):
+    """四舍五入（半上），与前端 JS toFixed 同口径。
+
+    Python 内置 round() 是银行家舍入：round(6.25, 1) = 6.2，而 JS (6.25).toFixed(1)
+    = "6.3"。分项贡献正好落在 .25/.75 上时两端会差 0.1 分，排序又按分数比较，
+    必须统一，否则「前后端分数一致」这类校验会周期性冒红。
+    """
+    q = Decimal(1).scaleb(-n)
+    return float(Decimal(str(x)).quantize(q, rounding=ROUND_HALF_UP))
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def _extra_intents():
+    """内置测试画像里勾过的意向岗位，用于把语义映射一次跑全。
+
+    只读 data/test_users/*.json 的 answers.intended_jobs；文件缺失或损坏就返回空，
+    不影响构建（大不了运行时再补判）。
+    """
+    out = []
+    d = os.path.join(HERE, "data", "test_users")
+    if not os.path.isdir(d):
+        return out
+    for fn in sorted(os.listdir(d)):
+        if not fn.endswith(".json") or fn == "index.json":
+            continue
+        try:
+            with open(os.path.join(d, fn), encoding="utf-8") as f:
+                u = json.load(f)
+            out += [str(x).strip() for x in
+                    ((u.get("answers") or {}).get("intended_jobs") or []) if str(x).strip()]
+        except Exception:
+            continue
+    return out
 DATA = os.path.join(HERE, "data")
 DB = os.path.join(DATA, "careersafari.db")
 OUT = os.path.join(DATA, "fair_payload.json")
@@ -34,7 +84,10 @@ sys.path.insert(0, os.path.join(HERE, "demo_v2"))
 import core as V2            # noqa: E402  复用五项权重 / 维度取值口径
 import rules as R            # noqa: E402
 import intent_semantics      # noqa: E402  岗位语义符合度（大模型推断）
+import unknown_infer         # noqa: E402  无具体岗企业按意向岗位判定（未知1 / 未知2）
 import hard_filter           # noqa: E402  v12 硬约束解析与教培类判定
+import job_level             # noqa: E402  岗位层级：主管/资深 vs 管培生/专员
+import cache_guard           # noqa: E402  缓存卫生：代码指纹 / 失效告警
 
 # ── v4.2 最新数据源（hy3 工作区产出）────────────────────────────
 # 采集流程（校招官网 → 招聘软件 → 联网兜底 / 4 列库）保持原样，一步不改。
@@ -56,6 +109,59 @@ V42_DISPLAY_FIELDS = (
 # 只归一"打分读取值"，原值存 *_raw 供展示，绝不丢数据。
 NATURE_TO_BUCKET = {"民办非企业": "民企", "合伙制": "民企", "合资": "民企",
                     "党政机关": "事业单位"}
+
+# ── 145 家「按参会名单」v4 增补档案（2026-11-15 01:5x 交接包）────────────
+# 这是目前唯一一份**按本次参会 145 家逐家重采**的榜单/成长/细分数据，
+# 与 company_jobs.name 逐字同名 145/145；v4.2 那份 118 家只与参会名单重叠 22 家，
+# 因此这里优先于 v4.2，缺失时才回退。
+# 接入口径（照交接说明，勿自行加戏）：
+#   · 打分仍读 city / nature / industry / scale_tier，公式一行不改；
+#   · 行业地位只读**合并后**的 rank_tier（global_leader / national_leader / niche），
+#     **不读 rank_dim**（已统一写成 merged，分族只是回溯用）；
+#   · rank_hits / segment / evidence 只展示，绝不进 calcOne；
+#   · 17 家非企业主体（学校/党政/事业单位）industry_rank_label=不适用、rank_checked=0，
+#     既不能当「普通公司」压低分，也不能当 0 分参与行业地位排序 → 打分层直接跳过该维；
+#   · scale_tier=未知 是采集口径选择（不硬凑），不拿 classify_scale 反推。
+ENRICH_DB = os.path.join(DATA, "fair2026_enrich.db")
+ENRICH_JSON_FIELDS = ("rank_hits", "growth_hits", "work_cities", "jobs_total",
+                      "jobs_official", "jobs_platform", "jobs_websearch",
+                      "matched_jobs", "inferred_jobs")
+ENRICH_ALIAS = {"segment_leader_url": "segment_leader_source_url",
+                "segment_leader_conf": "segment_leader_confidence"}
+
+
+def load_enrich():
+    """读 145 家增补档案；文件缺失时静默跳过，旧链路照常可跑。"""
+    if not os.path.exists(ENRICH_DB):
+        return {}
+    con = sqlite3.connect(ENRICH_DB)
+    con.row_factory = sqlite3.Row
+    try:
+        out = {}
+        for row in con.execute("SELECT * FROM companies"):
+            d = dict(row)
+            for k in ENRICH_JSON_FIELDS:
+                v = d.get(k)
+                if isinstance(v, str) and v[:1] in "[{":
+                    try:
+                        d[k] = json.loads(v)
+                    except Exception:
+                        pass
+            for a, b in ENRICH_ALIAS.items():
+                if a in d and not d.get(b):
+                    d[b] = d[a]
+            raw = {}
+            n = (d.get("nature") or "").strip()
+            if n in NATURE_TO_BUCKET:
+                raw["nature"] = n
+                d["nature"] = NATURE_TO_BUCKET[n]
+            d.setdefault("non_enterprise", 0)
+            d["_raw"] = raw
+            d["_src"] = "v4-enrich-20261115"
+            out[d["name"]] = d
+        return out
+    finally:
+        con.close()
 
 
 def load_v42():
@@ -218,7 +324,9 @@ def weights_from(profile):
     if picked and sum(picked.values()) > 0:
         total = sum(picked.values())
         w.update({k: round(v / total * 100, 1) for k, v in picked.items()})
-        return w
+        # 成长性按用户口径「没数据就记 0」，不关停、不回填权重；
+        # rebalance_weights 在 GROWTH_ENABLED=True 时是空操作，保留只为应急开关。
+        return R.rebalance_weights(w)
     # 无任何显式权重（空画像/旧格式）：用 DIMENSIONS 默认 7 维（合计 100），
     # 保证「没填完整」也能正常出一份默认权重的匹配报告。
     w = {d["id"]: float(d["default"]) for d in R.DIMENSIONS}
@@ -234,13 +342,13 @@ def weights_from(profile):
     if picked and sum(picked.values()) > 0:
         total = sum(picked.values())
         w.update({k: round(v / total * 100, 1) for k, v in picked.items()})
-    return w
+    return R.rebalance_weights(w)
 
 
 def dynamic_gaps(c, llm_row, booth):
     """按这家企业真实缺什么生成 gaps，取代模型那 6 种模板。"""
     g = []
-    jobs = c.get("jobs") or []
+    jobs = _clean_jobs(c.get("jobs"))
 
     def put(kind, why, conf):
         ctx = {"job": "、".join(llm_row["matched_jobs"][:2]) or "对口",
@@ -269,7 +377,9 @@ def dynamic_gaps(c, llm_row, booth):
             put("职责", "岗位描述缺职责原文", 0.4)
         if all("招聘阶段：未知" in str(j.get("requirements", "")) for j in jobs):
             put("阶段", "未标注校招 / 社招", 0.4)
-    put("作息", "公开 JD 中「双休」出现 0/277", 0.2)
+    # 作息：数本家岗位原文里「双休」的出现次数，别再写死 0/277（换名单后就不成立了）
+    _rest = sum(1 for j in jobs if "双休" in str(j.get("requirements", "")))
+    put("作息", "公开 JD 中「双休」出现 %d/%d" % (_rest, len(jobs)), 0.2)
     if llm_row["state"] == "inferred":
         put("岗位", "岗位为模型推断，需现场确认", 0.3)
     # 去重（同 kind 保留置信度更低的，因为更该问）
@@ -286,38 +396,64 @@ def score_parts(c, W, profile):
     规模与行业地位客观分档，不问用户；离家近含邻省 0.6。"""
     vals = {}
 
-    # —— 城市：7 类排名，命中多类取用户排名最靠前者 ——
-    cats = R.city_categories(c.get("city"))
+    # —— 城市 / 离家近：都按「全部工作城市」取最优，与页面 calcOne 的 workCities 一致 ——
+    # 校招公告常写多个工作地（如 上海/天津/南京），只认主城市会把同一家企业算低。
+    # 「未知」不能当城市用：以前它被带进 wcs，导致 city 维算不出（被移出分母），
+    # 而 home 维又拿「未知」算出个 0.3 —— 同一份缺失数据两套处理，属于 bug。
+    wcs = [x for x in (c.get("work_cities") or [])
+           if x and str(x).strip() not in ("", "未知")]
+    _c0 = str(c.get("city") or "").strip()
+    if not wcs and _c0 and _c0 != "未知":
+        wcs = [_c0]
     cr = profile.get("city_rank") or dict(R.CITY_RANK_DEFAULT)
-    matched = [(cat, cr.get(cat, len(R.CITY_CATS) + 1)) for cat in cats if cat in cr]
-    if matched:
-        matched.sort(key=lambda x: x[1])  # 排名升序，1 = 最看重
-        best_cat, best_rank = matched[0]
+    best = None
+    for cc in wcs:
+        for cat in R.city_categories(cc):
+            if cat in cr and (best is None or cr[cat] < best[1]):
+                best = (cat, cr[cat], cc)
+    if best:
+        best_cat, best_rank, best_city = best
         v = R.rank_value(best_rank, len(R.CITY_CATS))
-        vals["city"] = (v, "城市 %s 命中「%s」(你的第%d优先)" % (c.get("city"), best_cat, best_rank))
+        vals["city"] = (v, "工作城市 %s 命中「%s」(你的第%d优先)" % (best_city, best_cat, best_rank))
+    else:
+        vals["city"] = (0.0, "工作城市未查到，本项记 0")
 
-    # —— 离家近：同城 / 同省 / 邻省 / 其他 ——
+    # —— 离家近：同城 / 同省 / 邻省 / 其他，多城市取最近 ——
     home = profile.get("home_city")
-    cc = c.get("city")
-    if home and cc:
-        hp = R.CITY_PROVINCE.get(cc)
-        hhp = R.CITY_PROVINCE.get(home)
-        if cc == home:
-            v = 1.0
-        elif hp and hhp and hp == hhp:
-            v = 0.8
-        elif hhp and hp and hp in R.ADJ_PROVINCES.get(hhp, []):
-            v = 0.6
-        else:
-            v = 0.3
-        vals["home"] = (v, "工作城市 %s / 家乡 %s" % (cc, home))
+    if home and wcs:
+        best_h = None
+        for cc in wcs:
+            hp = R.CITY_PROVINCE.get(cc)
+            hhp = R.CITY_PROVINCE.get(home)
+            if cc == home:
+                v = 1.0
+            elif hp and hhp and hp == hhp:
+                v = 0.8
+            elif hhp and hp and hp in R.ADJ_PROVINCES.get(hhp, []):
+                v = 0.6
+            else:
+                v = 0.3
+            if best_h is None or v > best_h[0]:
+                best_h = (v, cc)
+        vals["home"] = (best_h[0], "离家最近的工作地 %s / 家乡 %s" % (best_h[1], home))
+    else:
+        vals["home"] = (0.0, "无有效工作城市，离家无法计算，本项记 0")
 
-    # —— 企业类型：国央企 / 民企 / 外企 三档排名 ——
-    b = R.company_type_bucket(c.get("nature"))
+    # —— 企业类型：直接用画像对「央企/国企/民企/外企/事业单位」的真实排序 ——
+    # 2026-11-15 修 bug：以前把 nature 归一成「国央企」三桶再去查画像键，
+    # 而画像键是央企/国企/事业单位 5 档 → 桶名查不到，24 家国企央企事业单位整维丢失；
+    # 民企则按 3 档算（rank 3 of 3 = 0.4），实际是 5 档第 3（0.7）→ 全体低估 4.5 分。
     ctr = profile.get("company_type_rank") or dict(R.COMPANY_TYPE_RANK_DEFAULT)
-    if b and b in ctr:
-        v = R.rank_value(ctr[b], len(R.COMPANY_TYPE_BUCKETS))
-        vals["company_type"] = (v, "性质 %s → %s(你的第%d优先)" % (c.get("nature"), b, ctr[b]))
+    nat = str(c.get("nature") or "").strip()
+    if nat in ctr:
+        v = R.rank_value(ctr[nat], len(ctr))
+        vals["company_type"] = (v, "性质 %s（你的第%d优先）" % (nat, ctr[nat]))
+    elif nat and nat != "未知":
+        # 混合所有制等未进排序的写法：按末档，不臆造优先
+        vals["company_type"] = (R.rank_value(len(ctr) + 1, len(ctr) + 1),
+                                "性质 %s（不在你的排序内，按末档）" % nat)
+    else:
+        vals["company_type"] = (0.0, "企业性质未查到，本项记 0")
 
     # —— 行业：对口是硬约束，这里只做排序偏好（不在列表内给中性地板分）——
     ind = c.get("industry")
@@ -330,22 +466,56 @@ def score_parts(c, W, profile):
         vals["industry"] = (0.4, "行业 %s（不在你的偏好排序内）" % ind)
 
     # —— 规模 / 行业地位：客观分档，不问用户 ——
-    st = c.get("scale_tier") or R.classify_scale(c.get("nature"), c.get("name", ""), c.get("industry"))
+    # '未知' 以前会被 or 短路掉、根本不走推断（14 家非企业主体就这样丢了一整维）
+    st = str(c.get("scale_tier") or "").strip()
+    if st not in R.SCALE_TIERS:
+        st = R.classify_scale(c.get("nature"), c.get("name", ""), c.get("industry"))
     if st in R.SCALE_TIERS:
         vals["scale"] = (R.SCALE_TIERS[st], "规模档 %s（体制/上市/集团客观判定）" % st)
+    else:
+        vals["scale"] = (0.0, "规模档无法判定，本项记 0")
 
-    pool = sum(W.get(k, 0) for k in vals) or 1
+    # —— 行业地位 / 成长性：读增补档案合并后的档位 ——
+    # 用户口径：**榜单里没有的就是 0**，不给中性底板分。
+    # 2026-11-15 修 bug：以前非企业主体「跳过该维 → pool 不含其权重 → 按其余维度归一」，
+    # 结果只有 2~3 维的企业（#85/#86）用 25 分池归一，34 分其实等于「两维平均 34」，
+    # 与 7 维满池的企业分数不可比。现在一律记 0、留在分母，只在依据里写明原因。
+    _ne = int(c.get("non_enterprise") or 0)
+    rt = str(c.get("rank_tier") or "").strip()
+    if rt in R.INDUSTRY_STATUS_TIERS:
+        vals["industry_status"] = (R.INDUSTRY_STATUS_TIERS[rt],
+                                   "行业地位 %s（第三方榜单 / 500强）" % rt)
+    elif _ne:
+        vals["industry_status"] = (R.INDUSTRY_STATUS_FLOOR,
+                                   "非企业主体（学校/党政/事业单位），无第三方榜单，本项记 0")
+    else:
+        vals["industry_status"] = (R.INDUSTRY_STATUS_FLOOR, "无公开榜单数据，本项记 0")
+
+    gt = str(c.get("growth_tier") or "none").strip()
+    if gt in R.GROWTH_TIERS:
+        vals["growth"] = (R.GROWTH_TIERS[gt], "成长性 %s" % gt)
+    elif gt == "unknown":
+        vals["growth"] = (R.GROWTH_FLOOR, "成长性未查到（记 0，不臆造）")
+    elif _ne:
+        vals["growth"] = (R.GROWTH_FLOOR,
+                          "非企业主体，无成长类榜单，本项记 0")
+    elif R.GROWTH_ENABLED:
+        vals["growth"] = (R.GROWTH_FLOOR, "无成长性数据，本项记 0")
+    else:
+        vals["growth"] = (0.0, "无成长性数据（本项不计分，权重已回填其他维度）")
+
+    # 分母恒为画像权重总和：漏掉的维度按 0 分计入，**不再归一放大**。
     total = sum(W.values()) or 100
     out = []
-    for k, (v, basis) in vals.items():
-        w = W.get(k, 0)
+    for k, w in ((d["id"], W.get(d["id"], 0)) for d in R.DIMENSIONS):
+        v, basis = vals.get(k, (0.0, "本项无数据，记 0"))
         out.append({"id": k,
                     "name": next(x["name"] for x in R.DIMENSIONS if x["id"] == k),
-                    "value": round(v, 2), "weight": w,
-                    "contribution": round(w / pool * v * 100, 1), "basis": basis})
-    return {"score": round(sum(x["contribution"] for x in out), 1),
-            "effective_weight": round(pool / total * 100, 1),
-            "parts": out, "pool": round(pool, 1)}
+                    "value": _round(v, 2), "weight": w,
+                    "contribution": _round(w / total * v * 100, 1), "basis": basis})
+    return {"score": _round(sum(x["contribution"] for x in out), 1),
+            "effective_weight": _round(total, 1),
+            "parts": out, "pool": _round(total, 1)}
 
 
 INDUSTRY_OK = {
@@ -368,7 +538,7 @@ def audit(c, m, all_titles=None, by_title=None):
     """企业端事实校验：把模型结论与企业真实 JD / 行业 / 全库岗位名对一遍。"""
     notes, trust = [], "high"
     all_titles = all_titles or {}
-    jobs = c.get("jobs") or []
+    jobs = _clean_jobs(c.get("jobs"))
     titles = {j.get("title", "") for j in jobs}
     ind = c.get("industry", "未知")
 
@@ -503,17 +673,96 @@ def hallucination_guard(c, m, trust, by_title):
     }
 
 
+_SOURCE_LABEL = {
+    "社招信息": "社招信息（招聘平台）",
+    # v17：联网搜到的岗位记录统一标 websearch（不再是「未知」）；
+    # 早期「主营业务推测」已按用户口径在库里降为「未知」并清空岗位。
+    "websearch": "websearch",
+    # v18 两类「无具体岗」：走大模型按意向岗位判断的推断分支，不进有岗位文案
+    "未知1": "未知1（有粗略业务描述）",
+    "未知2": "未知2（联网检索无岗位）",
+}
+
+
+def source_class(company, jobs):
+    """岗位信息来源分类，返回 (kind, 可读来源名)。
+
+    kind='campus'：校招公告，岗位列表视为齐全 —— 里面没有对口岗位就判定不对口。
+    kind='other' ：websearch / 社招 / 平台转载等，不保证齐全 —— 保留并提示现场确认。
+    「未知」表示岗位信息已按未知处理（jobs 为空）；此时走 0 岗推断分支。
+    没有整级来源标注时，用首条岗位的 source_url 域名给出可读来源名。
+    """
+    js = str(company.get("jobSource") or "").strip()
+    if js == "校招公告":
+        return "campus", "校招公告"
+    if js and js != "未知":
+        return "other", _SOURCE_LABEL.get(js, js)
+    for j in (jobs or [])[:5]:
+        u = str((j or {}).get("source_url") or "").lower()
+        if not u:
+            continue
+        if "mp.weixin.qq.com" in u:
+            return "other", "微信公众号推文"
+        if any(k in u for k in ("51job", "zhaopin", "liepin", "zhipin", "boss")):
+            return "other", "招聘平台"
+        if any(k in u for k in (".edu.cn", "91job", "iguopin", "wllm", "bys")):
+            return "other", "高校就业网 / 就业平台"
+        return "other", "企业官网或公开页面"
+    if "交付库" in str(company.get("jobEvidence") or ""):
+        return "other", "交付库的官方 / 转载页面"
+    return "other", "公开渠道汇总"
+
+
 def build():
+    # 缓存体检先跑：代码一改，相关缓存自动判失效（读取方会重建），
+    # 这里把结果打进 payload，页面「更多设置」里能直接看到本版用的是哪一代结果。
+    # 缓存体检：代码一改，相关缓存自动判失效。指纹对不上的旧文件先挪进
+    # data/_stale_cache/（可回溯），不在原地冒充本版结果；重建完再体检一次，
+    # 结果打进 payload，页面「更多设置」里能直接看到本版用的是哪一代结果。
+    _moved = cache_guard.purge_invalid()
+    if _moved:
+        print("已归档旧缓存：" + "、".join("%s→%s" % (n, os.path.basename(p))
+                                        for n, p in _moved))
     companies, llm, raw_profile = read_db()
     v42 = load_v42()
-    # 以 v4.2 为尊：4 个打分字段取最新数据（归一后），其余字段只作展示追加。
+    enrich = load_enrich()
+    # 数据来源优先级：145 家增补档案（同名单、逐字同名）> v4.2（22 家重叠）。
+    # 覆盖 4 个打分字段 + 两维档位 + 多城市；其余字段只作展示追加。
+    # 被覆盖的旧值留在 _enrich_diff 里，页面/日志可逐条核对，改错能看见。
+    _src_count = {"enrich": 0, "v42": 0}
     for _name, _c in companies.items():
-        _v = v42.get(_name)
+        _e = enrich.get(_name)
+        _v = _e or v42.get(_name)
         if not _v:
             continue
-        for _k in ("city", "nature", "industry", "scale_tier"):
-            if _v.get(_k):
-                _c[_k] = _v[_k]
+        _src_count["enrich" if _e else "v42"] += 1
+        _diff = {}
+        for _k in ("city", "nature", "scale_tier",
+                   # 榜单/成长档位也是打分字段（无值即 0），必须带进 c
+                   "rank_tier", "growth_tier",
+                   # 多城市招聘：页面按 work_cities 取最优，后端必须同口径
+                   "work_cities"):
+            _new = _v.get(_k)
+            if not _new:
+                continue
+            _old = _c.get(_k)
+            if _old and str(_old) != str(_new):
+                _diff[_k] = [_old, _new]
+            _c[_k] = _new
+        # 行业**不整表覆盖**：增补档案走工商门类口径（风电/光伏→制造、地产→建筑），
+        # 本项目的 industry 是招聘/业务口径，整表覆盖会重演「华为 IT→制造」的错判。
+        # 只补空值，原值保留；档案口径原样存 industry_raw 供展示与回溯。
+        _ind_new = (_v.get("industry") or "").strip()
+        if _ind_new:
+            _c["industry_raw"] = _ind_new
+            if not (_c.get("industry") or "").strip() or _c.get("industry") == "未知":
+                _c["industry"] = _ind_new
+            elif _c.get("industry") != _ind_new:
+                _diff["industry(工商口径,仅展示)"] = [_c.get("industry"), _ind_new]
+        _c["non_enterprise"] = int(_v.get("non_enterprise") or 0)
+        _c["data_src"] = _v.get("_src") or ("v4.2" if not _e else "v4-enrich-20261115")
+        if _diff:
+            _c["_enrich_diff"] = _diff
     profile = profile_from(raw_profile)
 
     # v12（2026-11-13 用户要求）：硬约束过滤。
@@ -535,17 +784,62 @@ def build():
             _keep[_n] = _c
         companies = _keep
 
+    # v15：岗位不对口的企业不进入榜单（不是降权，是直接删除）。
+    # 只排除 llm_match 明确判定 state=miss 的；0 岗（没查到）与 inferred（推断待核实）
+    # 一律保留，且**不降权、不顺延**：score 只衡量城市 / 性质 / 规模 / 行业地位等
+    # 硬件条件，与「今年招什么岗」无关。0 岗只是没抓到岗位信息，不等于不招；
+    # 只要按行业推断出了可能的岗位，高分就说明客观条件高度适配，应该优先去展位
+    # 问一句碰运气，而不是先去找分数更低的企业（「没查到 ≠ 不招」是既有红线）。
+    # 前提：这类企业的报告必须带「显著提示 + 现场提问」，把不确定性讲清楚。
+    _miss_names = []
+    _keep_matched = {}
+    for _n, _c in companies.items():
+        # 未知1 / 未知2 一律不被旧画像的 miss 结论排除：它们没有具体岗位，
+        # 「没查到 ≠ 不招」，必须交给匹配端大模型按当前意向岗位判断。
+        if str(_c.get("jobSource") or "") in ("未知1", "未知2"):
+            _keep_matched[_n] = _c
+            continue
+        if (llm.get(_n) or {}).get("state") == "miss":
+            _miss_names.append(_n)
+            continue
+        _keep_matched[_n] = _c
+    companies = _keep_matched
+
+    # v17：来源是完整校招公告、却没查到对口岗位的企业 → 判定不对口，直接排除。
+    # 校招公告的岗位列表视为齐全，里面都没有对口岗位就不用再去现场碰运气；
+    # 其他来源（websearch / 社招 / 平台转载）不保证齐全，保留并在报告里如实说明。
+    # 早期「主营业务推测」的岗位已在库里统一降为「未知」并清空，这类企业走 0 岗推断。
+    _campus_names = []
+    _keep_src = {}
+    for _n, _c in companies.items():
+        _js = _c.get("jobs") or []
+        if ((llm.get(_n) or {}).get("state") == "inferred" and _js
+                and source_class(_c, _js)[0] == "campus"):
+            _campus_names.append(_n)
+            continue
+        _keep_src[_n] = _c
+    companies = _keep_src
+
     # 用大模型判断「学生勾选的意向岗位」与「企业真实岗位名」是否语义相符。
     # 结果放进 payload 顶层，前端据此显示语义命中；模型不可用时返回 {}，前端退回字面匹配。
     _all_titles = sorted({j.get("title", "").strip()
                           for c in companies.values()
-                          for j in (c.get("jobs") or [])
+                          for j in _clean_jobs(c.get("jobs"))
                           if j.get("title")})
     # 只用当前画像里学生真正勾选的意向岗位；确实没有画像时才回退默认示例。
     # 不把「管科 + 供应链计划/数据分析师/商业分析」硬塞进每个用户的语义映射。
     _intended = list(dict.fromkeys(
         list(profile.get("intended_jobs") or []) or list(DEFAULT_PROFILE["intended_jobs"])))
-    intent_sem = intent_semantics.build_map(_intended, _all_titles)
+    # 语义映射顺带把内置测试画像的意向也跑一遍：学生切画像 / 打开 test_users 页时
+    # 直接用 payload 里的结果，不必现场等模型，也就不会因为连不上服务而退回本地规则。
+    # 注意：只扩 build_map 的入参，_intended 本身（对齐 / 层级 / 提问 / unknown_infer）
+    # 必须保持「当前画像」，否则会把别的专业的岗位问到这个学生头上。
+    _intended_sem = list(dict.fromkeys(_intended + _extra_intents()))
+    intent_sem = intent_semantics.build_map(_intended_sem, _all_titles)
+    # v18：未知1（有粗略业务描述）/ 未知2（联网检索仍无岗）两类「无具体岗」
+    # 企业，匹配端一视同仁，交给大模型按学生当前勾选的意向岗位判断可能招什么。
+    # 结果按 (意向岗位 + 企业清单指纹) 缓存，模型不可用时退回中性话术。
+    unknown_map = unknown_infer.build_map(list(companies.values()), _intended)
     W = weights_from(raw_profile)
     bm = booths()
     fb = read_feedback()
@@ -561,34 +855,134 @@ def build():
 
     rows = []
     for name, c in companies.items():
+        # 成长档位 vs 证据自洽性检查：档案里 4 家写 rising_star 却 growth_hits 为空，
+        # 其中 3 家备注直接写「未检索到」。不改档（改档要人拍板），先在报告里标出来。
+        _erec = enrich.get(name) or {}
+        _growth_flag = ""
+        if str(c.get("growth_tier") or "") == "rising_star" and not (_erec.get("growth_hits") or []):
+            _growth_flag = "档案标 rising_star，但 growth_hits 为空、备注为「%s」——证据不足，待核" % (
+                (_erec.get("growth_note") or "空")[:40])
         m = llm.get(name) or {"state": "miss", "priority": 1, "matched_jobs": [],
                               "reason": "", "gaps": [], "verify_question": "", "has_jd": bool(c.get("jobs"))}
+        # 安全兜底：无具体岗企业（未知1/未知2）即使缺 llm_match 行，也按 inferred 处理，
+        # 交给 unknown_infer 动态判定，绝不直接 miss 出榜（match_fill 已跳过这类企业）。
+        if (str(c.get("jobSource") or "") in ("未知1", "未知2")) and not c.get("jobs") and m["state"] == "miss":
+            m = dict(m)
+            m["state"] = "inferred"
         rec = by_name.get(name, {})
-        trust0, _ = audit(c, m, by_title, by_title)
-        guard = hallucination_guard(c, m, trust0, by_title)
+        # 行级 matched_jobs 是早期按别的画像跑的匹配结果，常含「管培生」「业务推动」
+        # 「区域总监助理」这类只共享通用词、或干脆跨职能的岗位名；先按与语义层同一套
+        # 确定性规则对齐到当前意向。只收紧岗位名，不删企业（0 岗≠不招）。
+        # 注意：变量名不能叫 _dropped —— 那会覆盖上面硬约束/教培剔除的企业清单，
+        # 导致 payload.hard_filter.dropped 永远显示 0（被剔除的 12 家教培无处可查）。
+        # 判断「大类岗位名能不能算对口」要看公司业务：供应链公司的「管培生」
+        # 可以算「供应链管培生」，新材料公司的「管培生」只能问一句。
+        _biz_text = " ".join(str(x or "") for x in (
+            name, c.get("industry"), c.get("segment"), c.get("biz_scope"),
+            c.get("job_brief")))
+        _aligned, _dropped_jobs = intent_semantics.align_jobs(
+            _intended, m["matched_jobs"], intent_sem, _biz_text)
+        _title_all = [j.get("title", "") for j in (c.get("jobs") or [])]
+        # 同职能、只是写着主管 / 资深 / 经理 → 校招投不进。单独列出来给报告写一句
+        # 「有同职能的主管岗，可现场问是否按应届招」，既不假装对口，也不说人家不招。
+        _lvl_blocked = intent_semantics.level_blocked(_intended, _title_all)
+        # 只写大类名（管培生 / 储备干部 / 研究员 / 专员）的岗位 → 不算对口，
+        # 但在提问里给一句「这家有管培生，问一句是否按你的方向培养」。
+        _ask_blocked = intent_semantics.ask_jobs(_intended, _title_all, _biz_text)
+        m_al = dict(m)
+        m_al["matched_jobs"] = [t for t, _ in _aligned]
+        # 企业端有 JD 时，「证据」必须是本家 JD 里真实存在的岗位名；把意向岗位名
+        # 直接写进 matched_jobs（「供应链管培生」本身就是学生勾的意向）不是证据。
+        _jd_titles = {j.get("title", "") for j in _clean_jobs(c.get("jobs"))}
+        _real = [t for t, _ in _aligned
+                 if (not _jd_titles) or any(_same_title(t, x) for x in _jd_titles)]
+        trust0, _ = audit(c, m_al, by_title, by_title)
+        guard = hallucination_guard(c, m_al, trust0, by_title)
         # 对外一律用脱敏后的岗位名（问句、命中列表、显著提示都不再念幻觉岗位）
         m_eff = dict(m)
         m_eff["matched_jobs"] = guard["display_jobs"]
         if guard["state_fix"]:
             m_eff["state"] = "inferred"
+        # 原本标「明确命中」、但对齐后一个同职能岗位都不剩（证据只有「管培生」这类
+        # 通用名、跨职能岗、或干脆是学生自己的意向名）-> 降为推断待核实，
+        # 岗位名清空，改问学生自己的意向。
+        if m["state"] == "hit" and m["matched_jobs"] and not _real:
+            m_eff["state"] = "inferred"
+            m_eff["matched_jobs"] = []
         # 证据等级修正后重跑一次事实校验，让行业不吻合检测也能生效
         m_audit = dict(m)
         m_audit["state"] = m_eff["state"]
         trust, check_notes = audit(c, m_audit, by_title, by_title)
         m_gap = dict(m_eff)
-        m_gap["matched_jobs"] = guard["ask_jobs"]   # 问句里念正常岗位名，不念屏蔽占位符
+        # 0 岗 / 岗位已按未知处理的企业没有可念的岗位名，改念学生自己勾选的意向岗位：
+        # 既不出现「对口岗位」这种空占位，也不再念早期从主营业务推测出来的假岗位。
+        _gap_jobs = guard["ask_jobs"]
+        if _gap_jobs == ["对口岗位"]:
+            _gap_jobs = list(profile.get("intended_jobs") or [])[:2] or ["对口岗位"]
+        m_gap["matched_jobs"] = _gap_jobs
+        guard["ask_jobs"] = _gap_jobs   # payload 里也不再留「对口岗位」空占位
         gaps = dynamic_gaps(c, m_gap, bm.get(name))
         sc = score_parts(c, W, profile)
         booth = bm.get(name, {})
 
+        # v18 推断话术分三种：
+        #  - 库里有岗位相关记录（websearch / 社招 / 平台转载）：如实说有 N 条
+        #    记录、未查到对口证据、来源不保证齐全 → 按意向岗位建议现场确认。
+        #  - 未知1 / 未知2（两类「无具体岗」）：匹配端一视同仁，由大模型按
+        #    学生当前勾选的意向岗位挑出可能招的 X；判空就如实说关联较弱，
+        #    绝不把假岗位或别的画像结论当成事实。
+        #  - 其他 0 岗：中性兜底。
+        # 校招公告来源且无对口岗位的企业已在过滤阶段直接排除。
+        jobs = _clean_jobs(c.get("jobs"))
+        ask_jobs = "、".join(guard["ask_jobs"][:2]) or "对口岗位"
+        # 「是否招 X」的 X 只能是学生自己勾选的意向岗位，不是企业库里已有的岗位名
+        intended_ask = "、".join(list(profile.get("intended_jobs") or [])[:2]) or ask_jobs
+        _src_kind, _src_label = source_class(c, jobs)
+        _js = str(c.get("jobSource") or "")
+        # 0 岗且来源不保证齐全的，全部交给 unknown_infer 判过；这三种来源都算
+        # 「没有岗位公告」，不能只认 未知1/未知2（「未知」这一批曾因此掉进模板兜底）。
+        _unknown = _js in unknown_infer.NO_JOB_SOURCES and not jobs
+        _u = unknown_map.get(name) or {}
+        _likely = [t for t in (_u.get("likely") or [])
+                   if t in (profile.get("intended_jobs") or [])][:2]
+        _askX = "、".join(_likely) if _likely else intended_ask
+        if m_eff["state"] == "inferred" and jobs:
+            infer_text = ("库里有 %d 条岗位相关记录（其中部分来自%s），"
+                          "未查到与你意向岗位明确对口的证据；"
+                          "因为来源不保证齐全，且模型推断可能招%s，"
+                          "建议现场确认是否招%s。" % (
+                              len(jobs), _src_label, intended_ask, intended_ask))
+        elif m_eff["state"] == "inferred" and _unknown:
+            _lead = ("库里没有具体岗位公告，仅有粗略业务描述；" if _js == "未知1"
+                     else "联网检索未取得该单位的具体岗位公告；")
+            if _likely:
+                infer_text = (_lead + "按行业与主营业务判断，可能招%s，"
+                              "建议去现场确认是否招%s。" % (_askX, _askX))
+            else:
+                infer_text = (_lead + "按行业与主营业务判断，与你选的意向岗位关联较弱；"
+                              "仍建议现场问一句今年招哪些岗位。")
+        elif m_eff["state"] == "inferred":
+            infer_text = ("网上没有岗位信息，根据「%s」行业和你选的意向岗位推断，"
+                          "可能有%s类岗位，建议去现场确认是否招%s。" % (
+                              c.get("industry", "未知"), intended_ask, intended_ask))
+        else:
+            infer_text = ""
+
+        # 现场问句也念学生自己的意向岗位。llm_match 里的 verify_question 是
+        # 早期按别的画像生成的（如「是不是招供应链管理专员」），与当前意向
+        # 岗位不符，再念一次就变成「模型编的岗位 ≠ 你的岗位、却又说可能招
+        # 你的岗位」的循环论证 —— 推断企业一律改用下面这句。
+        # 大模型判「都不合适」时不硬塞意向岗位，改成中性的现场问句
+        if _unknown and not _likely:
+            ask_question = "请问今年招哪些岗位、是否接受我这个方向？"
+        else:
+            ask_question = "请问今年是否招%s？" % _askX
+
         # 现场提问：权重 × (1 - 证据可信度)，取前 2；推断岗位固定排第一
         qs = []
         if m_eff["state"] == "inferred":
-            qs.append({"q": "【显著提示】网上没有岗位信息，根据「%s」行业我们推断他们可能有 %s 类岗位，"
-                            "您可以去现场问一句：%s" % (
-                                c.get("industry", "未知"),
-                                "、".join(guard["ask_jobs"][:2]) or "对口",
-                                m["verify_question"] or "是不是招这个岗位？"),
+            qs.append({"q": "【显著提示】" + infer_text
+                            + "（现场问一句：" + ask_question + "）",
                        "priority": 999, "infer": True})
         for g in gaps:
             wmap = {"岗位": W["industry"], "行业": W["industry"], "职责": W["scale"],
@@ -599,18 +993,43 @@ def build():
                        "why": g["why"]})
         qs.sort(key=lambda x: -x["priority"])
 
-        jobs = c.get("jobs") or []
-        hits, misses = [], []
-        for j in jobs[:6]:
-            t = j.get("title", "")
-            (hits if t in m_eff["matched_jobs"] else misses).append(t)
-        if not hits and m_eff["matched_jobs"]:
-            hits = list(m_eff["matched_jobs"][:3])
+        jobs = _clean_jobs(c.get("jobs"))
+        # 命中岗位：以判定结果 matched_jobs 为准。
+        # 旧写法是「在 JD 前 6 条里取交集」——排到第 7 位之后的命中会被整段吞掉，
+        # 于是出现「对口理由写了 2 个岗位、命中岗位只显示 1 个」，两栏加起来也不等于
+        # 判定结果（睿创微纳的「测试」排第 12 位就这样消失）。列表只做数量截断，
+        # 并如实记录总数，页面据此标「等 N 个」，不再是悄悄少显示。
+        _seen_h, hits_all = set(), []
+        for t in m_eff["matched_jobs"]:
+            t = (t or "").strip()
+            if t and t not in _seen_h:
+                _seen_h.add(t)
+                hits_all.append(t)
+        hits = hits_all[:6]
+        # 未对口：只作「这家还招别的什么方向」的示例，按 JD 原序取前 5 条，
+        # 与命中互斥（同一岗位名不会同时出现在两栏）。
+        _seen_m, misses_all = set(), []
+        for j in jobs:
+            t = (j.get("title") or "").strip()
+            if not t or t in _seen_h or t in _seen_m:
+                continue
+            _seen_m.add(t)
+            misses_all.append(t)
+        misses = misses_all[:5]
+        _title_total = len({(j.get("title") or "").strip()
+                            for j in jobs if (j.get("title") or "").strip()})
 
         # ---- v7 现场核实回流：反向修正企业端证据等级 ----
         fbrow = fb.get(name)
         state_final = m_eff["state"]
         trust_final, notes_final = trust, list(check_notes)
+        # 对齐剔除的岗位名要在页面上说清楚，否则学生看到「明确命中」却少了几个岗位会以为丢数据
+        if _dropped_jobs:
+            notes_final.append(
+                "已按你选的意向剔除 %d 个不同职能的岗位名（%s）；企业仍照常参与排序"
+                % (len(_dropped_jobs), "、".join(_dropped_jobs[:3])))
+        if m["state"] == "hit" and m["matched_jobs"] and not _real:
+            notes_final.append("原「明确命中」的岗位名与你的意向不同职能，已改为推断待核实")
         if fbrow and fbrow["result"] == "yes":
             if state_final == "inferred":
                 state_final = "hit"
@@ -633,41 +1052,89 @@ def build():
                 c.get("nature"), c.get("name", ""), c.get("industry")),
             "state": state_final, "priority": m["priority"],
             "original_state": guard["original_state"],
-            "matched_jobs": m_eff["matched_jobs"],
+            # 推断态不展示任何具体岗位名：那些名字是按行业猜的，不是企业证据
+            # （旧数据 llm_match 里就有「state=inferred 却带岗位名」的自相矛盾行）。
+            # 原值保留在 original_matched_jobs 供核对。
+            "matched_jobs": (m_eff["matched_jobs"] if state_final == "hit" else []),
             "original_matched_jobs": m["matched_jobs"],
-            "reason": m["reason"],
-            "verify_question": m["verify_question"],
+            # 对齐时被剔除的岗位名（只影响展示与「明确命中」判定，企业不删除）
+            "dropped_jobs": _dropped_jobs,
+            # llm_match 里的 reason 是早期按别的画像生成的（常写「学生专业为
+            # 管理科学与工程」），且会把「管培生」「业务推动」说成「干的活相近」；
+            # 明确命中的理由改为按**对齐后仍存活**的岗位重写，推断企业换成
+            # 与画像无关、只讲证据状态的中性理由。
+            "reason": ((_u.get("reason") or "按行业与主营业务判断，未查到具体岗位公告，建议现场确认。")
+                       if _unknown else
+                       (("按「%s」行业推断，尚未找到与意向岗位明确对口的证据，建议现场确认。"
+                         % c.get("industry", "未知")) if state_final == "inferred"
+                        else (intent_semantics.align_reason(
+                            [p for p in _aligned if p[0] in _real], intent_sem) or m["reason"]))),
+            "verify_question": ask_question if state_final == "inferred" else m["verify_question"],
+            # hits/misses 是截断后的展示清单；*_total 是去重后的真实条数，
+            # 页面按它标「等 N 个 / 示例 x/y」，避免学生以为企业只招这几类。
             "hits": hits, "misses": misses, "job_count": len(jobs),
+            "hit_total": len(hits_all), "miss_total": len(misses_all),
+            "job_title_total": _title_total,
+            # v18：无具体岗企业的粗略描述、标签、大模型按意向岗位挑出的可能岗位
+            "job_brief": c.get("job_brief", ""),
+            "source_kind": _js,
+            # 非校招企业联网补采的主营范围 / 主要产品（只展示，不进打分）。
+            # 报告里以「大模型判断依据：……」一句呈现，解释模型凭什么判断它可能招什么。
+            "biz_scope": c.get("biz_scope", ""),
+            "llm_basis": (("大模型判断依据：" + str(c["biz_scope"]).strip())
+                          if (str(c.get("biz_scope") or "").strip() and _js != "校招公告")
+                          else ""),
+            "infer_likely": _likely,
+            "infer_via": _u.get("via", "") if _unknown else "",
             # 企业真实岗位名（前端做语义命中用；不只是模型预生成的 matched_jobs）
             "job_titles": [j.get("title", "") for j in jobs if j.get("title")],
+            # 岗位层级分布 + 只差层级被挡下的岗位（主管 / 资深 / 经理）。
+            # 只展示、只影响「算不算对口」，不进 calcOne 打分。
+            "level_counts": dict(Counter(
+                job_level.LEVEL_NAMES.get(job_level.level_of(j.get("title", "")), "未识别")
+                for j in jobs if j.get("title"))),
+            "level_blocked": _lvl_blocked,
+            # 大类岗位名（管培生 / 储备干部 / 研究员）：不是对口证据，
+            # 但值得现场问一句「是不是我这个方向」。
+            "ask_jobs": _ask_blocked,
             "gaps": gaps, "questions": qs[:2],
             "score": sc["score"], "effective_weight": sc["effective_weight"],
             "parts": sc["parts"],
             "evidence": {"source": c.get("source", ""), "date": c.get("date", ""),
                          "jobSource": c.get("jobSource", "未知"),
                          "jobEvidence": str(c.get("jobEvidence", "未知"))[:80]},
-            "infer_notice": ("网上没有岗位信息，根据「%s」行业我们推断他们可能有 %s 类岗位，"
-                             "您可以去现场问一句是不是招这个岗位" % (
-                                 c.get("industry", "未知"),
-                                 "、".join(guard["ask_jobs"][:2]) or "对口"))
-                            if state_final == "inferred" else "",
-            # v4.2 展示层：行业地位(多榜) / 成长 / 细分领域 / 4 列岗位来源。
-            # 只展示与报告，不进 calcOne、不回写 scale_tier / industry。
-            "v42": v42_view(v42.get(name)),
+            "infer_notice": infer_text if state_final == "inferred" else "",
+            # 展示层：行业地位(多榜) / 成长 / 细分领域 / 4 列岗位来源。
+            # 数据源优先 145 家增补档案（同名 145/145），缺失回退 v4.2。
+            # rank_hits / segment / evidence 只展示，不进 calcOne。
+            "v42": v42_view(enrich.get(name) or v42.get(name)),
+            "data_src": c.get("data_src") or "",
+            # 非企业主体（学校/党政/事业单位）：榜单两维不存在，打分层已跳过
+            "non_enterprise": int(c.get("non_enterprise") or 0),
+            # 增补档案覆盖了哪些旧值（[旧, 新]），页面可核对，不自作主张
+            "enrich_diff": c.get("_enrich_diff") or {},
+            # 成长档位与证据不一致时的告警（不静默改档，先标出来给人看）
+            "growth_flag": _growth_flag,
         })
 
-    # 名次只由排序分决定（2026-11-13 用户明确要求）。
+    # 名次只由排序分决定。
     # 可信度 / 待核实 / 岗位状态一律不进名次比较——它们是展示标注，不是排序依据。
+    # 0 岗与 inferred 也不顺延：分数高就说明硬件条件更适配，值得先去问一句。
     # 唯一例外：「现场确认不招」属于事实出局，仍顺延到队尾。
+    # 同分并列时要给确定性次序，否则顺序取决于数据库返回顺序（页面上同分企业
+    # 谁在前谁在后会莫名其妙地变）。规则：命中 > 推断，再按展位号，最后按名称。
     rows.sort(key=lambda r: (1 if (r.get("feedback") or {}).get("result") == "no" else 0,
-                             -r["score"], -r["priority"], r["name"]))
+                             -r["score"],
+                             0 if r["state"] == "hit" else 1,
+                             str(r.get("booth") or "999"),
+                             r["name"]))
     by_booth = sorted([r for r in rows if r["booth"]], key=lambda r: str(r["booth"]))
     booth_pos = {r["name"]: i for i, r in enumerate(by_booth)}
     for i, r in enumerate(rows):
         r["next"] = rows[i + 1]["name"] if i + 1 < len(rows) else ""
         r["rank"] = i + 1
-        r["rank_reason"] = ("第 %d 位：排序分 %s（仅 %s%% 权重生效） / %s"
-                            % (i + 1, r["score"], r["effective_weight"],
+        r["rank_reason"] = ("第 %d 位：排序分 %s / %s"
+                            % (i + 1, r["score"],
                                {"hit": "有真实 JD 命中", "inferred": "按行业推断待核实",
                                 "miss": "无对口岗位"}[r["state"]]))
         if (r.get("feedback") or {}).get("result") == "yes":
@@ -678,9 +1145,24 @@ def build():
         r["nearby"] = ([by_booth[p - 1]["name"]] if p and p > 0 else []) + \
                       ([by_booth[p + 1]["name"]] if p is not None and p + 1 < len(by_booth) else [])
 
+    _cstat = cache_guard.status(verbose=True)
+    # 成长性可用家数（只统计本页，用于解释权重为何被关闭）
+    _growth_avail_n = sum(1 for r in rows
+                          if ((r.get("v42") or {}).get("growth_tier") in R.GROWTH_TIERS))
+    # 产物这一项在 build 里必然显示"待重建"（文件还是上一版）。本次写完就是最新，
+    # 这里直接标成本次生成，避免页面把正常状态当成告警。
+    _cstat["fair_payload"] = {"ok": True, "kind": "artifact", "desc": "页面数据产物",
+                             "why": "本次 build 生成（%s）" % time.strftime("%Y-%m-%d %H:%M:%S")}
     out = {
         "version": "v7-tri-2026-11-10", "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "profile": profile, "weights": W,
+        # 被关闭权重的维度：写明原因与实测覆盖，页面据此解释「为什么这维是 0 分权重」。
+        "weights_disabled": ({} if R.GROWTH_ENABLED else {
+            "growth": ("本页 %d 家里 %d 家有成长信号；成长性的权重已按比例回填其他维度，"
+                       "这一维仍作展示，不再记账。%s"
+                       % (len(rows), _growth_avail_n,
+                          "（145 家增补档案已到位，若数据足够应把开关改回 True）"))
+        }),
         "active_fair_id": profile.get("fair_id", ""),
         # v12 硬约束：让学生看见「因为自己设的条件，哪些企业被排除了」。
         # 排除是硬性的（不满足即不出现），但必须可见，不能悄悄删。
@@ -702,7 +1184,9 @@ def build():
             "现场回流": "careersafari.db / fair_feedback（招 -> 升级明确命中；不招 -> 顺延到队尾）",
         },
         "stats": {
-            "companies": len(rows), "jobs": sum(len(c.get("jobs") or []) for c in companies.values()),
+            "companies": len(rows),
+            # 与卡片上的「N 条岗位记录」同口径：批次名 / 专业类目 / 招考名目不算岗位
+            "jobs": sum(len(_clean_jobs(c.get("jobs"))) for c in companies.values()),
             "states": dict(Counter(r["state"] for r in rows)),
             "distinct_gap_sets": len(set(tuple(sorted(g["why"] for g in r["gaps"])) for r in rows)),
             "distinct_reasons": len(set(r["reason"] for r in rows)),
@@ -716,8 +1200,43 @@ def build():
             "feedback": dict(Counter((r.get("feedback") or {}).get("result", "none") for r in rows)),
             "realtime": True, "writeback": True,
             "active_fair_id": profile.get("fair_id", ""),
+            # 两维覆盖：145 家增补档案到位后，这两维不再是「集体扣分」。
+            # 非企业主体（学校/党政/事业单位）不参与这两维，单独计数，别混进分母。
+            "rank_cov": sum(1 for r in rows
+                            if not r.get("non_enterprise")
+                            and (r.get("v42") or {}).get("rank_tier") in R.INDUSTRY_STATUS_TIERS),
+            "growth_cov": sum(1 for r in rows
+                              if not r.get("non_enterprise")
+                              and (r.get("v42") or {}).get("growth_tier") in R.GROWTH_TIERS),
+            "growth_unknown": sum(1 for r in rows if not r.get("non_enterprise")
+                                  and (r.get("v42") or {}).get("growth_tier") == "unknown"),
+            "non_enterprise": sum(1 for r in rows if r.get("non_enterprise")),
+            "data_src": dict(Counter(r.get("data_src") or "无" for r in rows)),
+            "enrich_diff_companies": sum(1 for r in rows if r.get("enrich_diff")),
         },
         "intent_semantics": intent_sem,
+        # 岗位层级口径（应届校招）：只用于判断「算不算对口」，不进打分。
+        "level_rules": {
+            "levels": {str(k): v for k, v in job_level.LEVEL_NAMES.items() if k},
+            "campus_max": job_level.CAMPUS_MAX,
+            "note": ("同一职能里主管 / 资深 / 经理和管培生 / 专员是两档人。校招应届只把"
+                     "实习、校招初入（管培生/培训生/专员/助理）、常规经验岗算作可投；"
+                     "主管以上的岗位不会算成「对口」，企业照常留在榜单里，"
+                     "报告里会注明「有同职能主管岗，可现场问是否按应届招」。"),
+        },
+        # 缓存体检：每条结果是否是「本版代码」算出来的。失效的不静默使用，
+        # 页面明示，避免再出现「规则改了但页面还是旧结论」的误判。
+        "cache_status": {k: {"ok": bool(v["ok"]), "why": v["why"], "desc": v["desc"]}
+                         for k, v in _cstat.items()},
+        # 被剔出榜单的企业（供报告页明示，删了不能不说）
+        "excluded_miss": {"count": len(_miss_names), "names": _miss_names},
+        # 校招公告里明确没有对口岗位的企业（来源齐全，无需现场碰运气）
+        "excluded_campus": {"count": len(_campus_names), "names": _campus_names},
+        # 保留下来的推断企业里，岗位来源是否齐全的分类统计
+        "infer_source": {
+            "with_jobs_partial": sum(1 for r in rows if r["state"] == "inferred" and r["job_count"]),
+            "zero_jobs": sum(1 for r in rows if r["state"] == "inferred" and not r["job_count"]),
+        },
         "rows": rows,
     }
     with open(OUT, "w", encoding="utf-8") as f:
