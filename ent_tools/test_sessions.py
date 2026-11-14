@@ -54,17 +54,41 @@ def connect(db=DB):
 
 
 def save(payload: dict, profile_doc: dict = None, tag: str = "", sid: str = "",
-         note: str = "", top_n: int = 12, db=DB) -> dict:
-    """落一条测试记录。payload 是 fair_bridge.build() 的输出。"""
+         note: str = "", top_n: int = 12, db=DB, browser: dict = None) -> dict:
+    """落一条测试记录。payload 是 fair_bridge.build() 的输出。
+
+    browser：浏览器「结束使用」上传的现场快照。学生可能在页面里换了画像 /
+    微调权重但没提交入库，此时 payload 文件反映的是库内画像，直接落库会把
+    记录记成另一套输入。带上了 browser 就以浏览器为准：画像、权重、意向、
+    当前列表前 N 名全部覆盖，记录里存的就是学生屏幕上那一份。
+    """
     payload = payload or {}
-    prof = (payload.get("profile") or {})
+    prof = dict(payload.get("profile") or {})
     hf = payload.get("hard_filter") or {}
     rows = payload.get("rows") or []
 
-    top = [{"rank": r.get("rank"), "name": r.get("name"), "score": r.get("score"),
-            "city": r.get("city"), "industry": r.get("industry"),
-            "state": r.get("state")}
-           for r in rows[:top_n]]
+    br = browser or {}
+    bprof = br.get("profile") or {}
+    if bprof:
+        for k in ("major", "home_city", "region", "fair_id"):
+            if bprof.get(k):
+                prof[k] = bprof[k]
+        if bprof.get("intended_jobs"):
+            prof["intended_jobs"] = bprof["intended_jobs"]
+        weights = bprof.get("weights") or payload.get("weights") or {}
+    else:
+        weights = payload.get("weights") or {}
+
+    if br.get("top"):
+        top = [{"rank": i + 1, "name": (t.get("name") or ""), "score": t.get("score"),
+                "city": t.get("city"), "industry": t.get("industry"),
+                "state": t.get("state")}
+               for i, t in enumerate(br["top"][:top_n])]
+    else:
+        top = [{"rank": r.get("rank"), "name": r.get("name"), "score": r.get("score"),
+                "city": r.get("city"), "industry": r.get("industry"),
+                "state": r.get("state")}
+               for r in rows[:top_n]]
 
     con = connect(db)
     try:
@@ -73,10 +97,10 @@ def save(payload: dict, profile_doc: dict = None, tag: str = "", sid: str = "",
             "accept_no_major,weights_json,intended_json,profile_json,top_json,"
             "dropped_json,n_rows,note) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (time.strftime("%Y-%m-%d %H:%M:%S"),
-             payload.get("active_fair_id", ""), tag or "", sid or "",
+             prof.get("fair_id") or payload.get("active_fair_id", ""), tag or "", sid or "",
              prof.get("major", ""), hf.get("raw_text", ""),
              1 if hf.get("accept_no_major") else 0,
-             json.dumps(payload.get("weights") or {}, ensure_ascii=False),
+             json.dumps(weights, ensure_ascii=False),
              json.dumps(prof.get("intended_jobs") or [], ensure_ascii=False),
              json.dumps(profile_doc or {}, ensure_ascii=False),
              json.dumps(top, ensure_ascii=False),

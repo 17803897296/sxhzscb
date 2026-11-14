@@ -215,9 +215,32 @@ def is_wider_job(title, intent):
 DIR_WORDS = ("前端", "后端", "服务端", "客户端", "嵌入式", "上位机", "下位机", "固件",
              "移动端", "桌面", "驱动", "全栈", "低代码", "量化", "算法", "数据",
              "图像", "视觉", "图形", "游戏", "unity", "unreal", "大模型", "ai",
-             "人工智能", "测试", "运维", "安全", "网络", "通信")
+             "人工智能", "测试", "运维", "安全", "网络", "通信",
+             "供应链", "计划", "采购", "物流", "仓储", "商业分析")
 # 不带方向的通用词：抹干净后仍为空，才说明「这个意向 / 岗位没限定方向」。
 DIR_NEUTRAL = ("开发", "研发", "软件", "程序", "工程师", "技术", "应用", "系统", "岗", "员")
+
+# 方向层级：父类 → 它自己的下属细分。岗位方向全是意向父类的下属细分时算同一条线
+# （供应链管培生 × 采购/物流/仓储 → 照旧算对口）。
+# **计划不在里面**：计划岗在生产企业、核电、航天到处都是，不是供应链专属，
+# 「计划管培生 × 供应链管培生」是并列方向，不算命中。
+DIR_PARENTS = {"供应链": ("采购", "物流", "仓储")}
+
+
+def _same_line(at, bt):
+    """意向与岗位的方向词是否同属一条线（供应链家族）：
+
+    一方是父类本身、另一方全是它的下属细分（供应链 × 采购）→ 同一条线；
+    双方都是同一个父类下的兄弟细分（采购 × 物流/仓储）→ 也是同一条线。
+    计划不在家族里：供应链 × 计划 仍是并列。
+    """
+    if not at or not bt:
+        return False
+    for kids in DIR_PARENTS.values():
+        ks = set(kids) | set(DIR_PARENTS.keys())
+        if set(at) <= ks and set(bt) <= ks:
+            return True
+    return False
 
 
 def _dir_core(s):
@@ -255,6 +278,8 @@ def pair_verdict(title, intent):
     if a in b:                      # 岗位更具体：同向但多了限定
         return "ask"
     if at and bt and not (at & bt):  # 两条并列的路径：后端 × 量化 / 前端 / 嵌入式
+        if _same_line(at, bt):       # 采购/物流/仓储 ⊂ 供应链：同一条线的细分，照旧算
+            return "ok"
         return "no"
     return "ok"
 
@@ -789,7 +814,10 @@ def _reason_by_direction(t, intent):
     if b in a:
         return ""
     if at and bt and not (at & bt):
-        # 两个都带方向词且不相交：并列的两条路（量化 × 后端）
+        if _same_line(at, bt):
+            # 采购/物流/仓储 ⊂ 供应链：同一条线的细分，算对口，但要说清是哪个细分。
+            return "「%s」是「%s」条线下的%s细分（同一条线）" % (t, intent, b)
+        # 两个都带方向词且不相交：并列的两条路（量化 × 后端 / 计划 × 供应链）
         return "「%s」与「%s」同属一个大类但方向不同（%s × %s）" % (t, intent, b, a)
     if not at:
         # 意向没限定方向，岗位带方向（开发工程师 → 量化开发）
@@ -1013,13 +1041,29 @@ def _fill_reasons(intent, pairs, titles):
     return reasons
 
 
-def _dir_filter(intent, titles):
-    """并列方向的岗位名不许留在该意向的词表里（后端 × 量化 / 前端 / 嵌入式）。
+def _dir_filter(intent, titles, reasons=None):
+    """两类岗位名不许留在该意向的词表里，都在**入口**上清掉，不等展示时再滤：
 
-    模型是按「都是开发」挑的，词表里就会混进另一条路的岗位；命中、理由、页面
-    「岗位语义命中」都从这个词表来，所以必须在**入口**上清掉，而不是等展示时再滤。
+    1. 并列方向（后端 × 量化 / 前端 / 嵌入式；计划 × 供应链）—— 同一个大类下的
+       两条不同的路，模型按「都是开发」挑的，留着就会被说成另一个说法。
+    2. 模型自己在理由里承认「不是同一细分」的配对（关务、供应商质量…）——
+       意向带方向时，模型都说不细分的，不许再挂成命中。
+       意向没写方向（开发工程师 → 量化开发）不算这条：那是「无方向收一切细分」，
+       学生自己认可的规则。
     """
-    return [t for t in titles if pair_verdict(t, intent) != "no"]
+    _, at = _dir_core(intent)
+    out = []
+    for t in titles:
+        if pair_verdict(t, intent) == "no":
+            continue
+        if at and reasons and "不是同一细分" in str(reasons.get(t) or ""):
+            # 同一条线的细分（采购/物流/仓储 ⊂ 供应链）不受模型措辞影响：
+            # 确定性层级判据说了算，模型就算嘴上说「不是同一细分」也不降。
+            _, bt = _dir_core(t)
+            if not _same_line(at, bt):
+                continue
+        out.append(t)
+    return out
 
 
 def _clean_map(mp, title_set):
@@ -1028,7 +1072,8 @@ def _clean_map(mp, title_set):
     for k, v in (mp or {}).items():
         # 并列方向（后端 × 量化 / 前端 / 嵌入式）直接从词表里清掉：这类配对不是
         # 「同职能不同叫法」，留着就会在页面和理由里被说成另一个说法。
-        titles = _dir_filter(k, _sanitize(k, v.get("titles") or [], title_set))
+        titles = _dir_filter(k, _sanitize(k, v.get("titles") or [], title_set),
+                             v.get("reasons") or {})
         reasons = {t: _tag_reason(r) for t, r in (v.get("reasons") or {}).items()
                    if t in titles and r}
         cleaned[k] = dict(v, titles=titles, reasons=reasons)
@@ -1096,7 +1141,8 @@ def build_map(intended, all_titles, timeout=45):
                 if t:
                     pairs.append((t, r))
             titles_only = [t for t, _ in pairs][:25]
-            sani = _dir_filter(it, _sanitize(it, titles_only, title_set))
+            sani = _dir_filter(it, _sanitize(it, titles_only, title_set),
+                               dict(pairs))
             reasons = _fill_reasons(it, pairs, sani)
         except Exception as exc:
             # 偶发超时/断网：沿用上一次成功的大模型判定，别让功能直接退化成字面匹配。
@@ -1132,7 +1178,8 @@ def _live_entry(cfg, intent, titles, title_set, timeout):
             r = ""
         if t:
             pairs.append((t, r))
-    sani = _dir_filter(intent, _sanitize(intent, [t for t, _ in pairs][:25], title_set))
+    sani = _dir_filter(intent, _sanitize(intent, [t for t, _ in pairs][:25], title_set),
+                       dict(pairs))
     return {"titles": sani, "reasons": _fill_reasons(intent, pairs, sani), "terms": [],
             "reason": "大模型判定为同类校招岗位", "via": "llm"}
 

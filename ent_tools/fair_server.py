@@ -210,6 +210,18 @@ class Handler(BaseHTTPRequestHandler):
             if p == "/api/fair/feedback":
                 self._json({"ok": True, "items": fair_ingest.read_feedback()})
                 return
+            if p == "/api/fair/version":
+                # 轻量轮询端点：报告页每 15 秒看一眼 generated_at，
+                # 变了就提示刷新，避免「页面还开着、数据已经换了一版」。
+                gen = ""
+                if os.path.exists(PAYLOAD):
+                    try:
+                        with open(PAYLOAD, encoding="utf-8") as f:
+                            gen = (json.load(f).get("generated_at") or "")
+                    except Exception:
+                        gen = ""
+                self._json({"ok": True, "generated_at": gen})
+                return
             if p == "/api/fair/payload":
                 # 提交画像后正在按新画像重算命中/排除，先告诉前端「计算中」去轮询，
                 # 不要返回旧 payload（否则学生会看到上一个学生的意向岗位结论）。
@@ -334,7 +346,8 @@ class Handler(BaseHTTPRequestHandler):
                 payload = json.load(open(PAYLOAD, encoding="utf-8"))
                 out = test_sessions.save(
                     payload, tag=body.get("tag", ""), sid=body.get("sid", ""),
-                    note=body.get("note", ""), top_n=int(body.get("top_n") or 12))
+                    note=body.get("note", ""), top_n=int(body.get("top_n") or 12),
+                    browser=body.get("browser") or None)
                 self._json(out)
                 return
             # 按 id 删除单条测试记录；不做批量清空，避免误删真人数据

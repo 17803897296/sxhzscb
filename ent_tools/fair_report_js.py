@@ -300,7 +300,22 @@ function miWider(title,intent){
    与 intent_semantics.DIR_WORDS 同源。 */
 const MI_DIRWORDS=['前端','后端','服务端','客户端','嵌入式','上位机','下位机','固件',
   '移动端','桌面','驱动','全栈','低代码','量化','算法','数据','图像','视觉','图形','游戏',
-  'unity','unreal','大模型','ai','人工智能','测试','运维','安全','网络','通信'];
+  'unity','unreal','大模型','ai','人工智能','测试','运维','安全','网络','通信',
+  '供应链','计划','采购','物流','仓储','商业分析'];
+/* 方向层级：父类 → 下属细分（与 intent_semantics.DIR_PARENTS 同源）。
+   采购/物流/仓储 ⊂ 供应链 → 同一条线照旧算；计划不是供应链专属（生产/核电都有
+   计划岗），「计划管培生 × 供应链管培生」是并列方向，不算命中。 */
+const MI_PARENTS={'供应链':['采购','物流','仓储']};
+function miSameLine(ak,bk){
+  if(!ak.length||!bk.length) return false;
+  const parents=Object.keys(MI_PARENTS);
+  for(let i=0;i<parents.length;i++){
+    const ks=MI_PARENTS[parents[i]].concat([parents[i]]);
+    if(ak.every(function(w){ return ks.indexOf(w)>=0; })
+       && bk.every(function(w){ return ks.indexOf(w)>=0; })) return true;
+  }
+  return false;
+}
 const MI_DIRNEUTRAL=['开发','研发','软件','程序','工程师','技术','应用','系统','岗','员'];
 function miDirCore(t){
   let x=miDirText(t);
@@ -320,7 +335,10 @@ function miPairVerdict(title,intent){
      b ⊂ a → 岗位更泛（AI算法研究 → 算法）→ ok（小类能进大类）。 */
   if(a.t.indexOf(b.t)>=0) return 'ok';
   if(b.t.indexOf(a.t)>=0) return 'ask';
-  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })) return 'no';
+  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })){
+    if(miSameLine(a.k,b.k)) return 'ok';   /* 采购/物流/仓储 ⊂ 供应链：同一条线照旧算 */
+    return 'no';
+  }
   return 'ok';
 }
 /* 方向不一样时，不能说成「另一种说法」：写清是哪个大类下面的哪个方向。
@@ -328,8 +346,11 @@ function miPairVerdict(title,intent){
 function miDirReason(t,intent){
   const a=miDirCore(intent), b=miDirCore(t);
   if(!b.t||a.t===b.t||(a.t&&b.t.indexOf(a.t)>=0)) return '';
-  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; }))
+  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })){
+    if(miSameLine(a.k,b.k))
+      return '「'+t+'」是「'+intent+'」条线下的'+b.t+'细分（同一条线）';
     return '「'+t+'」与「'+intent+'」同属一个大类但方向不同（'+b.t+' × '+a.t+'）';
+  }
   if(!a.t) return '「'+t+'」是「'+intent+'」下的'+b.t+'方向（同一大类，不是同一细分）';
   if(a.t&&b.t.indexOf(a.t)>=0) return '「'+t+'」的方向是'+b.t+'，比「'+intent+'」细，不是同一个岗位';
   return '';
@@ -1165,6 +1186,60 @@ function hardFilterNote(custom){
     + '</div>';
 }
 
+/* ---------- 结束使用：一键把本次测试存进测试记录 ----------
+   原来的「保存到测试库」埋在折叠区里还要手填标签，实测学生测完没人去点，
+   测试记录页就一直是空的。现在榜单下面放一个醒目的「结束使用」：
+   自动生成标签、自动带上浏览器当前的画像与排名快照，点一下就落库。 */
+function fmtGen(t){
+  t=String(t||'');
+  return t? t.replace('T',' ').slice(0,19) : '未知';
+}
+function endSessionBar(){
+  return '<div style="margin:16px 0 6px;border-top:1px dashed #cfd6e4;padding-top:12px;'
+    +'display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+    + '<button type="button" class="btn btn-p" data-end-session '
+    +   'style="font-size:13px;padding:8px 18px">结束使用</button>'
+    + '<span style="font-size:12px;color:#41506b">点这里把本次填写与排名结果存进测试记录'
+    + '（自动记录，不用填标签）</span>'
+    + '<a href="/tests.html" target="_blank" style="font-size:12px;color:#2563eb">'
+    + '查看测试记录 →</a>'
+    + '<span id="end-msg" style="font-size:12px"></span>'
+    + '</div>';
+}
+function bindEndSession(box){
+  var btn=box.querySelector('[data-end-session]');
+  if(!btn) return;
+  btn.onclick=function(){
+    var msg=box.querySelector('#end-msg');
+    var P=getProfile();
+    var top=(currentRows||[]).slice(0,12).map(function(r){
+      return {name:r.name,score:r.score,city:r.city,industry:r.industry,state:r.state};});
+    var now=new Date(), pad=function(n){return (n<10?'0':'')+n;};
+    var tag='结束使用 '+now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())
+      +' '+pad(now.getHours())+':'+pad(now.getMinutes());
+    btn.disabled=true;
+    if(msg){msg.style.color='#8a94a6';msg.textContent='保存中…';}
+    fetch(SEM_BASE+'/api/fair/test-save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tag:tag,top_n:12,
+        browser:{profile:{major:P.major,home_city:P.home_city,region:P.region,
+                          fair_id:P.fair_id,intended_jobs:P.intended_jobs,
+                          weights:(wOverride||P.weights)},
+                 top:top},
+        note:P.fair_id?('会话画像 '+P.fair_id):''})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(msg){
+        msg.style.color=d&&d.ok?'#0f9960':'#c0392b';
+        msg.textContent=d&&d.ok?('已存入测试记录 #'+d.id+'（'+d.n_rows+' 家企业）')
+          :('保存失败：'+((d&&d.error)||'未知原因'));
+      }
+      btn.disabled=false;
+    }).catch(function(){
+      if(msg){msg.style.color='#c0392b';msg.textContent='保存失败：连不上服务';}
+      btn.disabled=false;
+    });
+  };
+}
+
 /* ---------- v12 测试数据库：保存本次填写 + 排序结果 ---------- */
 function testSaveBox(rows){
   var hf=D.hard_filter||{};
@@ -1419,7 +1494,8 @@ function render(){
         + '<div class="note" style="font-size:12px;margin:0 0 12px"><b>完整报告 · '
         + e(cur.name)+'</b>　展位 '+e(cur.booth||'—')
         + ' · 推荐序第 '+cur.rank+' 位 / 共 '+rows.length
-        + ' 位 · 排序分 '+cur.score+'　'+live+'</div>'
+        + ' 位 · 排序分 '+cur.score+'　'+live
+        + ' · 数据生成于 '+e(fmtGen(D.generated_at))+'</div>'
         + rowHTML(cur, t, P)
         + '<details style="margin:12px 0"><summary style="cursor:pointer;font-size:12px">'
         + '本页完整信息（统计 / 权重微调 / 筛选 / 导出 / 现场进度）</summary>'
@@ -1432,7 +1508,8 @@ function render(){
       /* 不在榜里的「不对口」不参与排名（硬过滤直接剔掉），没有可显示的计数；
          原来取 D.stats.states.miss 会渲染成 undefined。换画像后按当前结果重数。 */
       + (_customNow?'（按当前画像重算）':'')
-      + ' · 意向岗位 '+e((P.intended_jobs||[]).join('、')||'—')+'</div>'
+      + ' · 意向岗位 '+e((P.intended_jobs||[]).join('、')||'—')
+      + ' · 数据生成于 '+e(fmtGen(D.generated_at))+'</div>'
       + hardFilterNote(_customNow)
       + '<div class="btns" style="margin:0 0 12px">'
       + '<button type="button" class="btn '+(sortMode==='queue'?'btn-p':'btn-g')
@@ -1466,6 +1543,8 @@ function render(){
       rs.forEach(function(r){ html+=rowBrief(r,idx++,P); });
       html+='</div>';
     });
+    /* 榜单末尾：结束使用按钮（一键存测试记录） */
+    html+=endSessionBar();
   }
   currentRows=rows;
   suppress=true;
@@ -1473,6 +1552,37 @@ function render(){
   // 详情页本来就是看细节的，折叠区默认展开。
   if(DETAIL_NAME) box.querySelectorAll('.jobbox details').forEach(function(d){ d.open=true; });
   bindTestSave(box);
+  bindEndSession(box);
+  /* 数据版本轮询：重建 payload 后，开着的报告页 15 秒内感知并自动刷新。
+     只在独立报告视图（?report=1 / ?detail=）才自动 reload ——
+     采集对话页里报告是内嵌挂载的，自动 reload 会把学生填到一半的对话清零
+     （2026-11-15 修复：采集页只提示，不刷新）。 */
+  (function(){
+    if(window.__verPoll) return; window.__verPoll=1;
+    const REPORT_VIEW = DETAIL_NAME || new URLSearchParams(location.search).get('report')==='1';
+    setInterval(function(){
+      if(document.hidden) return;
+      fetch(SEM_BASE+'/api/fair/version').then(function(r){return r.json();}).then(function(v){
+        if(v&&v.generated_at&&D.generated_at&&v.generated_at!==D.generated_at
+           &&!window.__verWarn){
+          window.__verWarn=1;
+          const b=document.createElement('div');
+          b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;'
+            +'background:#fff7e6;border-bottom:1px solid #ffe0a3;padding:10px 14px;'
+            +'font-size:13px;color:#b7791f';
+          if(REPORT_VIEW){
+            b.textContent='⚠ 数据已更新（'+fmtGen(v.generated_at)+'），3 秒后自动刷新页面载入新版结果……';
+            document.body.appendChild(b);
+            setTimeout(function(){location.reload();},3000);
+          }else{
+            b.textContent='ℹ 匹配端数据已更新（'+fmtGen(v.generated_at)+'）；本次不影响当前对话，稍后可在报告页查看新版结果。';
+            document.body.appendChild(b);
+            setTimeout(function(){ b.remove(); },8000);
+          }
+        }
+      }).catch(function(){});
+    },15000);
+  })();
   setTimeout(function(){suppress=false;},60);
   box.querySelectorAll('[data-wk]').forEach(function(b){
     b.onclick=function(){

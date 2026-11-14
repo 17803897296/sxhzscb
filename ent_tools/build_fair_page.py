@@ -140,6 +140,43 @@ def patch_fair_js(js):
         + "  flow.push(jobRecommendStep());\n", 1)
     edits.append("教培接受度与岗位推荐移到实习/竞赛/论文之后、大模型推荐之前")
 
+    # v15：简历里已抽到经历（实习/竞赛/论文）时不再重复追问。简历摘要卡已经
+    # 让学生逐项确认过「从简历里抽到这些」，再问一遍「做过哪些实习/竞赛/论文」
+    # 纯属重复（用户实测反馈）。没抽到经历才保留原题。
+    _old_flow = "  fairSteps().forEach(step => flow.push(step));\n"
+    _new_flow = (
+        "  /* v15：简历已抽到经历时跳过「实习/竞赛/论文」追问，直接用简历里的。 */\n"
+        "  const _resumeExpN = (function(){ const r = state.resume || {};\n"
+        "    return ((r.experiences || []).length + (r.competitions || []).length\n"
+        "      + (r.papers || []).length) || (((r.extraction || {}).experiences) || []).length;\n"
+        "  })();\n"
+        "  fairSteps().forEach(step => { if (step.id === 'internship' && _resumeExpN > 0) return; flow.push(step); });\n")
+    if _old_flow not in js:
+        raise RuntimeError("buildFlow 的 fairSteps forEach 定位没找到（v15 跳过经历题）")
+    js = js.replace(_old_flow, _new_flow, 1)
+    edits.append("简历有经历时跳过「实习/竞赛/论文」追问（v15）")
+
+    # v15b：不再问「哪段经历最想让我们看」（用户：为什么还问什么展示，到简历里找就是）。
+    # 多段经历自动取第一段并说明；想换说法学生可以在报告里改。
+    _old_flag = """    const exps = state.resume.experiences || [];
+    if (exps.length > 1) {
+      const picked = await flagshipCard();
+      if (picked && picked.text) state.answers.fair.flagship_experience = picked.text;
+    } else if (exps.length === 1) {
+      state.answers.fair.flagship_experience = exps[0].text;
+    }"""
+    _new_flag = """    const exps = state.resume.experiences || [];
+    /* v15：不再弹「哪段经历最想让我们看」。多段自动取第一段，消息里说明清楚。 */
+    if (exps.length) {
+      state.answers.fair.flagship_experience = exps[0].text;
+      await say('经历直接用简历里的（共 ' + exps.length
+        + ' 段，匹配优先看第 1 段），不再重复问你。', { fast: true });
+    }"""
+    if _old_flag not in js:
+        raise RuntimeError("init 的 flagshipCard 分支没匹配到（v15b）")
+    js = js.replace(_old_flag, _new_flag, 1)
+    edits.append("简历有多段经历时自动取第一段，不再弹「哪段经历最想让我们看」（v15）")
+
     # ③ 删除「最晚什么时候落地」整步
     tl_start = js.find("    fairStep('timeline',")
     tl_end = js.find("  ];\n}\n\nfunction buildFlow", tl_start)
@@ -505,8 +542,18 @@ function _buildDocument(body) {
                storage: FAIR_ONLINE ? "sqlite:fair_profiles（同源服务待写库）"
                                     : "浏览器 localStorage + 可导出 JSON 入库" },
     consent: body.consent || {},
-    identity: (r.fields && Object.fromEntries(
-      Object.entries(r.fields).map(([k, v]) => [k, v.value || v]))) || {},
+    /* 身份字段：简历解析字段优先；没传简历时用对话里填的 identity
+       （之前只取 r.fields，「直接聊」模式下对话填的姓名/学校/专业全丢，
+       画像 major 被兜底成管科默认值 —— 2026-11-15 修复）。 */
+    identity: (() => {
+      const src = (r.fields && Object.fromEntries(
+        Object.entries(r.fields).map(([k, v]) => [k, v.value || v]))) || {};
+      const aid = a.identity || {};
+      const out = {};
+      ["name", "school", "major", "degree", "grade", "graduation", "phone", "email"]
+        .forEach(k => { out[k] = src[k] || aid[k] || ""; });
+      return out;
+    })(),
     fair: {
       event_date: fair.event_date || "",
       target_stage: COHORT_STAGE,
@@ -638,7 +685,23 @@ function _jobRecommendRules(major, exps, skills, exclude) {
       "产品工程师（校招）","嵌入式软件工程师（校招）","技术支持工程师（校招）"],
     "金融": ["行业研究助理","量化研究岗","财富顾问培训生","风险管理培训生",
       "投行承做岗（校招）","管培生（金融方向）","客户经理培训生","金融数据分析岗",
-      "信贷管理专员","合规专员","运营培训生（银行方向）","金融市场岗"]
+      "信贷管理专员","合规专员","运营培训生（银行方向）","金融市场岗"],
+    /* 理科 / 化工类（2026-11-15 补，与服务端 MAJOR_BASE 同步）：此前没有理科词表，
+       化学等专业会兜底成「管培生/数据分析岗/业务运营岗」这类管理通用岗。 */
+    "化学": ["研发工程师（校招）","合成研究员","化验/质检岗","分析测试岗",
+      "工艺工程师（校招）","实验室技术员","EHS安全工程师（校招）","质量工程师（校招）"],
+    "化学工程与工艺": ["工艺工程师（校招）","生产技术员","化验/质检岗",
+      "EHS安全工程师（校招）","设备工程师（校招）","质量工程师（校招）"],
+    "材料": ["材料研发工程师","失效分析工程师","工艺工程师（校招）",
+      "质量工程师（校招）","实验室技术员","化验/质检岗"],
+    "生物": ["生物研发工程师","发酵/细胞培养技术员","实验员","质检QA",
+      "注册专员（校招）","生产技术员"],
+    "药学": ["药物分析研究员","药品注册专员","QA/QC岗","生产技术员",
+      "医学信息沟通专员"],
+    "数学": ["数据分析岗","统计分析师","算法工程师（校招）","精算助理",
+      "量化研究岗","数据开发工程师（校招）"],
+    "环境工程": ["EHS工程师（校招）","环保工程师","水处理工程师","环境检测员",
+      "化验/质检岗"]
   };
   const RULES = [
     [["供应链","库存","补货","采购","物流","仓储","周转","供应商"],
