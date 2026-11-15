@@ -94,13 +94,12 @@ function hideComputing(){ var el=document.getElementById('recompute-note'); if(e
    并进 D.intent_semantics 再重渲染。离线 / 服务不可用 / 模型超时 → 保持本地兜底，
    不阻塞页面、不编结论。试过的意向记在 semTried 里，避免同一个意向反复打接口。 */
 let semTried={}, semNoteTimer=null;
-/* 语义服务基址。页面本身就是 8102 时用同源相对路径；从 WorkBuddy 的静态快照预览
-   （127.0.0.1:56711/static-html/…）、file:// 或别的端口打开时，相对路径会打到
-   没有这个接口的静态服务上，于是「大模型又没了」。这里一律指向本机 8102 ——
-   服务端已开 Access-Control-Allow-Origin: *，跨端口可用。 */
+/* 语义服务基址。http(s) 页面一律同源取数（哪个端口就请求哪个端口，
+   多实例 8102/8103 各自正确）；只有 file:// 离线打开才回退本机 8102，
+   服务端已开 Access-Control-Allow-Origin: *。 */
 const SEM_BASE=(function(){
   try{
-    if(/^https?:$/.test(location.protocol) && location.port==='8102') return '';
+    if(/^https?:$/.test(location.protocol)) return '';
   }catch(e){}
   return 'http://127.0.0.1:8102';
 })();

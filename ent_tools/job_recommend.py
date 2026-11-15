@@ -324,7 +324,9 @@ def rule_pool(major, cats, tier, accept, db_jobs):
             for kw in base:
                 core = re.sub(r"[（(].*?[)）]", "", kw)
                 core = re.sub(r"(岗|专员|工程师|管培生|经理|助理|分析师)$", "", core)
-                if core and len(core) >= 2 and core in dj:
+                # 核心词至少 3 字：「研发」这种 2 字泛词会把 数据库研发工程师/
+                # C++研发工程师 等计算机岗全误吸进来；3 字起才做库内匹配。
+                if core and len(core) >= 3 and core in dj:
                     add(dj, "企业库现场在招，与专业方向对口", True)
                     break
         for kws, jobs, why in SIGNAL_RULES:
