@@ -66,7 +66,22 @@ function miWider(title,intent){
    与 intent_semantics.DIR_WORDS 同源。 */
 const MI_DIRWORDS=['前端','后端','服务端','客户端','嵌入式','上位机','下位机','固件',
   '移动端','桌面','驱动','全栈','低代码','量化','算法','数据','图像','视觉','图形','游戏',
-  'unity','unreal','大模型','ai','人工智能','测试','运维','安全','网络','通信'];
+  'unity','unreal','大模型','ai','人工智能','测试','运维','安全','网络','通信',
+  '供应链','计划','采购','物流','仓储','商业分析'];
+/* 方向层级：父类 → 下属细分（与 intent_semantics.DIR_PARENTS 同源）。
+   采购/物流/仓储 ⊂ 供应链 → 同一条线照旧算；计划不是供应链专属（生产/核电都有
+   计划岗），「计划管培生 × 供应链管培生」是并列方向，不算命中。 */
+const MI_PARENTS={'供应链':['采购','物流','仓储']};
+function miSameLine(ak,bk){
+  if(!ak.length||!bk.length) return false;
+  const parents=Object.keys(MI_PARENTS);
+  for(let i=0;i<parents.length;i++){
+    const ks=MI_PARENTS[parents[i]].concat([parents[i]]);
+    if(ak.every(function(w){ return ks.indexOf(w)>=0; })
+       && bk.every(function(w){ return ks.indexOf(w)>=0; })) return true;
+  }
+  return false;
+}
 const MI_DIRNEUTRAL=['开发','研发','软件','程序','工程师','技术','应用','系统','岗','员'];
 function miDirCore(t){
   let x=miDirText(t);
@@ -86,7 +101,10 @@ function miPairVerdict(title,intent){
      b ⊂ a → 岗位更泛（AI算法研究 → 算法）→ ok（小类能进大类）。 */
   if(a.t.indexOf(b.t)>=0) return 'ok';
   if(b.t.indexOf(a.t)>=0) return 'ask';
-  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })) return 'no';
+  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })){
+    if(miSameLine(a.k,b.k)) return 'ok';   /* 采购/物流/仓储 ⊂ 供应链：同一条线照旧算 */
+    return 'no';
+  }
   return 'ok';
 }
 /* 方向不一样时，不能说成「另一种说法」：写清是哪个大类下面的哪个方向。
@@ -94,8 +112,11 @@ function miPairVerdict(title,intent){
 function miDirReason(t,intent){
   const a=miDirCore(intent), b=miDirCore(t);
   if(!b.t||a.t===b.t||(a.t&&b.t.indexOf(a.t)>=0)) return '';
-  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; }))
+  if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })){
+    if(miSameLine(a.k,b.k))
+      return '「'+t+'」是「'+intent+'」条线下的'+b.t+'细分（同一条线）';
     return '「'+t+'」与「'+intent+'」同属一个大类但方向不同（'+b.t+' × '+a.t+'）';
+  }
   if(!a.t) return '「'+t+'」是「'+intent+'」下的'+b.t+'方向（同一大类，不是同一细分）';
   if(a.t&&b.t.indexOf(a.t)>=0) return '「'+t+'」的方向是'+b.t+'，比「'+intent+'」细，不是同一个岗位';
   return '';

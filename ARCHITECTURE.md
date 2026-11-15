@@ -143,22 +143,27 @@ cd sxhzscb-deploy && git pull        # 或干脆删掉重新 git clone
 
 - 自动同步：`ent_tools/*.py`（排除 `_*.py` 调试脚本）、`ent_tools/*.md`、
   `.env.example`、`data/test_users/*.json`、`demo/*.js`、`questionnaire.json`、
-  **7 个白名单 HTML**。
-- **永不自动同步**：`.env`（密钥）、`careersafari.db`（含本机测试记录）、
-  `fair_payload.json`（含当前画像快照）、`_*.py`、含真实姓名的个人报告页
-  （`排行_*` / `ranking_*` / `采集数据_*`）。需要更新数据时用
-  `--include-payload` / `--include-db` 显式指定，并先自检内容。
+  **7 个白名单 HTML**、**6 个测试资产**（`_test_match.js` / `_test_parity.js` /
+  `_rule_regress.py` / `_schema_consts.json` / `_js_matchintent.js` /
+  `data/_parity.json`，最后一个缺了 clone 直接跑不了 parity）、
+  **`data/fair_payload.json`**（默认带上，发布后两端报告数据同源）。
+- payload **发布前必过隐私自检**：画像里出现姓名 / 学校 / 电话 / 邮箱（或疑似
+  手机号、邮箱串）就跳过该文件并明确提示，绝不静默推到公开仓库。
+  确需不带它用 `--no-payload`。
+- **永不自动同步**：`.env`（密钥）、`careersafari.db`（含本机测试记录，
+  要带用 `--include-db` 显式指定）、一次性 `_*` 调试脚本、含真实姓名的个人报告页
+  （`排行_*` / `ranking_*` / `采集数据_*`）。
 - 文本比对按 LF 归一（git 的 CRLF/LF 转换不算差异），二进制按原哈希；
   验证「两端同源」时也要先归一化行尾再比哈希，否则会误报。
 - 脚本**不自动 commit / push**。同步完人工确认 `git status` 再提交推送。
-- 仓库里的 `careersafari.db` 和 `fair_payload.json` 是**发布时的初始快照**，
-  保证 clone 下来能直接跑；日常测试的画像/记录不随发布更新。
+- 仓库里的 `careersafari.db` 是**发布时的初始快照**，保证 clone 下来能直接跑；
+  本机测试记录不随发布更新。`fair_payload.json` 每次发布都随正本更新。
 
 改完一轮的推荐顺序：
 
 ```
 改源文件 → refresh_all.py（若改了规则） → sync_repo.py --check → --apply
-→ git commit / push → 从 GitHub 干净 clone 临时起 8103 验收 → 停 8103
+→ git commit / push → 克隆实例 git pull → 两端比对页面与 payload 哈希
 ```
 
 ---
