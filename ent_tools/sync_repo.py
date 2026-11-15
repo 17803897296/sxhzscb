@@ -61,8 +61,17 @@ def _blocked(rel: Path) -> bool:
     )
 
 
+TEXT_EXT = {".py", ".md", ".html", ".js", ".json", ".css", ".txt"}
+
+
 def _sha(p: Path) -> str:
+    """文本按 LF 归一后哈希：git 的 CRLF/LF 转换不算内容差异，
+    否则仓库/clone 每次都会显示「不一致」并反复复制同一份内容。"""
     h = hashlib.sha256()
+    if p.suffix.lower() in TEXT_EXT:
+        data = p.read_bytes().replace(b"\r\n", b"\n")
+        h.update(data)
+        return h.hexdigest()
     with p.open("rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
             h.update(chunk)

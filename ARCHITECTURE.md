@@ -143,6 +143,8 @@ cd sxhzscb-deploy && git pull        # 或干脆删掉重新 git clone
   `fair_payload.json`（含当前画像快照）、`_*.py`、含真实姓名的个人报告页
   （`排行_*` / `ranking_*` / `采集数据_*`）。需要更新数据时用
   `--include-payload` / `--include-db` 显式指定，并先自检内容。
+- 文本比对按 LF 归一（git 的 CRLF/LF 转换不算差异），二进制按原哈希；
+  验证「两端同源」时也要先归一化行尾再比哈希，否则会误报。
 - 脚本**不自动 commit / push**。同步完人工确认 `git status` 再提交推送。
 - 仓库里的 `careersafari.db` 和 `fair_payload.json` 是**发布时的初始快照**，
   保证 clone 下来能直接跑；日常测试的画像/记录不随发布更新。
