@@ -56,6 +56,8 @@ TEST_ASSETS = [
     "ent_tools/_test_match.js",
     "ent_tools/_test_parity.js",
     "ent_tools/data/_parity.json",   # _test_parity.js 直接读它，缺了 clone 跑不了门禁
+    "ent_tools/_is_old_tmp.py",      # _rule_regress.py 的旧规则基线模块
+    "ent_tools/data/_v5_verify.json",  # _rule_regress.py 的验证夹具
 ]
 
 PAYLOAD_REL = "ent_tools/data/fair_payload.json"

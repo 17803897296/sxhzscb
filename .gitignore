@@ -33,6 +33,8 @@ desktop.ini
 ent_tools/_*.py
 ent_tools/_*.js
 ent_tools/_*.json
+# 例外：回归测试的旧规则基线模块，clone 跑 _rule_regress.py 必须有
+!ent_tools/_is_old_tmp.py
 
 # 含真实姓名的个人报告页 / 采集数据页（本机保留，永不入库）
 demo/排行_*.html

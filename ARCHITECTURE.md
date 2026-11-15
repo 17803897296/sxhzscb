@@ -143,9 +143,10 @@ cd sxhzscb-deploy && git pull        # 或干脆删掉重新 git clone
 
 - 自动同步：`ent_tools/*.py`（排除 `_*.py` 调试脚本）、`ent_tools/*.md`、
   `.env.example`、`data/test_users/*.json`、`demo/*.js`、`questionnaire.json`、
-  **7 个白名单 HTML**、**6 个测试资产**（`_test_match.js` / `_test_parity.js` /
+  **7 个白名单 HTML**、**8 个测试资产**（`_test_match.js` / `_test_parity.js` /
   `_rule_regress.py` / `_schema_consts.json` / `_js_matchintent.js` /
-  `data/_parity.json`，最后一个缺了 clone 直接跑不了 parity）、
+  `data/_parity.json` / `_is_old_tmp.py` / `data/_v5_verify.json`；
+  夹具和旧规则基线缺任一，clone 直接跑门禁就会报 FileNotFoundError）、
   **`data/fair_payload.json`**（默认带上，发布后两端报告数据同源）。
 - payload **发布前必过隐私自检**：画像里出现姓名 / 学校 / 电话 / 邮箱（或疑似
   手机号、邮箱串）就跳过该文件并明确提示，绝不静默推到公开仓库。
