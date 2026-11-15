@@ -136,6 +136,11 @@ python -X utf8 ent_tools/sync_repo.py --apply     # 重建问卷+页面 → 同�
 cd sxhzscb-deploy && git pull        # 或干脆删掉重新 git clone
 ```
 
+> 验收实例跑起来后，`data/careersafari.db`（测试记录）和 `job_recommend_pool.json`
+> 等缓存会被服务端改写，`git status` 出现这两类改动是**正常运行时副产物**，
+> 不要提交、也不要拿去和开发正本对比。要恢复干净用
+> `git checkout -- ent_tools/data`。
+
 - 自动同步：`ent_tools/*.py`（排除 `_*.py` 调试脚本）、`ent_tools/*.md`、
   `.env.example`、`data/test_users/*.json`、`demo/*.js`、`questionnaire.json`、
   **7 个白名单 HTML**。
