@@ -158,6 +158,53 @@ def rebuild(enabled=True):
         print("  重建 %s ✓" % script)
 
 
+def sync_profile_seed():
+    """让仓库的只读种子库带上与发布 payload 相同的生效画像。
+
+    fair_server 的 /api/fair/payload 有安全网：payload.active_fair_id 与本地库
+    生效画像不一致就立刻 fair_bridge.build() 重建。只同步 payload、不配套种子库，
+    clone 一请求就会把发布快照覆盖掉（2026-11-15 实测 79 家 -> 61 家）。
+    种子库同时清空历史测试画像、脱敏 identity，避免把测试记录带进公开仓库。
+    """
+    import sqlite3
+    src = DEV / "ent_tools/data/careersafari.db"
+    seed = REPO / "ent_tools/data/careersafari.db.seed"
+    if not (src.is_file() and seed.is_file()):
+        return "跳过（活库或种子缺失）"
+    try:
+        ro = sqlite3.connect(str(src))
+        fid = (ro.execute(
+            "select fair_id from fair_active where id='current'").fetchone() or [None])[0]
+        row = ro.execute(
+            "select fair_id,created_at,persona,completeness,document_json "
+            "from fair_profiles where fair_id=?", (fid,)).fetchone()
+        ro.close()
+        if not row:
+            return "跳过（找不到生效画像 %s）" % fid
+        doc = json.loads(row[4])
+        doc["identity"] = {k: ("" if k in SENSITIVE_KEYS else v)
+                           for k, v in (doc.get("identity") or {}).items()}
+        db = sqlite3.connect(str(seed))
+        db.execute("delete from fair_profiles")
+        db.execute("insert into fair_profiles"
+                   "(fair_id,created_at,persona,completeness,document_json) "
+                   "values (?,?,?,?,?)",
+                   (row[0], row[1], row[2], row[3],
+                    json.dumps(doc, ensure_ascii=False)))
+        db.execute("update fair_active set fair_id=?, updated_at=? where id='current'",
+                   (fid, row[1]))
+        db.commit()
+        db.execute("vacuum")
+        db.close()
+        for suffix in ("-shm", "-wal"):
+            f = Path(str(seed) + suffix)
+            if f.exists():
+                f.unlink()
+        return "生效画像 %s 已配套（identity 脱敏，历史测试画像清空）" % fid
+    except Exception as exc:
+        return "失败：%s: %s" % (type(exc).__name__, exc)
+
+
 def compare(target: Path, rels):
     same, diff, missing = [], [], []
     for rel in rels:
@@ -200,6 +247,9 @@ def main(argv=None):
     if a.apply:
         print("== 重建构建产物 ==")
         rebuild(not a.no_rebuild)
+        if not a.no_payload:
+            print("== 种子库生效画像配套 ==")
+            print("  " + sync_profile_seed())
 
     rels = source_files(not a.no_payload)
     # 数据同源是默认行为，但隐私优先：画像里出现姓名/学校/电话/邮箱就跳过 payload，

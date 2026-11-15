@@ -160,7 +160,10 @@ cd sxhzscb-deploy && git pull        # 或干脆删掉重新 git clone
   `fair_server.py` 首次启动时复制成 `data/careersafari.db`。活库不入库，
   git pull / stash / checkout 不会再替换一个正在被 SQLite 写入的文件——
   2026-11-15 实测那样做会得到 `database disk image is malformed`。
-  seed 只在数据大版本更新时由维护者手工替换。
+  `sync_repo.py --apply` 每次发布都会把**正本当前生效画像**写进种子库
+  （identity 脱敏、历史画像清空）：因为 `/api/fair/payload` 有安全网，
+  payload 的 `active_fair_id` 与本地库生效画像不一致就会立刻重建并覆盖发布快照。
+  两端数据要同源，payload 与种子的生效画像必须配套。
 
 改完一轮的推荐顺序：
 
