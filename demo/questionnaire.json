@@ -259,7 +259,7 @@
    "硕士",
    "博士"
   ],
-  "max_resume_bytes": 8388608,
+  "max_resume_bytes": 20971520,
   "max_resume_chars": 20000,
   "llm_configured": false
  }

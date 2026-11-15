@@ -24,6 +24,16 @@ live_payload_tmp.json
 Thumbs.db
 desktop.ini
 
+# 一次性调试脚本 / 本地夹具（本机保留，永不入库）
+ent_tools/_*.py
+ent_tools/_*.js
+ent_tools/_*.json
+
+# 含真实姓名的个人报告页 / 采集数据页（本机保留，永不入库）
+demo/排行_*.html
+demo/ranking_*.html
+demo/采集数据_*.html
+
 # 备份与本地缓存（不入库）
 *.bak_*
 ent_tools/data/hard_filter_cache.json

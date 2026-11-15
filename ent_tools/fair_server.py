@@ -363,11 +363,39 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.write("[fair_server] %s\n" % (fmt % args))
 
 
+def _already_serving(host: str, port: int, timeout: float = 0.5) -> bool:
+    """启动前探测该端口是否已有服务在响应。
+
+    Windows 的 SO_REUSEADDR 允许两个进程同时 LISTENING 同一端口
+    （2026-11-15 实测：旧进程没死、新进程照常启动成功，请求随机打到旧代码上，
+    表现成「改了代码不生效」「缓存指纹是新的但结果是旧的」）。光靠 bind 不报错
+    发现不了，必须主动 connect 一次：连得上就说明已经有服务在跑。
+    """
+    import socket
+    probe = "127.0.0.1" if host in ("", "0.0.0.0", "::") else host
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(timeout)
+    try:
+        return s.connect_ex((probe, port)) == 0
+    except OSError:
+        return False
+    finally:
+        s.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8102)
     a = ap.parse_args()
+    # 单实例纪律：同端口只允许一个服务。多实例请换端口，不要重复绑定。
+    if _already_serving(a.host, a.port):
+        print("✗ %s:%d 已有服务在响应，拒绝启动第二个实例。" % (a.host, a.port))
+        print("  Windows 允许两个进程绑定同一端口，同时跑会让请求随机打到旧代码上。")
+        print("  查旧进程： netstat -ano | findstr :%d" % a.port)
+        print("  停掉旧进程： taskkill /F /PID <PID>")
+        print("  确认没有 LISTENING 后重新启动；确实要并行请改用另一个端口。")
+        raise SystemExit(2)
     if not os.path.exists(PAYLOAD):
         fair_bridge.build()
     # 企业端搜索/初筛接口复用 portal.py，需要先初始化模型；不初始化会静默降级成关键词规则
