@@ -186,13 +186,22 @@ def sync_profile_seed():
         doc = json.loads(row[4])
         doc["identity"] = {k: ("" if k in SENSITIVE_KEYS else v)
                            for k, v in (doc.get("identity") or {}).items()}
+        clean_json = json.dumps(doc, ensure_ascii=False)
         db = sqlite3.connect(str(seed))
+        cur_active = (db.execute(
+            "select fair_id from fair_active where id='current'").fetchone() or [None])[0]
+        cur = db.execute(
+            "select document_json from fair_profiles where fair_id=?", (fid,)).fetchone()
+        n_profiles = db.execute("select count(*) from fair_profiles").fetchone()[0]
+        # 幂等：已配套就不重写二进制，避免每次发布都产生无意义的 diff
+        if cur_active == fid and cur and cur[0] == clean_json and n_profiles == 1:
+            db.close()
+            return "生效画像 %s 已配套，无需改动" % fid
         db.execute("delete from fair_profiles")
         db.execute("insert into fair_profiles"
                    "(fair_id,created_at,persona,completeness,document_json) "
                    "values (?,?,?,?,?)",
-                   (row[0], row[1], row[2], row[3],
-                    json.dumps(doc, ensure_ascii=False)))
+                   (row[0], row[1], row[2], row[3], clean_json))
         db.execute("update fair_active set fair_id=?, updated_at=? where id='current'",
                    (fid, row[1]))
         db.commit()
