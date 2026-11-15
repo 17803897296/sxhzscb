@@ -26,6 +26,7 @@ import os
 import re
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from intent_semantics import _load_env, _parse_json
 import cache_guard
@@ -37,6 +38,11 @@ CACHE = os.path.join(HERE, "data", "unknown_infer_cache.json")
 # 这类判定要可复现，宁可多调几次；结果有缓存，重建一次付一次代价。
 BATCH = 1
 TIMEOUT = 40
+# 并发跑「批次」——不是把几家企业并进一个提示词，是多家各发一个请求。
+# BATCH 保持 1：实测同一批里塞进不同行业的企业会改变对单家的判断
+# （「国联财务」混在含 IT 企业的一批里会被判「可能招软件岗」，单独判是「无」）。
+# 并发不改提示词内容，所以判定结果与逐条串行**逐字一致**。
+MAX_WORKERS = max(1, int(os.environ.get("FAIR_LLM_WORKERS") or 8))
 
 # 视为「没有岗位公告」的来源取值。早先只认 未知1/未知2，漏了「未知」这一批
 # （source_kind=未知、job_count=0 的企业），它们于是掉进 fair_bridge 的模板兜底，
@@ -238,16 +244,27 @@ def build_map(companies, intended, timeout=TIMEOUT):
     has_key = bool(os.environ.get("DEEPSEEK_API_KEY") or cfg.get("DEEPSEEK_API_KEY"))
     out = {}
     if has_key:
-        for s in range(0, len(items), BATCH):
-            batch = items[s:s + BATCH]
-            try:
-                text = _call_raw(cfg, PROMPT.format(intended="、".join(intended),
-                                                    rows=_prompt_rows(batch)), timeout)
-                by_i = _parse_any(text, intended)
-            except Exception as exc:
-                print("[unknown_infer] 批次 %d 判定失败，回退：%s"
-                      % (s // BATCH + 1, str(exc)[:70]))
-                by_i = {}
+        def _one_batch(batch, to):
+            text = _call_raw(cfg, PROMPT.format(intended="、".join(intended),
+                                                rows=_prompt_rows(batch)), to)
+            return _parse_any(text, intended)
+
+        batches = [items[s:s + BATCH] for s in range(0, len(items), BATCH)]
+        results = {}
+        workers = min(MAX_WORKERS, len(batches)) or 1
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            futs = {ex.submit(_one_batch, b, timeout): i
+                    for i, b in enumerate(batches)}
+            for fut in as_completed(futs):
+                i = futs[fut]
+                try:
+                    results[i] = fut.result()
+                except Exception as exc:
+                    print("[unknown_infer] 批次 %d 判定失败，回退：%s"
+                          % (i + 1, str(exc)[:70]))
+                    results[i] = {}
+        for i, batch in enumerate(batches):
+            by_i = results.get(i) or {}
             for idx, c in enumerate(batch, 1):
                 r = by_i.get(idx) or {}
                 out[c["name"]] = {

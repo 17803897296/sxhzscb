@@ -61,10 +61,20 @@ REGISTRY = {
         "deps": ["unknown_infer.py"],
         "desc": "无具体岗企业（未知1/未知2）按意向推断",
     },
+    "biz_fit": {
+        "path": "biz_fit_cache.json", "kind": "derived",
+        "deps": ["biz_fit.py"],
+        "desc": "按主营业务判企业是否与学生方向交叉（yes/ask/no，逐家）",
+    },
     "hard_filter": {
         "path": "hard_filter_cache.json", "kind": "derived",
         "deps": ["hard_filter.py", "demo_v2/rules.py"],
         "desc": "学生自由填空（只要南京/只看互联网）解析结果",
+    },
+    "hit_verify": {
+        "path": "hit_verdicts.json", "kind": "derived",
+        "deps": ["hit_verify.py", "intent_semantics.py", "job_level.py"],
+        "desc": "本地规则候选命中的大模型批量复核（逐对 0/1，构建期算好）",
     },
     "lookup": {
         "path": "lookup_cache.json", "kind": "snapshot",
@@ -80,7 +90,7 @@ REGISTRY = {
     "fair_payload": {
         "path": "fair_payload.json", "kind": "artifact",
         "deps": ["fair_bridge.py", "intent_semantics.py", "job_level.py", "unknown_infer.py",
-                 "hard_filter.py", "demo_v2/rules.py", "demo_v2/core.py"],
+                 "biz_fit.py", "hard_filter.py", "demo_v2/rules.py", "demo_v2/core.py"],
         "desc": "三端合并后的页面数据产物",
     },
 }

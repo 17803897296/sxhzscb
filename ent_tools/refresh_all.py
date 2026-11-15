@@ -130,10 +130,18 @@ def step_fixtures():
                      for t in (r.get("job_titles") or []) if str(t).strip()})
     mat = {it: {t: bool(IS._role_ok(it, t) and IS._share_core(it, t)) for t in titles}
            for it in PARITY_INTENTS}
-    json.dump({"ints": PARITY_INTENTS, "titles": titles, "mat": mat},
+    # 只看 role/share 是盲区：命中最终结论还取决于 pair_verdict（ok/ask/no）。
+    # 2026-11-15「电磁设计 × 机械设计」就是 verdict 层漏判——role/share 都对，
+    # 但方向不同。这里把 verdict 也抽成夹具，前端 miPairVerdict 必须逐对一致。
+    ver = {it: {t: IS.pair_verdict(t, it) for t in titles} for it in PARITY_INTENTS}
+    # 轮岗类判定也做同源对拍：它决定「值得问一句」的范围，
+    # 前后端一旦不一致，页面就会问出后端不会问的话。
+    rot = {t: bool(IS.is_rotation_job(t)) for t in titles}
+    json.dump({"ints": PARITY_INTENTS, "titles": titles, "mat": mat,
+               "ver": ver, "rot": rot},
               open(os.path.join(HERE, "data", "_parity.json"), "w", encoding="utf-8"),
               ensure_ascii=False)
-    print("   data/_parity.json    %d 意向 × %d 岗位 = %d 对"
+    print("   data/_parity.json    %d 意向 × %d 岗位 = %d 对（含 verdict）"
           % (len(PARITY_INTENTS), len(titles), len(PARITY_INTENTS) * len(titles)))
 
 

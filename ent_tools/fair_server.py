@@ -21,6 +21,8 @@ v6 · 双选会助手同源服务（标准库，无第三方依赖）。
 from __future__ import annotations
 
 import argparse
+import gzip
+import hashlib
 import json
 import os
 import sys
@@ -28,6 +30,7 @@ import threading
 import time
 import traceback
 import urllib.parse
+from collections import OrderedDict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -42,6 +45,7 @@ import test_sessions        # noqa: E402  v12 测试数据库（只追加的实�
 import portal               # noqa: E402  复用企业端搜索/补全接口（/api/filter、/api/lookup、/api/names）
 import match_fill           # noqa: E402  提交画像后按新画像重算 llm_match（hit/inferred/miss）
 import intent_semantics     # noqa: E402  按需补判意向岗位语义（换画像 / 现场新勾岗位）
+import hit_verify           # noqa: E402  按需批量复核命中（现场新意向）
 
 PAGE = os.path.join(ROOT, "demo", "fair.html")
 PAYLOAD = os.path.join(HERE, "data", "fair_payload.json")
@@ -107,21 +111,103 @@ def _recompute_busy():
     return _RECOMPUTE["busy"]
 
 
+# ---------------------------------------------------------------- 响应压缩缓存
+# payload（696 KB）和页面（1.2 MB）每次请求都重压一遍太浪费：20 并发就是 20 次
+# gzip。按「ETag + 类型」缓存压好的字节，文件改了 ETag 就变，缓存自然失效。
+_GZ = OrderedDict()
+_GZ_LOCK = threading.Lock()
+_GZ_MAX = 16
+
+
+def _gz_cached(key, data):
+    with _GZ_LOCK:
+        hit = _GZ.get(key)
+        if hit is not None:
+            _GZ.move_to_end(key)
+            return hit
+    out = gzip.compress(data, 5)
+    with _GZ_LOCK:
+        _GZ[key] = out
+        while len(_GZ) > _GZ_MAX:
+            _GZ.popitem(last=False)
+    return out
+
+
+def _wants_gzip(header_value):
+    """只认明确的 gzip；q=0 视为拒绝。"""
+    if not header_value:
+        return False
+    for part in header_value.lower().split(","):
+        bits = part.strip().split(";")
+        if bits[0].strip() in ("gzip", "*"):
+            if len(bits) > 1 and "q=0" in bits[1].replace(" ", ""):
+                continue
+            return True
+    return False
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "FairBridge/7.0"
+    # HTTP/1.1：开 keep-alive，浏览器一次连接复用多个请求（首屏 4 个请求只剩 1 次握手）。
+    # 前提是每个响应都必须有准确的 Content-Length——本文件所有分支都走 _send()。
+    protocol_version = "HTTP/1.1"
 
     # ------------------------------------------------------------ helpers
-    def _json(self, obj, code=200):
-        out = json.dumps(obj, ensure_ascii=False).encode("utf-8")
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
+    def handle(self):
+        # 开了 keep-alive 之后，浏览器/curl 关闭空闲连接时服务器可能正好在
+        # readline()，标准库会把 ConnectionResetError 打成整段 traceback。
+        # 这不是错误，静默收尾即可，否则日志会被噪声淹没。
+        try:
+            super().handle()
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            self.close_connection = True
+
+    def _send(self, data, ctype, status=200, etag=None, cacheable=None):
+        """统一出口：ETag 校验（304）+ gzip + keep-alive 所需的 Content-Length。"""
+        if cacheable is None:
+            cacheable = (self.command == "GET" and status == 200)
+        if etag is None:
+            etag = '"%s"' % hashlib.blake2b(data, digest_size=8).hexdigest()
+
+        if cacheable:
+            inm = self.headers.get("If-None-Match") or ""
+            if etag in [t.strip() for t in inm.split(",")]:
+                self.send_response(304)
+                self.send_header("ETag", etag)
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Vary", "Accept-Encoding")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                return
+
+        body = data
+        gz = False
+        if len(data) >= 1024 and _wants_gzip(self.headers.get("Accept-Encoding")):
+            body = _gz_cached(etag + "|" + ctype, data)
+            gz = True
+
+        self.send_response(status)
+        self.send_header("Content-Type", ctype)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(out)))
+        self.send_header("ETag", etag)
+        self.send_header("Cache-Control", "no-cache" if cacheable else "no-store")
+        self.send_header("Vary", "Accept-Encoding")
+        if gz:
+            self.send_header("Content-Encoding", "gzip")
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(out)
+        if self.command != "HEAD":
+            try:
+                self.wfile.write(body)
+            except Exception:
+                # 客户端中途断开：别让异常冒到路由里再试一次写响应
+                self.close_connection = True
+
+    def _json(self, obj, code=200):
+        out = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        self._send(out, "application/json; charset=utf-8", status=code)
 
     def _body(self):
         n = int(self.headers.get("Content-Length", 0))
@@ -145,13 +231,14 @@ class Handler(BaseHTTPRequestHandler):
             return {}
 
     def _bytes(self, data, ctype):
-        self.send_response(200)
-        self.send_header("Content-Type", ctype)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        self._send(data, ctype)
+
+    def _bytes_file(self, path, ctype):
+        """按 (mtime, size) 生成 ETag——大文件不用算哈希，改版后自动失效。"""
+        st = os.stat(path)
+        with open(path, "rb") as f:
+            data = f.read()
+        self._send(data, ctype, etag='"%x-%x"' % (st.st_mtime_ns, st.st_size))
 
     # ------------------------------------------------------------ routes
     def do_OPTIONS(self):
@@ -159,6 +246,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        self.send_header("Content-Length", "0")
         self.end_headers()
 
     def do_GET(self):
@@ -166,25 +254,23 @@ class Handler(BaseHTTPRequestHandler):
         try:
             # 统一入口：一个网址里用三个标签页串起问卷 / 报告 / 测试记录
             if p in ("/", "/portal.html", "/index.html"):
-                with open(os.path.join(ROOT, "demo", "portal.html"), "rb") as f:
-                    self._bytes(f.read(), "text/html; charset=utf-8")
+                self._bytes_file(os.path.join(ROOT, "demo", "portal.html"),
+                                 "text/html; charset=utf-8")
                 return
             # demo 目录下的其它静态页（展位排行快照 / 样例 / 演练页）：
             # 只放行 demo/ 下的单层 .html 文件，不接受带目录的路径，防穿越。
             if p.endswith(".html") and p.count("/") == 1:
                 cand = os.path.join(ROOT, "demo", p.lstrip("/"))
                 if os.path.isfile(cand):
-                    with open(cand, "rb") as f:
-                        self._bytes(f.read(), "text/html; charset=utf-8")
+                    self._bytes_file(cand, "text/html; charset=utf-8")
                     return
             if p == "/fair.html":
-                with open(PAGE, "rb") as f:
-                    self._bytes(f.read(), "text/html; charset=utf-8")
+                self._bytes_file(PAGE, "text/html; charset=utf-8")
                 return
             # 独立的测试记录管理页：查看 / 删除 / 批量清理测试脏数据
             if p in ("/tests", "/tests.html"):
-                with open(os.path.join(ROOT, "demo", "tests.html"), "rb") as f:
-                    self._bytes(f.read(), "text/html; charset=utf-8")
+                self._bytes_file(os.path.join(ROOT, "demo", "tests.html"),
+                                 "text/html; charset=utf-8")
                 return
             if p == "/api/fair/health":
                 self._json({"ok": True, "service": "fair_server", "version": 7,
@@ -244,8 +330,8 @@ class Handler(BaseHTTPRequestHandler):
                             fair_bridge.build()
                     except Exception:
                         fair_bridge.build()
-                with open(PAYLOAD, "rb") as f:
-                    self._bytes(f.read(), "application/json; charset=utf-8")
+                # payload 是首屏最大的一块：走文件 ETag，配合 gzip 后只传 77 KB
+                self._bytes_file(PAYLOAD, "application/json; charset=utf-8")
                 return
             # v12 测试记录：列表 / 单条详情（供页面查看与清理）
             if p == "/api/fair/test-list":
@@ -305,6 +391,22 @@ class Handler(BaseHTTPRequestHandler):
                         intents or [], body.get("titles") or _payload_titles())
                 out["ok"] = True
                 self._json(out, 200)
+                return
+            # ---- 按需批量复核命中 ----
+            # payload 的 hit_verdicts 只覆盖构建时那份画像 + 内置测试画像的意向。
+            # 学生现场新填一个意向时，本地规则仍可能被共享字骗过（食品研发 × 药品
+            # 研发 只共享「研发」）。这里把页面判成规则命中的对子成批送判一次，
+            # 结果进同一个 pair 缓存；判不动的对子不返回，前端继续标「未复核」。
+            if p == "/api/fair/verify":
+                pairs = []
+                for x in (body.get("pairs") or []):
+                    if isinstance(x, (list, tuple)) and len(x) >= 2:
+                        it, t = str(x[0]).strip(), str(x[1]).strip()
+                        if it and t:
+                            pairs.append((t, it))
+                with _SEM_LOCK:
+                    verdicts, meta = hit_verify.verify_pairs(pairs)
+                self._json({"ok": True, "verdicts": verdicts, "meta": meta}, 200)
                 return
             # ---- 原有 fair 接口 ----
             if p == "/api/fair/profile":

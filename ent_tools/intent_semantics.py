@@ -22,9 +22,15 @@ import json
 import os
 import re
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import cache_guard
 import job_level
+
+# 意向之间彼此独立（每个意向一次独立请求，提示词里不带别的意向），
+# 所以可以并发。串行 8 个意向 ≈ 8s，8 线程约 1~2s。
+# 注意：不能把多个意向塞进一次调用 —— 实测输出偏大会超时。
+MAX_WORKERS = max(1, int(os.environ.get("FAIR_LLM_WORKERS") or 8))
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "data", "intent_semantics_cache.json")
@@ -176,6 +182,24 @@ def is_bare_generic(title):
     return len(rest) <= 1
 
 
+# 真正「先轮岗、后定岗」的岗位类型。只有这类岗位，「会不会往某个方向培养」
+# 才是企业真会考虑的事，问一句有意义。
+# 研究员 / 助理工程师 / 分析师 / 专员 / 经理 / 主任 是定向招聘：招进来就是那个
+# 条线的人，不会为某个应届生改培养方向，问「按你的方向培养」是白问。
+ROTATION_WORDS = ("管培", "培训生", "储备干部", "储干", "校招生")
+
+
+def is_rotation_job(title):
+    """岗位是否属于「轮岗后再定岗」的类型（管培生 / 培训生 / 储备干部 / 校招生）。
+
+    「职能管培生」「运营培训生」含「管培」「培训生」，同样算；
+    「储备站经理」是定向岗（储备的是站经理），不算；
+    「培训专员」是定向岗（做培训的人），「培训生」才是轮岗。
+    """
+    t = re.sub(r"[\s（）()\[\]【】、，,·—\-/_]+", "", str(title or "")).lower()
+    return bool(t) and any(w in t for w in ROTATION_WORDS)
+
+
 def _dir_text(s):
     """抹掉层级 / 身份词后剩下的方向串。
 
@@ -205,6 +229,14 @@ def is_wider_job(title, intent):
     a, b = _dir_text(title), _dir_text(intent)
     if not a or not b or a == b:
         return False
+    # 学科教师特例：岗位与意向都是「同学科 + 教师」，只差学段/修饰（化学教师 ×
+    # 高中化学教师）。「高中」是学段不是方向细分，同学科教师就是同一个岗，
+    # 不算上位类 —— 否则学校招化学教师反而被判「比高中化学教师宽」，错误掉出命中。
+    if _any_word(title, TEACH_WORDS) and _any_word(intent, TEACH_WORDS):
+        sa = {s for s in SUBJECTS if s in str(title)}
+        sb = {s for s in SUBJECTS if s in str(intent)}
+        if sa and sa == sb:
+            return False
     return a in b and len(a) < len(b)
 
 
@@ -218,13 +250,103 @@ DIR_WORDS = ("前端", "后端", "服务端", "客户端", "嵌入式", "上位�
              "人工智能", "测试", "运维", "安全", "网络", "通信",
              "供应链", "计划", "采购", "物流", "仓储", "商业分析")
 # 不带方向的通用词：抹干净后仍为空，才说明「这个意向 / 岗位没限定方向」。
-DIR_NEUTRAL = ("开发", "研发", "软件", "程序", "工程师", "技术", "应用", "系统", "岗", "员")
+# 「设计师」与「工程师」同级：机械设计师 = 机械设计工程师，同一个岗位的两种叫法。
+# 漏了它，「机械设计师」会剩成「机械设计师」≠「机械设计」，被判成「岗位更细」→ ask，
+# 于是一整类设计岗（银河航天 / 卫星机构 / 模具）在页面上显示「不一致」。
+DIR_NEUTRAL = ("开发", "研发", "软件", "程序", "工程师", "设计师",
+               "技术", "应用", "系统", "岗", "员")
+
+# 职责词不是方向：设备维护 / 设备检修 / 设备点检 都是设备岗的职责范围，
+# 不是与设备并列的另一条路。抹掉后与意向一致 → 同一岗位的不同写法，算命中。
+# 不收「运维」：那是软件条线的词，会把「系统运维」错算成「系统工程师」。
+DUTY_WORDS = ("维护", "保养", "维修", "点检", "巡检", "检修", "调试")
 
 # 方向层级：父类 → 它自己的下属细分。岗位方向全是意向父类的下属细分时算同一条线
 # （供应链管培生 × 采购/物流/仓储 → 照旧算对口）。
 # **计划不在里面**：计划岗在生产企业、核电、航天到处都是，不是供应链专属，
 # 「计划管培生 × 供应链管培生」是并列方向，不算命中。
 DIR_PARENTS = {"供应链": ("采购", "物流", "仓储")}
+
+# 职业序列互斥：教师 / 工程技术 / 研究 / 医护 是几条不同的职业路。
+# 「化学教师」和「化学环保助理专工」都带「化学」，但一个是教书、一个是化工
+# 技术岗，共享领域词不代表同一个岗位。有意向名命中教师、另一名命中专业序列时
+# 不算对口——只拦「一边教师、一边明确专业序列」这种常识错误，泛词交给后续规则。
+# 与 fair_report_js.MI_TEACH / MI_PROFSEQ 逐词同源。
+TEACH_WORDS = ("教师", "老师", "教学", "讲师", "班主任", "教研", "学科教师")
+PROF_SEQ = ("工程师", "专工", "研究员", "研发", "工艺", "技术员", "化验", "检验",
+            "医师", "医生", "护士", "临床", "会计", "律师", "设计师")
+# 专业方向：两名各带不同的专业方向词时，是并列的细分，不是同一个岗位。
+# 「化学分析工程师」×「化学环保助理专工」= 分析 × 环保，方向不同。
+# 不放供应链词（采购/物流/仓储）——那是有 DIR_PARENTS 兜底的同一条线；
+# 不放「质量」——「质量工程师 × 原料药质量研究员」是同一职能的两种叫法。
+# 与 fair_report_js.MI_PROFDIR 逐词同源。
+PROF_DIR = ("分析", "环保", "合成", "工艺", "研发", "测试", "算法",
+            "机械", "电气", "材料", "医药", "食品", "纺织", "环境", "安全")
+# 上位泛学科岗位名：没写具体学科，不能反推某个具体学科教师的对口。
+# 「高中学科教师」不是「高中化学教师」——小类能进大类，大类不能反推小类。
+GENERIC_SUBJ_TITLE = ("学科教师", "各科教师", "全科教师", "学科老师")
+
+# 设计方向族：岗位名都以「设计」结尾，但设计对象不同就是并列方向，不是同一类岗位。
+# 「电磁设计工程师 × 机械设计工程师」只共享「设计工程师」；「机械设计 × 结构设计」
+# 同属机械结构方向，算同类。没写方向的（设计管理助理专工 / 产品设计）返回空集，不参与互斥。
+# 与 fair_report_js.MI_DESIGN_GROUPS 逐词同源。
+DESIGN_DIR_GROUPS = {
+    "mech": ("机械", "结构", "机构", "模具", "工装", "夹具", "钣金"),
+    "elec": ("电磁", "电气", "电子", "电路", "电力", "电机", "电控"),
+    "optic": ("光学", "光机", "光电"),
+    "appear": ("外观", "造型", "工业设计"),
+    "sim": ("仿真", "cae", "热设计", "散热", "流体"),
+}
+
+
+def _design_group(s):
+    """岗位/意向命中的设计方向族集合；不含「设计」或未写方向 → 空集。"""
+    t = str(s or "").lower()
+    if "设计" not in t:
+        return frozenset()
+    return frozenset(g for g, ws in DESIGN_DIR_GROUPS.items()
+                     if any(w in t for w in ws))
+
+# 命中判据专用的窄义领域词：只放指向明确、不会出现在通用职能岗位里的词。
+# 与 DOMAIN_FAMILY 的区别：那边是「值得问一句」的准入，词表宽（含 培训/材料/安全/
+# 网络科技 等），拿来判断命中会把「运营管理培训生」误归教育。这里只拦**双方都带
+# 明确且互斥的领域词**的配对（新能源 × 软件开发 / 装备 × 嵌入式），一方泛词不拦。
+# 与 fair_report_js.MI_HITDOMAIN 逐词同源。
+HIT_DOMAIN = {
+    "it": ("软件", "互联网", "计算机", "数据库", "前端", "后端", "嵌入式",
+           "java", "c++", "android", "ios", "算法工程"),
+    "elec": ("新能源", "电气", "半导体", "芯片", "集成电路", "光伏", "锂电",
+             "电力", "电芯"),
+    "mech": ("机械", "装备", "机电", "数控", "模具", "发动机", "结构"),
+    "chem": ("化学", "化工", "精细化工", "石化", "炼化", "高分子", "试剂", "树脂"),
+    "medical": ("医药", "制药", "临床", "药学", "生物", "医学", "药品", "原料药"),
+    "fin": ("证券", "基金", "银行", "保险", "期货", "金融", "信托", "私募"),
+    "civil": ("建筑", "土木", "路桥", "地产", "施工", "造价"),
+    "food": ("食品", "餐饮", "饮料", "乳业", "烘焙"),
+    "edu": ("教师", "教学", "学校", "中学", "小学", "班主任", "教研"),
+    "supply": ("供应链", "物流", "仓储", "货运", "采购"),
+    "energy": ("石油", "煤炭", "燃气", "核电", "风电", "发电"),
+}
+
+
+def _hit_domain(s):
+    """岗位/意向里指向明确的领域族集合（窄义，见 HIT_DOMAIN）。"""
+    t = str(s or "").lower()
+    return {f for f, kws in HIT_DOMAIN.items() if any(k in t for k in kws)}
+
+
+# 泛职能意向：名字里是培养/轮岗性质，本就要收各领域岗位，不参与跨行领域过滤。
+# 与 fair_report_js.MI_GENERIC_INTENT 逐词同源。
+GENERIC_INTENT_WORDS = ("管培生", "培训生", "储备干部", "储备", "专员", "助理",
+                        "计划", "干部", "校招生")
+
+
+def _is_generic_intent(s):
+    return any(w in str(s or "") for w in GENERIC_INTENT_WORDS)
+
+
+def _any_word(s, words):
+    return any(w in str(s or "") for w in words)
 
 
 def _same_line(at, bt):
@@ -273,7 +395,34 @@ def pair_verdict(title, intent):
         return "ok"
     if b == a:
         return "ok"
+    # —— 常识互斥判据（在「更宽/更细」的子串判定之前，先挡住共享字但方向相反的错配）——
+    # ① 教师 × 明确专业序列：一个教书、一个做技术/研究/医护，不是同一岗位。
+    if _any_word(title, TEACH_WORDS) != _any_word(intent, TEACH_WORDS):
+        if _any_word(title, PROF_SEQ) or _any_word(intent, PROF_SEQ):
+            return "no"
+    # ② 上位泛学科岗位不能反推具体学科意向：高中学科教师 ≠ 高中化学教师。
+    if _any_word(title, GENERIC_SUBJ_TITLE) and any(s in intent for s in SUBJECTS) \
+            and not any(s in title for s in SUBJECTS):
+        return "no"
+    # ③ 两名各带不同的专业方向词（分析 × 环保 / 机械 × 电气）：并列细分，不算同一。
+    #    只用「一边有一个、另一边有另一个且互不相同」时才拦，避免两边都含同词误伤。
+    td = {w for w in PROF_DIR if w in title}
+    idr = {w for w in PROF_DIR if w in intent}
+    if td and idr and not (td & idr):
+        return "no"
+    # ④ 设计方向族：都叫「X设计工程师」，但设计对象不同就是两条路
+    #    （电磁设计 × 机械设计 / 光学设计 × 结构设计）。同组（机械 × 结构）不拦。
+    dgt, dgi = _design_group(title), _design_group(intent)
+    if dgt and dgi and not (dgt & dgi):
+        return "no"
     if b in a:                      # 岗位更泛：小类能进大类
+        return "ok"
+    # 职责词不算方向：设备维护工程师 × 设备工程师 → 同一岗位，不是「更细的方向」。
+    # 应届生投设备岗，公告上写的就是「设备维护工程师」，判成 ask 等于把真岗位挡掉。
+    b2 = b
+    for w in DUTY_WORDS:
+        b2 = b2.replace(w, "")
+    if b2 and b2 == a:
         return "ok"
     if a in b:                      # 岗位更具体：同向但多了限定
         return "ask"
@@ -297,6 +446,50 @@ BIZ_EXTRA = {
     "quality": ("检测", "认证"),
     "media": ("文化传媒", "影视", "广告传媒"),
 }
+
+# 主营领域族：用于「值得问一句」的准入 —— 企业的行业 / 主营业务得沾意向的方向，
+# 管培生、储备干部这类大类岗位才值得问「是不是招这个方向」。
+# 保险公司的管培生不可能定向培养成化学工程师、教育公司的管培生不会是供应链方向：
+# 这些跨行岗位连问一句都是骚扰，直接不生成。
+# 与 fair_report_js.MI_DOMAIN 逐词同源。
+DOMAIN_FAMILY = {
+    "chem": ("化学", "化工", "精细化工", "石化", "炼化", "材料", "高分子", "塑料",
+             "橡胶", "涂料", "印染", "助剂", "试剂", "树脂", "聚碳酸酯", "聚酯", "聚酰胺"),
+    "mech": ("机械", "装备", "机电", "自动化", "数控", "模具", "发动机", "汽车", "重工"),
+    "elec": ("电气", "电子", "半导体", "芯片", "集成电路", "光伏", "锂电", "新能源",
+             "电力", "通信", "铁塔"),
+    "civil": ("建筑", "土木", "城建", "地产", "路桥", "园区"),
+    "edu": ("教育", "学校", "中学", "小学", "培训", "学院", "K12", "教师", "教学", "老师"),
+    "medical": ("医院", "医疗", "医药", "制药", "生物", "临床", "护理", "卫生", "药学"),
+    "food": ("食品", "餐饮", "饮料", "乳业", "烘焙", "茶饮", "古茗"),
+    "fin": ("保险", "银行", "证券", "基金", "期货", "金融", "信托", "资管", "财富", "私募"),
+    "it": ("软件", "互联网", "信息科技", "智能科技", "大数据", "算法", "电商", "网络科技",
+           "数字科技", "计算机"),
+    "supply": ("供应链", "物流", "仓储", "货运", "快递", "报关", "货代", "4PL", "采购"),
+    "energy": ("能源", "石油", "煤炭", "燃气", "核电", "风电", "发电"),
+    "textile": ("纺织", "服装", "面料", "家纺", "鞋", "服饰"),
+    "furniture": ("家具", "家居", "办公家具"),
+    "safety": ("安全", "防护", "职业健康", "安环", "应急"),
+}
+
+
+def domain_families(text):
+    t = str(text or "")
+    return {f for f, kws in DOMAIN_FAMILY.items() if any(k in t for k in kws)}
+
+
+def biz_related(intent, biz_text):
+    """意向方向和企业主营是否沾边 —— 只用于「值得问一句」的准入。
+
+    意向领域明确、但企业主营识别不出或与之不相交 → 不相关，连问句都不生成
+    （保险 / 教育 / 办公用品电商的管培生，不会定向培养成化学工程师）。
+    只有意向本身是泛词、识别不出领域时 → 宽松放行，避免误杀。
+    """
+    fi = domain_families(intent) | _func_family(intent)
+    if not fi:                      # 意向本身没有明确方向（泛词）：无从判断，不拦
+        return True
+    fb = domain_families(biz_text) | biz_family(biz_text)
+    return bool(fi & fb)            # 企业主营为空或不相交 → 不问
 
 
 def biz_family(text):
@@ -497,6 +690,11 @@ FUNC_FAMILY = {
     # 质量岗自成一族：SQE / 体系 / 客诉 / 质保 / 质检 都是同一职能，
     # 不靠「工程」这个通用 2 字词去凑。
     "quality": ("质量", "品质", "品控", "质检", "质保", "体系", "客诉"),
+    # 施工建造自成一族：施工员 / 土建工程 / 项目管理 / 机电管理 都是施工现场的同一批岗，
+    # 字面一个词都不重合（施工员 × 项目管理岗），只能按职能族认。
+    # 「造价 / 成本」不进来——那是商务条线，不是施工管理。
+    "civil": ("施工", "土建", "市政", "总承包", "工程管理", "项目管理",
+              "机电管理", "机电安装", "安装工程", "监理"),
     # 外贸不是「市场」也不是「供应链」，是一条独立业务链：业务员 / 单证 / 报关 / 货代。
     # 缺了这一族，「国际市场营销」这种明显同类的入口会被字面判成不相关。
     "trade": ("外贸", "国际贸易", "进出口", "海外业务", "海外销售", "国际业务",
@@ -668,6 +866,11 @@ def _share_core(intent, title):
     shared = [g for g in (grams - GEN_GRAMS) if g in title]
     if any(g[-1] not in BOUNDARY_TAIL for g in shared):
         return True
+    # 词首片段不受边界规则约束：那条规则只为挡「风险管理岗」里跨词造出来的「理岗」，
+    # 而「施工管理岗」开头两个字就是「施工」。旧版把「施工」当边界片段扔掉，
+    # 于是「施工员」这个最标准的施工管理入口，永远判不成「施工管理岗」。
+    if any(intent.startswith(g) for g in shared):
+        return True
     if intent in GENERIC_JOB and any(g in title for g in grams):
         return True
     # 意向本身是业务/销售型（外贸业务员、客户经理、商务拓展）时，
@@ -795,10 +998,15 @@ def _ask_why_spec(t, intent):
 
 
 def _ask_why_parallel(t, intent):
-    """并列方向（后端 × 量化 / 前端）：同属一个大类，却是两条不同的路。"""
-    return ("岗位名「%s」和你的「%s」同属一个大类，但方向不同（%s × %s），"
-            "不是同一个岗位的两种叫法。现场问一句：这个岗能不能按「%s」的方向培养。"
-            % (t, intent, _dir_text(t) or t, _dir_text(intent) or intent, intent))
+    """并列方向（后端 × 量化 / 前端）：同属一个大类，却是两条不同的路。
+
+    旧话术让现场问「能不能按 X 方向培养」——研究员、工程师这类岗位是定向招聘
+    的，不会为某个应届生改培养方向，问了也是白问。改成如实说清方向差异，
+    让学生自己判断要不要投，而不是提一个不可能被满足的要求。
+    """
+    return ("岗位名「%s」和你的「%s」方向不同（%s × %s），是两类岗位，"
+            "不算同一个。这家企业有相关领域的岗，但方向不是你选的这个。"
+            % (t, intent, _dir_text(t) or t, _dir_text(intent) or intent))
 
 
 def _reason_by_direction(t, intent):
@@ -847,6 +1055,7 @@ def align_jobs_detail(intended, jobs, sem=None, biz=""):
         # 大类岗位名（管培生 / 储备干部 / 研究员）先走原逻辑：公司业务就是这个细分
         # 才算对口，否则只问一句。
         if is_bare_generic(t):
+            rotation = is_rotation_job(t)
             best, best_s = None, -1.0
             for it in intended:
                 if is_bare_generic(it):
@@ -854,7 +1063,9 @@ def align_jobs_detail(intended, jobs, sem=None, biz=""):
                 if biz_ok(it, biz):
                     best, best_s = it, -1.0
                     break
-                if len(ask) < 3 and not any(a["job"] == t for a in ask):
+                # 只对真·轮岗类问「会不会往你的方向培养」；研究员 / 助理工程师 /
+                # 分析师 / 专员 / 经理 是定向招聘，问了白问，不当证据也不问。
+                if rotation and len(ask) < 3 and not any(a["job"] == t for a in ask):
                     ask.append({"job": t, "intent": it, "why": _ask_why(t, it)})
                     break
             if best:
@@ -916,22 +1127,33 @@ def align_jobs_detail(intended, jobs, sem=None, biz=""):
 
 
 def ask_jobs(intended, titles, biz=""):
-    """只写大类名（管培生 / 储备干部 / 研究员 / 专员）的岗位 → 现场问一句。
+    """只写大类名、且属于「轮岗后再定岗」的岗位 → 现场问一句。
 
     这类岗位不是对口证据（大类不能反推小类），但值得去问一句：制造业企业招的
     管培生，可能就是供应链方向，也可能统一轮岗后再定岗。除非公司业务本身就是
     那个细分（biz），那种情况已经算成对口证据，不再重复问。
+
+    **只问真·轮岗类**（管培生 / 培训生 / 储备干部 / 校招生）。研究员、助理工程师、
+    分析师、专员、经理、主任这些虽然也是「没写方向的大类」，但它们是定向招聘：
+    招进来就是那条线的人，不会为某个应届生改培养方向，问「按你的方向培养」是白问。
     """
     out, seen = [], set()
     for t in titles or []:
         t = str(t).strip()
         if not t or t in seen or not job_level.is_job_title(t):
             continue
+        # 纯大类里只留轮岗类；定向岗与意向无关，不必逐条意向试。
+        bare = is_bare_generic(t)
+        if bare and not is_rotation_job(t):
+            continue
         for it in (intended or []):
             it = str(it).strip()
             if not it or is_bare_generic(it) or biz_ok(it, biz):
                 continue
-            bare = is_bare_generic(t)
+            # 企业主营和这个意向方向毫不相关 → 连问一句都不该有
+            # （保险公司 / 教育公司的管培生不会定向培养成化学工程师）。
+            if not biz_related(it, biz):
+                continue
             # 岗位比意向宽一层（算法工程师 × AI算法研究工程师）也值得问一句：
             # 它确实沾边，但看不出是不是那个细分方向。
             wider = (not bare) and is_wider_job(t, it) \
@@ -1050,8 +1272,26 @@ def _dir_filter(intent, titles, reasons=None):
        意向带方向时，模型都说不细分的，不许再挂成命中。
        意向没写方向（开发工程师 → 量化开发）不算这条：那是「无方向收一切细分」，
        学生自己认可的规则。
+    3. 跨行错配：意向和岗位都带明确且互斥的领域词（新能源 × 后端/前端/Java 开发）——
+       模型按「都叫开发」挑出来的 IT 岗，不是新能源对口。只清语义映射的词表，
+       不改全局 pair_verdict（那会牵动泛职能意向收岗位的规则）。泛职能意向
+       （管培生/专员/计划…）跳过，它们本就要收各领域岗位。
     """
     _, at = _dir_core(intent)
+    fi = _hit_domain(intent)
+    if fi and not _is_generic_intent(intent):
+        def _cross_or_vague(t):
+            ft = _hit_domain(t)
+            # 跨行：岗位有明确领域且与意向互斥（新能源 × 后端/前端/Java 开发）。
+            if ft and not (ft & fi):
+                return True
+            # 泛词：抹掉通用词后没方向（「开发工程师」）。这类词会被前端按
+            # 「包含」命中任何 X 开发工程师（数据库内核/软件/机械…），意向明明是
+            # 新能源这种明确领域时绝不能留；意向泛职能（已在上面跳过）不受影响。
+            if not _dir_core(t)[0]:
+                return True
+            return False
+        titles = [t for t in titles if not _cross_or_vague(t)]
     out = []
     for t in titles:
         if pair_verdict(t, intent) == "no":
@@ -1124,34 +1364,45 @@ def build_map(intended, all_titles, timeout=45):
     short = _candidate_titles(titles, intended)
     pool = "、".join(short or titles[:240])
 
+    def _one(it):
+        """单个意向 → 判定。纯计算，不发写盘，可并发。"""
+        data = _call(cfg, PROMPT.format(intent=it, titles=pool), timeout)
+        raw = (data or {}).get("titles") or []
+        # 兼容旧缓存：可能是字符串列表，也可能是 {title, reason} 对象列表。
+        pairs = []
+        for x in raw:
+            if isinstance(x, dict):
+                t = str(x.get("title") or "").strip()
+                r = _tag_reason(str(x.get("reason") or "").strip())
+            else:
+                t = str(x).strip()
+                r = ""
+            if t:
+                pairs.append((t, r))
+        titles_only = [t for t, _ in pairs][:25]
+        sani = _dir_filter(it, _sanitize(it, titles_only, title_set),
+                           dict(pairs))
+        reasons = _fill_reasons(it, pairs, sani)
+        return {"titles": sani, "reasons": reasons, "terms": [],
+                "reason": "大模型判定为同类校招岗位", "via": "llm"}
+
     out = {}
-    for it in intended:
-        try:
-            data = _call(cfg, PROMPT.format(intent=it, titles=pool), timeout)
-            raw = (data or {}).get("titles") or []
-            # 兼容旧缓存：可能是字符串列表，也可能是 {title, reason} 对象列表。
-            pairs = []
-            for x in raw:
-                if isinstance(x, dict):
-                    t = str(x.get("title") or "").strip()
-                    r = _tag_reason(str(x.get("reason") or "").strip())
-                else:
-                    t = str(x).strip()
-                    r = ""
-                if t:
-                    pairs.append((t, r))
-            titles_only = [t for t, _ in pairs][:25]
-            sani = _dir_filter(it, _sanitize(it, titles_only, title_set),
-                               dict(pairs))
-            reasons = _fill_reasons(it, pairs, sani)
-        except Exception as exc:
-            # 偶发超时/断网：沿用上一次成功的大模型判定，别让功能直接退化成字面匹配。
-            # 但只能沿用它自己这一版代码的结果——旧代码的 map 里可能写着已经修掉的
-            # 错误归因，沿用等于把 bug 又装回去。
-            print("[intent_semantics] %s 判定失败，沿用上次结果：%s" % (it, exc))
-            return _fallback()
-        out[it] = {"titles": sani, "reasons": reasons, "terms": [],
-                   "reason": "大模型判定为同类校招岗位", "via": "llm"}
+    failed = None
+    workers = min(MAX_WORKERS, len(intended)) or 1
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        futs = {ex.submit(_one, it): it for it in intended}
+        for fut in as_completed(futs):
+            it = futs[fut]
+            try:
+                out[it] = fut.result()
+            except Exception as exc:
+                # 偶发超时/断网：沿用上一次成功的大模型判定，别让功能直接退化成字面匹配。
+                # 但只能沿用它自己这一版代码的结果——旧代码的 map 里可能写着已经修掉的
+                # 错误归因，沿用等于把 bug 又装回去。
+                print("[intent_semantics] %s 判定失败，沿用上次结果：%s" % (it, exc))
+                failed = exc
+    if failed is not None:
+        return _fallback()
 
     if not any(v["titles"] for v in out.values()):
         return _fallback()

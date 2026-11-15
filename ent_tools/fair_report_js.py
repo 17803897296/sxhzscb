@@ -175,6 +175,35 @@ function ensureSemantics(intents){
 }
 window.__ensureSemantics=ensureSemantics;
 
+/* 命中复核（按需）：页面按本地规则判成命中、但 payload 里没有复核结论的对子
+   （现场新填意向 / 不在候选集），成批送服务端复核一次。
+   只发「未复核」的对子，结果并进同一张 hit_verdicts；拿不到就保持「未复核」，
+   不编结论、不阻塞首屏。服务端同样是「一次调用判一批 + pair 级缓存」。 */
+var hvTried={};
+function ensureVerify(pairs){
+  const todo=[];
+  (pairs||[]).forEach(function(p){
+    const k=String(p[0])+'||'+String(p[1]);
+    if(hvTried[k]) return;
+    hvTried[k]=1;
+    todo.push([p[0],p[1]]);
+  });
+  if(!todo.length||!SEM_BASE) return;
+  fetch(SEM_BASE+'/api/fair/verify',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pairs:todo})})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(j){
+      const v=(j&&j.verdicts)||{};
+      const ks=Object.keys(v);
+      if(!ks.length) return;
+      D.hit_verdicts=D.hit_verdicts||{};
+      ks.forEach(function(k){ D.hit_verdicts[k]=v[k]; });
+      lastSig=''; render();
+    })
+    .catch(function(){ /* 复核失败：保持「未复核」标注，不改判、不编结论 */ });
+}
+
 function refreshFromServer(){
   if(!/^https?:$/.test(location.protocol)) return;
   var tries=0;
@@ -251,6 +280,9 @@ const MI_FAM={
   media:['新媒体','短视频','直播','内容运营','内容策划','公众号','小红书','抖音','B站',
          '视频号','社媒','社交媒体','文案'],
   quality:['质量','品质','品控','质检','质保','体系','客诉'],
+  /* 施工建造族：施工员 / 土建工程 / 项目管理 / 机电管理 都是施工现场的同一批岗，
+     字面毫不重合，只能按职能族认。「造价 / 成本」属商务条线，不进这一族。 */
+  civil:['施工','土建','市政','总承包','工程管理','项目管理','机电管理','机电安装','安装工程','监理'],
   trade:['外贸','国际贸易','进出口','海外业务','海外销售','国际业务','海外市场',
          '国际市场营销','单证','报关','货代','船代','外销']
 };
@@ -291,6 +323,13 @@ function miDirText(t){
 function miWider(title,intent){
   const a=miDirText(title), b=miDirText(intent);
   if(!a||!b||a===b) return false;
+  /* 学科教师特例：岗位与意向都是「同学科 + 教师」，只差学段/修饰（化学教师 ×
+     高中化学教师）就是同一个岗，不算上位类。与 intent_semantics.is_wider_job 同源。 */
+  if(miHas(title,MI_TEACH)&&miHas(intent,MI_TEACH)){
+    const sa=MI_SUBJ.filter(function(s){ return String(title).indexOf(s)>=0; });
+    const sb=MI_SUBJ.filter(function(s){ return String(intent).indexOf(s)>=0; });
+    if(sa.length&&sa.length===sb.length&&sa.every(function(s){ return sb.indexOf(s)>=0; })) return false;
+  }
   return b.indexOf(a)>=0 && a.length<b.length;
 }
 /* 并列方向词：同属一个大类、却是两条不同职业路径的限定词。
@@ -301,6 +340,61 @@ const MI_DIRWORDS=['前端','后端','服务端','客户端','嵌入式','上位
   '移动端','桌面','驱动','全栈','低代码','量化','算法','数据','图像','视觉','图形','游戏',
   'unity','unreal','大模型','ai','人工智能','测试','运维','安全','网络','通信',
   '供应链','计划','采购','物流','仓储','商业分析'];
+/* 职业序列 / 专业方向互斥词：与 intent_semantics 同源。教师×工程师、分析×环保
+   这类「共享字但方向不同」的错配，不能因为裸兜底就算命中。 */
+const MI_TEACH=['教师','老师','教学','讲师','班主任','教研','学科教师'];
+const MI_PROFSEQ=['工程师','专工','研究员','研发','工艺','技术员','化验','检验',
+  '医师','医生','护士','临床','会计','律师','设计师'];
+const MI_PROFDIR=['分析','环保','合成','工艺','研发','测试','算法',
+  '机械','电气','材料','医药','食品','纺织','环境','安全'];
+const MI_GENERIC_SUBJ=['学科教师','各科教师','全科教师','学科老师'];
+/* 设计方向族：岗位名都以「设计」结尾，但设计对象不同就是并列方向。
+   与 intent_semantics.DESIGN_DIR_GROUPS 逐词同源。
+   「电磁设计 × 机械设计」不算同一类；「机械设计 × 结构设计」同属机械结构方向，算。 */
+const MI_DESIGN_GROUPS={
+  mech:['机械','结构','机构','模具','工装','夹具','钣金'],
+  elec:['电磁','电气','电子','电路','电力','电机','电控'],
+  optic:['光学','光机','光电'],
+  appear:['外观','造型','工业设计'],
+  sim:['仿真','cae','热设计','散热','流体']};
+function miDesignGroup(s){
+  const t=String(s==null?'':s).toLowerCase();
+  if(t.indexOf('设计')<0) return [];
+  const out=[];
+  for(const g in MI_DESIGN_GROUPS){
+    if(MI_DESIGN_GROUPS[g].some(function(w){ return t.indexOf(w)>=0; })) out.push(g);
+  }
+  return out;
+}
+/* 命中判据专用窄义领域词（与 intent_semantics.HIT_DOMAIN 逐词同源）：只放指向明确、
+   不会出现在通用职能岗里的词。拦「新能源 × 软件开发 / 装备 × 嵌入式」这类模型按
+   「都叫开发」挑出的跨行岗；一方泛词识别不出领域时不拦。 */
+const MI_HITDOMAIN={
+  it:['软件','互联网','计算机','数据库','前端','后端','嵌入式','java','c++','android','ios','算法工程'],
+  elec:['新能源','电气','半导体','芯片','集成电路','光伏','锂电','电力','电芯'],
+  mech:['机械','装备','机电','数控','模具','发动机','结构'],
+  chem:['化学','化工','精细化工','石化','炼化','高分子','试剂','树脂'],
+  medical:['医药','制药','临床','药学','生物','医学','药品','原料药'],
+  fin:['证券','基金','银行','保险','期货','金融','信托','私募'],
+  civil:['建筑','土木','路桥','地产','施工','造价'],
+  food:['食品','餐饮','饮料','乳业','烘焙'],
+  edu:['教师','教学','学校','中学','小学','班主任','教研'],
+  supply:['供应链','物流','仓储','货运','采购'],
+  energy:['石油','煤炭','燃气','核电','风电','发电']
+};
+function miHitDomain(s){
+  const x=String(s==null?'':s).toLowerCase(), out=[];
+  Object.keys(MI_HITDOMAIN).forEach(function(f){
+    if(MI_HITDOMAIN[f].some(function(k){ return x.indexOf(k)>=0; })) out.push(f);
+  });
+  return out;
+}
+/* 泛职能意向（管培生/专员/计划…）：本就要收各领域岗位，不参与跨行领域过滤。
+   与 intent_semantics.GENERIC_INTENT_WORDS 逐词同源。语义映射在后端清洗，
+   前端这里只做词表镜像以备同源校验。 */
+const MI_GENERIC_INTENT=['管培生','培训生','储备干部','储备','专员','助理',
+  '计划','干部','校招生'];
+function miIsGenericIntent(s){ return MI_GENERIC_INTENT.some(function(w){ return String(s).indexOf(w)>=0; }); }
 /* 方向层级：父类 → 下属细分（与 intent_semantics.DIR_PARENTS 同源）。
    采购/物流/仓储 ⊂ 供应链 → 同一条线照旧算；计划不是供应链专属（生产/核电都有
    计划岗），「计划管培生 × 供应链管培生」是并列方向，不算命中。 */
@@ -315,7 +409,10 @@ function miSameLine(ak,bk){
   }
   return false;
 }
-const MI_DIRNEUTRAL=['开发','研发','软件','程序','工程师','技术','应用','系统','岗','员'];
+/* 「设计师」与「工程师」同级：机械设计师 = 机械设计工程师（与 intent_semantics.DIR_NEUTRAL 同源） */
+const MI_DIRNEUTRAL=['开发','研发','软件','程序','工程师','设计师','技术','应用','系统','岗','员'];
+/* 职责词不是方向：设备维护 / 检修 / 点检 都是设备岗的职责，不是并列的另一条路 */
+const MI_DUTY=['维护','保养','维修','点检','巡检','检修','调试'];
 function miDirCore(t){
   let x=miDirText(t);
   MI_DIRNEUTRAL.forEach(function(w){ x=x.split(w).join(''); });
@@ -329,10 +426,33 @@ function miDirCore(t){
 function miPairVerdict(title,intent){
   const a=miDirCore(intent), b=miDirCore(title);
   if(!a.t||!b.t||a.t===b.t) return 'ok';
+  /* 常识互斥判据（在「更宽/更细」子串判定之前，先挡住共享字但方向相反的错配）。
+     与 intent_semantics.pair_verdict ① ② ③ 逐条同源。 */
+  /* ① 教师 × 明确专业序列：一个教书、一个做技术/研究/医护，不是同一岗位。
+     化学教师 × 化学环保助理专工 → no。 */
+  if(miHas(title,MI_TEACH)!==miHas(intent,MI_TEACH)){
+    if(miHas(title,MI_PROFSEQ)||miHas(intent,MI_PROFSEQ)) return 'no';
+  }
+  /* ② 上位泛学科岗位不能反推具体学科意向：高中学科教师 ≠ 高中化学教师。 */
+  if(miHas(title,MI_GENERIC_SUBJ) && MI_SUBJ.some(function(s){ return intent.indexOf(s)>=0; })
+     && !MI_SUBJ.some(function(s){ return title.indexOf(s)>=0; })) return 'no';
+  /* ③ 两名各带不同的专业方向词（分析 × 环保 / 机械 × 电气）：并列细分，不算同一。
+     只在一边有这个、另一边有那个且互不相交时拦，避免两边都含同词误伤。 */
+  const td=MI_PROFDIR.filter(function(w){ return title.indexOf(w)>=0; });
+  const idr=MI_PROFDIR.filter(function(w){ return intent.indexOf(w)>=0; });
+  if(td.length&&idr.length&&!td.some(function(w){ return idr.indexOf(w)>=0; })) return 'no';
+  /* ④ 设计方向族：都叫「X设计工程师」，但设计对象不同就是两条路
+     （电磁设计 × 机械设计 / 光学设计 × 结构设计）。同组（机械 × 结构）不拦。
+     与 intent_semantics 的 ④ 逐条同源。 */
+  const dgt=miDesignGroup(title), dgi=miDesignGroup(intent);
+  if(dgt.length&&dgi.length&&!dgt.some(function(g){ return dgi.indexOf(g)>=0; })) return 'no';
   /* 注意方向：a=意向方向，b=岗位方向。
      b ⊃ a → 岗位更细（测试 → 器件测试）→ ask；
      b ⊂ a → 岗位更泛（AI算法研究 → 算法）→ ok（小类能进大类）。 */
   if(a.t.indexOf(b.t)>=0) return 'ok';
+  /* 职责词不算方向：设备维护工程师 × 设备工程师 → 同一岗位，不是「更细的方向」 */
+  let b2=b.t; MI_DUTY.forEach(function(w){ b2=b2.split(w).join(''); });
+  if(b2 && b2===a.t) return 'ok';
   if(b.t.indexOf(a.t)>=0) return 'ask';
   if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })){
     if(miSameLine(a.k,b.k)) return 'ok';   /* 采购/物流/仓储 ⊂ 供应链：同一条线照旧算 */
@@ -353,6 +473,16 @@ function miDirReason(t,intent){
   if(!a.t) return '「'+t+'」是「'+intent+'」下的'+b.t+'方向（同一大类，不是同一细分）';
   if(a.t&&b.t.indexOf(a.t)>=0) return '「'+t+'」的方向是'+b.t+'，比「'+intent+'」细，不是同一个岗位';
   return '';
+}
+/* 真·轮岗类岗位：只有这类「会不会往某方向培养」才是企业会考虑的事。
+   研究员 / 助理工程师 / 分析师 / 专员 / 经理 是定向招聘，问了白问。
+   与 intent_semantics.ROTATION_WORDS 同源。 */
+const MI_ROTATION=['管培','培训生','储备干部','储干','校招生'];
+function miIsRotation(t){
+  const x=String(t==null?'':t).replace(/[\s（）()\[\]【】、，,·—\-\/_]+/g,'').toLowerCase();
+  if(!x) return false;
+  for(let i=0;i<MI_ROTATION.length;i++){ if(x.indexOf(MI_ROTATION[i])>=0) return true; }
+  return false;
 }
 function miBareGeneric(t){
   let x=String(t==null?'':t).replace(/[\s（）()\[\]【】、，,·—\-\/_]+/g,'');
@@ -379,6 +509,38 @@ function miBizFamilies(txt){
 function miBizOk(intent,txt){
   const fa=miFam(intent), fb=miBizFamilies(txt);
   return fa.some(function(x){ return fb.indexOf(x)>=0; });
+}
+/* 主营领域族：只用于「值得问一句」的准入 —— 企业的行业/主营得沾意向的方向。
+   保险公司的管培生不可能定向培养成化学工程师、教育公司的管培生不会是供应链方向：
+   这类跨行岗位连问一句都是骚扰，直接不生成。与 intent_semantics.DOMAIN_FAMILY 逐词同源。 */
+const MI_DOMAIN={
+  chem:['化学','化工','精细化工','石化','炼化','材料','高分子','塑料','橡胶','涂料','印染','助剂','试剂','树脂','聚碳酸酯','聚酯','聚酰胺'],
+  mech:['机械','装备','机电','自动化','数控','模具','发动机','汽车','重工'],
+  elec:['电气','电子','半导体','芯片','集成电路','光伏','锂电','新能源','电力','通信','铁塔'],
+  civil:['建筑','土木','城建','地产','路桥','园区'],
+  edu:['教育','学校','中学','小学','培训','学院','K12','教师','教学','老师'],
+  medical:['医院','医疗','医药','制药','生物','临床','护理','卫生','药学'],
+  food:['食品','餐饮','饮料','乳业','烘焙','茶饮','古茗'],
+  fin:['保险','银行','证券','基金','期货','金融','信托','资管','财富','私募'],
+  it:['软件','互联网','信息科技','智能科技','大数据','算法','电商','网络科技','数字科技','计算机'],
+  supply:['供应链','物流','仓储','货运','快递','报关','货代','4PL','采购'],
+  energy:['能源','石油','煤炭','燃气','核电','风电','发电'],
+  textile:['纺织','服装','面料','家纺','鞋','服饰'],
+  furniture:['家具','家居','办公家具'],
+  safety:['安全','防护','职业健康','安环','应急']
+};
+function miDomainFamilies(txt){
+  return Object.keys(MI_DOMAIN).filter(function(f){ return miHas(txt||'',MI_DOMAIN[f]); });
+}
+/* 意向方向和企业主营是否沾边 —— 只用于「值得问一句」的准入。
+   意向领域明确、但企业主营识别不出或不相交 → 不相关，连问句都不生成。
+   只有意向本身是泛词、识别不出领域时 → 宽松放行，避免误杀。
+   与 intent_semantics.biz_related 同源。 */
+function miBizRelated(intent,bizText){
+  const fi=miDomainFamilies(intent).concat(miFam(intent));
+  if(!fi.length) return true;
+  const fb=miDomainFamilies(bizText).concat(miBizFamilies(bizText));
+  return fi.some(function(x){ return fb.indexOf(x)>=0; });
 }
 const MI_TECH=['工程师','研发','开发','算法','研究员','测试','工艺','设备','质检'];
 const MI_PROD=['产品经理','产品专员','产品工程师','产品岗','产品规划','产品运营'];
@@ -502,6 +664,10 @@ function miShare(a,b){
      不算证据（见 intent_semantics.BOUNDARY_TAIL）。 */
   const shared=g.filter(function(x){ return b.indexOf(x)>=0; });
   if(shared.some(function(x){ return MI_TAIL.indexOf(x.slice(-1))<0; })) return true;
+  /* 词首片段不受边界规则约束：那条规则只为挡「风险管理岗」里跨词造出的「理岗」，
+     而「施工管理岗」开头就是「施工」。旧版把它当边界片段扔掉，
+     「施工员」这个最标准的施工管理入口就永远判不成对口。 */
+  if(shared.some(function(x){ return a.indexOf(x)===0; })) return true;
   if(MI_GENERIC.indexOf(a)>=0 && miGrams(a).some(function(x){ return b.indexOf(x)>=0; })) return true;
   /* 意向本身是业务/销售型（外贸业务员、客户经理）时，「销售 xxx」就是同一类 */
   if(miHas(a,MI_SALES) && b.indexOf('销售')>=0) return true;
@@ -615,10 +781,17 @@ function miAskJobs(intended,titles,biz){
   const out=[], seen={};
   (titles||[]).forEach(function(t){
     if(!t || seen[t] || !miIsJob(t)) return;
+    /* 纯大类里只留轮岗类（管培生 / 培训生 / 储备干部 / 校招生）；
+       研究员 / 助理工程师 / 分析师 / 专员 / 经理 是定向招聘，不问。
+       与 intent_semantics.ask_jobs 同源。 */
+    const bare=miBareGeneric(t);
+    if(bare && !miIsRotation(t)) return;
     for(let i=0;i<(intended||[]).length;i++){
       const a=intended[i];
       if(!a || miBareGeneric(a) || miBizOk(a,biz)) continue;
-      const bare=miBareGeneric(t);
+      /* 企业主营和这个意向方向毫不相关 → 连问一句都不该有
+         （保险公司 / 教育公司的管培生不会定向培养成化学工程师）。 */
+      if(!miBizRelated(a,biz)) continue;
       /* 岗位比意向宽一层（算法工程师 × AI算法研究工程师）也值得问一句 */
       const wider=!bare && miWider(t,a) && miRole(a,t) && miShare(a,t);
       if(!bare && !wider) continue;
@@ -635,6 +808,14 @@ function miAskJobs(intended,titles,biz){
   return out.slice(0,3);
 }
 
+/* 命中复核表（构建期由大模型成批判好）：{"意向||企业岗位名": 0|1}。
+   0 = 复核否决，不算命中；1 = 确认同类；键不存在 = 未复核（模型不可用 / 该对不在
+   候选集）。未复核的继续用本地规则，但文案如实写「未复核」，不冒充复核结论。 */
+function hvGet(intent,job){
+  const o=(typeof D!=='undefined'&&D&&D.hit_verdicts)||{};
+  const k=String(intent)+'||'+String(job);
+  return Object.prototype.hasOwnProperty.call(o,k) ? o[k] : null;
+}
 function matchIntent(titles,intended,sem,jobTitles,biz){
   const pool=((jobTitles&&jobTitles.length)?jobTitles:titles)||[];
   const out=[];
@@ -656,9 +837,15 @@ function matchIntent(titles,intended,sem,jobTitles,biz){
             && !(miBareGeneric(t) && !miBareGeneric(x) && !miBizOk(x,biz))
             /* 比意向宽一层的岗（算法工程师 × AI算法研究工程师）也不能算命中 */
             && !(miWider(t,x) && !miBizOk(x,biz))
-            /* 只拦并列方向（后端 × 量化 / 前端 / 嵌入式）：同大类两条路，不能顶替。
-               岗位更细（测试 → 器件测试）照旧算命中，理由里写清方向不同。 */
-            && miPairVerdict(t,x)!=='no';
+            /* 并列方向（后端 × 量化 / 前端 / 嵌入式）：同大类两条路，不能顶替。
+               岗位更细（测试 → 器件测试）原本算命中，但**复核 1 只是「确认同类」，
+               不能把 ask 提升成命中**——否则复核表一换，页面命中数就与 payload
+               不一致（2026-11-15 实测：客诉质量 × 质量 被判 ask，后端 drop、
+               前端按复核 1 算命中，10 家分歧由此而来）。 */
+            && miPairVerdict(t,x)!=='no'
+            && !(miPairVerdict(t,x)==='ask' && hvGet(x,t)===1)
+            /* 复核否决的跨方向岗位不能算命中（食品研发 × 药品研发 只共享「研发」） */
+            && hvGet(x,t)!==0;
         })[0];
         if(ex){ picked={job:ex, reason:(miDirReason(ex,x)||reasons[s]||m.reason||'大模型判定为同类校招岗位')}; break; }
       }
@@ -670,24 +857,44 @@ function matchIntent(titles,intended,sem,jobTitles,biz){
             && miRole(x,t) && miShare(x,t) && miLevelOk(x,t)
             /* 比意向宽一层的岗（算法工程师 × AI算法研究工程师）不能走这条兜底 */
             && !(miWider(t,x) && !miBizOk(x,biz))
-            && miPairVerdict(t,x)!=='no';
+            && miPairVerdict(t,x)!=='no'
+            && !(miPairVerdict(t,x)==='ask' && hvGet(x,t)===1)
+            && hvGet(x,t)!==0;
         });
         if(kw.length){ hitJob=kw[0]; via='llm-term'; reason=m.reason||'同属一类校招岗位'; }
       }
     }
-    /* 该意向已有大模型判定（且判定出了同类岗位）却没匹配上时，不再走兜底：
-       否则「管培生」会因与「供应链管培生」共享「管培」二字被误判为命中。
-       兜底只用于 sem 里没覆盖到这个意向（新勾岗位 / 换学生 / 模型失败）的情况，
-       规则与后端 intent_semantics 同源，判完写明是本地规则，不冒充大模型。 */
-    const covered = m && m.via==='llm' && (m.titles||[]).length>0;
-    if(!hitJob && !covered){
-      const t=miMatch(x,pool,biz);
+    /* 2026-11-15 统一候选集：模型词表只决定「理由怎么写」，不再当作命中门槛。
+       原来 `covered` 会让「模型已覆盖该意向」直接跳过本地规则，于是后端按企业全量
+       岗位名判命中（爱旭「工艺」× 工艺工程师），前端却因为模型没挑出这个词而判不命中。
+       规则本身有 bareGeneric / wider / pairVerdict 三道闸，不会退回「管培生 ×
+       供应链管培生」那种只共享泛词的误命中——这条由 _test_match 的反例段守着。 */
+    if(!hitJob){
+      /* 逐个候选试，不能只试第一个：miMatch 命中的第一个如果是共享字的跨方向岗位
+         （食品研发 × 药品研发），被复核否决后必须继续往下找，否则同一家企业里
+         真正的同名岗位会被一起漏掉。
+         复核结论 1 → 确认命中并标明是大模型复核的；0 → 跳过这个候选；
+         没有结论 → 收下，但文案写「未复核」，不冒充复核过。 */
+      let t=null, v=null;
+      for(let i=0;i<pool.length;i++){
+        const cand=pool[i];
+        if(!cand || cand===hitJob) continue;
+        /* 字面同名不需要复核，也不许写成「大模型复核过」——它本来就是个同名岗位。 */
+        const cv=(cand===x) ? null : hvGet(x,cand);
+        if(cv===0) continue;
+        /* 复核 1 只能确认「本地规则本就判为对口」的对子，不能把同向但更细的岗位
+           （质量工程师 × 客诉质量工程师 = ask）提升成命中：后端 align_jobs 只收
+           pair_verdict=='ok'，前端若放行，页面命中数就多于 payload。 */
+        if(cv===1 && miPairVerdict(cand,x)!=='ok') continue;
+        if(miMatch(x,[cand],biz)){ t=cand; v=cv; break; }
+      }
       if(t){
         hitJob=t;
-        via='rule';
-        reason=(t===x) ? '字面同名'
-          : (t.indexOf(x)>=0 ? '岗位名里含你的意向岗位名'
-             : '本地规则判定：同职能不同叫法');
+        via=(v===1)?'llm-verify':'rule';
+        reason=(v===1) ? '大模型复核：与「'+x+'」同属一类校招岗位'
+          : (t===x ? '字面同名'
+             : (t.indexOf(x)>=0 ? '岗位名里含你的意向岗位名（未复核）'
+                : '本地规则判定：同职能不同叫法（未复核）'));
       }
     }
     if(hitJob) out.push({intent:x, job:hitJob, via:via, reason:reason});
@@ -990,8 +1197,9 @@ function rowHTML(r,idx,P){
         // 模型已经把「即另一种说法 / 大模型判断二者类似工作内容」写进 reason，
         // 这类以「大模型判断 / 大模型判定」开头的就直接原样展示，避免再套一层「大模型判定：」。
         const tail = m.via==='literal' ? '（字面近似）'
+          : m.via==='llm-verify' ? '（大模型复核：同类，可投）'
           : m.via==='rule' ? '（'+m.reason+'）'
-          : (/^大模型(判断|判定)/.test(m.reason||'') ? '（'+m.reason+'）' : '（大模型判定：'+m.reason+'）');
+          : (/^大模型(判断|判定|复核)/.test(m.reason||'') ? '（'+m.reason+'）' : '（大模型判定：'+m.reason+'）');
         return m.job+' ↔ 你选的「'+m.intent+'」'+tail;
       }).join('；'))+'</span>'
     : ((r.intent_hit&&r.intent_hit.length)
@@ -1370,6 +1578,15 @@ function render(){
      先让服务端补判；拿不到就用本地规则兜底，不阻塞首屏。 */
   ensureSemantics(P.intended_jobs);
   const allRows=recompute(P);
+  /* 本地规则判成命中、payload 里没有复核结论的对子（现场新填意向）→ 成批补复核。
+     只收 via='rule' 的：语义映射命中的本来就来自大模型，不重复判。 */
+  const _unv=[];
+  allRows.forEach(function(r){
+    (r.intent_matches||[]).forEach(function(m){
+      if(m.via==='rule' && hvGet(m.intent,m.job)===null) _unv.push([m.intent,m.job]);
+    });
+  });
+  if(_unv.length) ensureVerify(_unv);
   /* 换画像后 payload 里的 hit/inferred 统计是按旧画像的，这里按当前结果重数 */
   const _hitN=allRows.filter(function(r){return r.state==='hit';}).length;
   const _infN=allRows.filter(function(r){return r.state==='inferred';}).length;
@@ -1381,6 +1598,10 @@ function render(){
     if(filter==='low') return r.trust==='low';
     return true;
   });
+  /* 与你的方向无关的家数（业务判定 no）：只用于顶部计数，卡片渲染见下方折叠组 */
+  const _noN=rows.filter(function(r){
+    return r.biz_fit && r.biz_fit.fit==='no' && !r.state_recalc;
+  }).length;
   if(sortMode==='booth'){
     rows.sort(function(a,b){
       return String(a.booth||'zzz').localeCompare(String(b.booth||'zzz'),'zh',{numeric:true});
@@ -1520,6 +1741,7 @@ function render(){
     html='<div class="note" style="font-size:12px;margin:0 0 10px"><b>共 '
       + D.stats.companies+' 家 / '+D.stats.jobs+' 条岗位</b>　'+live
       + ' · 明确命中 '+_hitN+' / 推断 '+_infN
+      + (_noN?'（其中 '+_noN+' 家的主营与你的方向不交叉，已折叠到列表底部）':'')
       /* 不在榜里的「不对口」不参与排名（硬过滤直接剔掉），没有可显示的计数；
          原来取 D.stats.states.miss 会渲染成 undefined。换画像后按当前结果重数。 */
       + (_customNow?'（按当前画像重算）':'')
@@ -1554,9 +1776,19 @@ function render(){
   // 排名模式不再按「命中/推断/不对口」分组渲染——那会把全局分数顺序打乱，
   // 出现第 4 名分数低于第 5 名的情况。现在只有一条连续的榜单，名次即分数序；
   // 岗位状态仍逐条显示在卡片上（展示，不影响名次）。
+  /* 业务判定为「与你的方向无关」（biz_fit.fit='no'）的企业：不进排行，
+     收到列表底部一个折叠组里。数据、展位号、导逛路线一律不动 ——
+     0 岗 ≠ 不招，这里只是「这次别把排队时间花在那里」。
+     换画像后 payload 的判定不再对应当前意向（state_recalc），就不折叠。 */
+  const _noRows = rows.filter(function(r){
+    return r.biz_fit && r.biz_fit.fit==='no' && !r.state_recalc;
+  });
+  const _mainRows = _noRows.length
+    ? rows.filter(function(r){ return _noRows.indexOf(r)<0; })
+    : rows;
   const groups = sortMode==='booth'
-    ? [['t1','按会场序列号（展位号）顺序 · 走一遍不折返 · 评分照常显示', rows]]
-    : [['t1','按排序分从高到低 · 可信度与岗位状态仅作提示，不影响名次', rows]];
+    ? [['t1','按会场序列号（展位号）顺序 · 走一遍不折返 · 评分照常显示', _mainRows]]
+    : [['t1','按排序分从高到低 · 可信度与岗位状态仅作提示，不影响名次', _mainRows]];
   if(!DETAIL_NAME){
     groups.forEach(function(g){
       const rs=g[2];
@@ -1565,6 +1797,17 @@ function render(){
       rs.forEach(function(r){ html+=rowBrief(r,idx++,P); });
       html+='</div>';
     });
+    if(_noRows.length){
+      html+='<details class="tier" style="margin:14px 0 0">'
+        + '<summary class="tier-h" style="cursor:pointer">'
+        + '与你的方向无关 <em>'+_noRows.length+' 家</em>'
+        + '<span style="font-weight:400;font-size:12px;color:#8a94a6;margin-left:8px">'
+        + '主营业务与你的意向方向不交叉，建议这个展位跳过；'
+        + '展位号与岗位数据都还在，导逛路线不变</span></summary>'
+        + '<div style="padding:8px 0 0">';
+      _noRows.forEach(function(r){ html+=rowBrief(r,idx++,P); });
+      html+='</div></details>';
+    }
     /* 榜单末尾：结束使用按钮（一键存测试记录） */
     html+=endSessionBar();
   }

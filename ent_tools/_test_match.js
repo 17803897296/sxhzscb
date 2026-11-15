@@ -20,6 +20,9 @@ function chk(ok, label, detail) {
 (async () => {
   const PORT = process.env.FAIR_PORT || 8102;   // 可用 FAIR_PORT=8199 跑临时服务
   const p = await get('http://127.0.0.1:' + PORT + '/api/fair/payload');
+  /* 页面里 D 就是这份 payload；测试里也挂上，才能让 hvGet（命中复核表）
+     真的生效——否则复核逻辑写了却没被测到。 */
+  global.D = p;
   const sem = p.intent_semantics || {};
   const intended = (p.profile && p.profile.intended_jobs) || [];
   const rows = p.rows || [];
@@ -80,6 +83,12 @@ function chk(ok, label, detail) {
   }
 
   console.log('\n[兜底] payload 未覆盖该意向时，本地规则要与后端同源');
+  /* 这一节断言的是**本地规则本身**，必须在「没有复核结论」的前提下跑：
+     复核表按当前画像建，换画像会增删键（如「质量工程师 × 原料药质量研究员」
+     在机械画像下被判 0），若让复核生效，本地规则的断言会随画像漂移。
+     复核链路单独在 _test_verify.js 里测。 */
+  const D_FULL = global.D;
+  global.D = { hit_verdicts: {} };
   const fb = [
     // [意向, 企业岗位清单, 期望命中(null=不该命中)]
     ['供应链管培生', ['战略管培生'], null],
@@ -106,6 +115,9 @@ function chk(ok, label, detail) {
     ['机械设计工程师', ['模拟IC设计工程师'], null],
     ['机械设计工程师', ['光学设计工程师'], null],
     ['机械设计工程师', ['结构设计工程师'], '结构设计工程师'],
+    // 设计对象不同就是两条路：电磁 / 光学 ≠ 机械；模具 / 结构 同属机械方向，算。
+    ['机械设计工程师', ['电磁设计工程师'], null],
+    ['机械设计工程师', ['模具设计工程师'], '模具设计工程师'],
     ['管培生', ['管培生'], '管培生'],
     // 大类不能反推小类：「算法工程师」是「AI算法研究工程师」的上位类，
     // 意向是细分方向时，光写「算法工程师」的岗位不算对口（转现场提问）。
@@ -135,6 +147,7 @@ function chk(ok, label, detail) {
     chk(job === expect, '兜底 ' + intent + ' × ' + pools[0], '→ ' + (job || '不命中') +
       (got ? ' [' + got.via + '] ' + got.reason : ''));
   }
+  global.D = D_FULL;
 
   console.log('\n==== 失败项 ' + fails + ' ====');
   process.exit(fails ? 1 : 0);
