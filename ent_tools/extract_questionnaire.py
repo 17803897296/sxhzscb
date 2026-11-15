@@ -42,7 +42,7 @@ prof, miss1 = harvest(ROOT / "profile.py", WANT_PROFILE)
 fair, miss2 = harvest(ROOT / "fair.py", WANT_FAIR)
 schema_env, _ = harvest(ROOT / "schema.py", ["SCHEMA_VERSION", "MAJOR_DIRECTIONS"])
 prof.update({k: v for k, v in schema_env.items() if k == "MAJOR_DIRECTIONS"})
-fair["MAX_RESUME_BYTES"] = 8 * 1024 * 1024
+fair["MAX_RESUME_BYTES"] = 20 * 1024 * 1024
 
 doc = {
     "ok": True,
