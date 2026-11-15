@@ -1054,6 +1054,8 @@ function rowHTML(r,idx,P){
    +   '<span class="line">'+e(r.rank_reason)+'</span>'
    +   (r.tour_pos?'<span class="line">会场动线第 '+r.tour_pos+' 站 · 推荐序第 '+r.rank
         +' 位（匹配分 '+r.score+' 照常显示）</span>':'')
+   +   (r.hit_pos?'<span class="line">命中优先第 '+r.hit_pos+' 位 · 推荐序第 '+r.rank
+        +' 位（匹配分 '+r.score+' 照常显示，命中企业在先）</span>':'')
    +   '<span class="line">来源 '+e(short(ev.source,54))+' · '+e(ev.date)+' · 岗位来源 '+e(ev.jobSource)+'</span>'
    +   (r.job_brief?'<span class="line" style="color:#8a6d3b">岗位情况：'+e(short(r.job_brief,160))+'</span>':'')
    +   (r.llm_basis?'<span class="line" style="color:#1a6b4f"><b>'+e(short(r.llm_basis,240))+'</b></span>':'')
@@ -1386,6 +1388,20 @@ function render(){
     // 导逛模式下补站位，避免卡片仍写「队列第 N 位」与实际位置不符。
     rows.forEach(function(r,i){ r.tour_pos=i+1; });
   }
+  if(sortMode==='hit'){
+    // 明确命中优先（用户 2026-11-15 要求）：先排 state==='hit' 的企业（组内按分），
+    // 推断待核实的全部排后面——推断企业分数再高也不越过命中企业。
+    // 现场确认不招的照旧垫底；组内同分用 展位号→名称 定确定性次序。
+    rows.sort(function(a,b){
+      const an=(feedback[a.name]||{}).result==='no'?1:0;
+      const bn=(feedback[b.name]||{}).result==='no'?1:0;
+      const ah=a.state==='hit'?0:1, bh=b.state==='hit'?0:1;
+      return (an-bn) || (ah-bh) || (b.score-a.score)
+        || String(a.booth||'999').localeCompare(String(b.booth||'999'))
+        || a.name.localeCompare(b.name);
+    });
+    rows.forEach(function(r,i){ r.hit_pos=i+1; });
+  }
   const fbKeys=Object.keys(feedback);
   const fbYes=fbKeys.filter(function(k){return feedback[k].result==='yes';}).length;
   const fbNo=fbKeys.length-fbYes;
@@ -1515,6 +1531,13 @@ function render(){
         +'" data-sort="queue">按排名</button>'
       + '<button type="button" class="btn '+(sortMode==='booth'?'btn-p':'btn-g')
         +'" data-sort="booth">按展位排行</button>'
+      + '<button type="button" class="btn '+(sortMode==='hit'?'btn-p':'btn-g')
+        +'" data-sort="hit">明确命中优先</button>'
+      + (sortMode==='hit'
+        ? '<div class="note" style="font-size:12px;margin:8px 0 0">先排<b>明确命中</b>的 '
+          +_hitN+' 家（组内按分），再排<b>推断待核实</b>的 '+_infN
+          +' 家——推断企业分数再高也不越过命中企业。</div>'
+        : '')
       + '</div>'
       + '<details style="margin:0 0 12px"><summary style="cursor:pointer;font-size:12px">'
       + '更多设置 / 完整信息（统计 · 权重微调 · 筛选 · 导出 · 现场进度）</summary>'
