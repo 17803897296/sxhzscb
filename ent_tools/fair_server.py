@@ -396,6 +396,15 @@ def main():
         print("  停掉旧进程： taskkill /F /PID <PID>")
         print("  确认没有 LISTENING 后重新启动；确实要并行请改用另一个端口。")
         raise SystemExit(2)
+    # 运行时活库不入库：仓库只放只读种子 careersafari.db.seed，
+    # 首次启动复制出本地库。git pull / stash / checkout 永远不会再替换
+    # 一个正在被 SQLite 写入的文件（2026-11-15 实测会写成 disk image is malformed）。
+    import shutil
+    db_path = os.path.join(HERE, "data", "careersafari.db")
+    seed = db_path + ".seed"
+    if not os.path.isfile(db_path) and os.path.isfile(seed):
+        shutil.copy2(seed, db_path)
+        print("  已从只读种子初始化本地库 data/careersafari.db")
     if not os.path.exists(PAYLOAD):
         fair_bridge.build()
     # 企业端搜索/初筛接口复用 portal.py，需要先初始化模型；不初始化会静默降级成关键词规则

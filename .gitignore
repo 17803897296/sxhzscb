@@ -12,6 +12,9 @@ venv/
 # SQLite 运行时副产物
 *.db-shm
 *.db-wal
+# 运行时活库不入库：仓库只放只读种子 careersafari.db.seed，
+# 服务首次启动自动复制。git 操作碰到正在写入的 db 会把它写成 malformed。
+ent_tools/data/careersafari.db
 
 # 演示时浏览器/脚本产生的临时文件
 _lp.json

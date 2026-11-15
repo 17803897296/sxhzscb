@@ -94,7 +94,7 @@ def _sha(p: Path) -> str:
     return h.hexdigest()
 
 
-def source_files(include_payload=True, include_db=False):
+def source_files(include_payload=True):
     out = []
     for sub, pat in GLOBS:
         d = DEV / sub
@@ -119,10 +119,7 @@ def source_files(include_payload=True, include_db=False):
         p = DEV / PAYLOAD_REL
         if p.is_file():
             out.append(p.relative_to(DEV))
-    if include_db:
-        p = DEV / "ent_tools/data/careersafari.db"
-        if p.is_file():
-            out.append(p.relative_to(DEV))
+    # careersafari.db 是运行时活库，永不入库；仓库只放只读 .seed 供首次启动初始化。
     return sorted(set(out))
 
 
@@ -186,8 +183,6 @@ def main(argv=None):
                     help="兼容旧用法；现在 payload 默认就随发布同步")
     ap.add_argument("--no-payload", action="store_true",
                     help="本次不带 fair_payload.json（两端数据会不同源）")
-    ap.add_argument("--include-db", action="store_true",
-                    help="显式同步 careersafari.db（含本机测试记录，默认不带）")
     a = ap.parse_args(argv)
 
     if not DEV.is_dir() or not REPO.is_dir():
@@ -206,7 +201,7 @@ def main(argv=None):
         print("== 重建构建产物 ==")
         rebuild(not a.no_rebuild)
 
-    rels = source_files(not a.no_payload, a.include_db)
+    rels = source_files(not a.no_payload)
     # 数据同源是默认行为，但隐私优先：画像里出现姓名/学校/电话/邮箱就跳过 payload，
     # 绝不静默把个人信息推到公开仓库。
     if not a.no_payload:

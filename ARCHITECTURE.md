@@ -136,10 +136,10 @@ python -X utf8 ent_tools/sync_repo.py --apply     # 重建问卷+页面 → 同�
 cd sxhzscb-deploy && git pull        # 或干脆删掉重新 git clone
 ```
 
-> 验收实例跑起来后，`data/careersafari.db`（测试记录）和 `job_recommend_pool.json`
-> 等缓存会被服务端改写，`git status` 出现这两类改动是**正常运行时副产物**，
-> 不要提交、也不要拿去和开发正本对比。要恢复干净用
-> `git checkout -- ent_tools/data`。
+> 验收实例跑起来后，`data/` 下的推荐池等缓存 JSON 会被服务端改写，
+> `git status` 出现这类改动是**正常运行时副产物**，不要提交、也不要拿去和
+> 开发正本对比；要恢复用 `git checkout -- ent_tools/data`。
+> **运行时活库 `careersafari.db` 已被 .gitignore 排除、不再被 git 跟踪**。
 
 - 自动同步：`ent_tools/*.py`（排除 `_*.py` 调试脚本）、`ent_tools/*.md`、
   `.env.example`、`data/test_users/*.json`、`demo/*.js`、`questionnaire.json`、
@@ -150,14 +150,17 @@ cd sxhzscb-deploy && git pull        # 或干脆删掉重新 git clone
 - payload **发布前必过隐私自检**：画像里出现姓名 / 学校 / 电话 / 邮箱（或疑似
   手机号、邮箱串）就跳过该文件并明确提示，绝不静默推到公开仓库。
   确需不带它用 `--no-payload`。
-- **永不自动同步**：`.env`（密钥）、`careersafari.db`（含本机测试记录，
-  要带用 `--include-db` 显式指定）、一次性 `_*` 调试脚本、含真实姓名的个人报告页
+- **永不自动同步**：`.env`（密钥）、`careersafari.db`（运行时活库，
+  仓库只放 `.seed` 只读种子）、一次性 `_*` 调试脚本、含真实姓名的个人报告页
   （`排行_*` / `ranking_*` / `采集数据_*`）。
 - 文本比对按 LF 归一（git 的 CRLF/LF 转换不算差异），二进制按原哈希；
   验证「两端同源」时也要先归一化行尾再比哈希，否则会误报。
 - 脚本**不自动 commit / push**。同步完人工确认 `git status` 再提交推送。
-- 仓库里的 `careersafari.db` 是**发布时的初始快照**，保证 clone 下来能直接跑；
-  本机测试记录不随发布更新。`fair_payload.json` 每次发布都随正本更新。
+- 仓库里的 `careersafari.db.seed` 是**只读初始种子**（已清空测试记录），
+  `fair_server.py` 首次启动时复制成 `data/careersafari.db`。活库不入库，
+  git pull / stash / checkout 不会再替换一个正在被 SQLite 写入的文件——
+  2026-11-15 实测那样做会得到 `database disk image is malformed`。
+  seed 只在数据大版本更新时由维护者手工替换。
 
 改完一轮的推荐顺序：
 
@@ -170,6 +173,6 @@ cd sxhzscb-deploy && git pull        # 或干脆删掉重新 git clone
 
 ## 7. 一句话记住
 
-**一个正本、一份构建产物、一个同步脚本、一次 parity 门禁；
+**一个正本、一份构建产物、一个同步脚本、一次 parity 门禁；活库不入库；
 多实例可以，但必须端口不同且内容同源（副本只靠 git 更新）。**
 其余目录都是副本，改动只发生在正本，发布只走脚本。
