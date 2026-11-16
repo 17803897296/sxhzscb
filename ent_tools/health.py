@@ -53,7 +53,10 @@ SKIP_DIRS = {"__pycache__", "scratch", "tests", "js", "data", "node_modules"}
 DUP_EXEMPT_FILES = {"_is_old_tmp.py", "health.py"}
 DUP_EXEMPT_NAMES = {"main"}          # 各构建脚本的入口，长得像不代表是拷贝
 
-# 2026-11-16 重构完成时的实测快照，仅作参照
+# 2026-11-16 18:45 开始清理时的实测快照，仅作参照。
+# 当天后来做了两件事：删掉 gate.py、把 build() 拆成 11 个函数（736→443 行）、
+# strip_html/fetch 去重（11→7 份拷贝）。所以下面几个数现在会显示成「好」或「涨」——
+# 涨的那两项（文件数、总行数）是拆函数时补的说明文字，不是新功能。
 REF = {
     "py_files": 61,
     "py_lines": 20689,
@@ -111,9 +114,11 @@ def max_file_lines():
 def longest_func():
     """最长的那个函数：(行数, 位置)。
 
-    736 行的是 fair_bridge.build（内部一个 for 循环占 418 行）。
-    这是全项目最典型的「改一处不知道会坏哪儿」，但拆它要动主营链路，
-    所以在拆之前，这个数字就一直停在这儿 —— 体检表记着，不催。
+    2026-11-16 之前是 fair_bridge.build 736 行（内部一个 for 循环占 418 行）——
+    全项目最典型的「改一处不知道会坏哪儿」。当天按「只搬不改」拆成 11 个函数，
+    现在 443 行、最大的 for 239 行，payload 逐字未变。
+    再往下拆收益递减（把「一家企业 → 一行 payload」整段抽出来要 20 个参数），
+    所以停在 443。这个数字就记在这儿，不催。
     """
     best, where = (0, "")
     for p in _py_files():
@@ -283,7 +288,7 @@ def main():
     print("代码体检  %s" % __import__("datetime").datetime.now()
           .strftime("%Y-%m-%d %H:%M"))
     print("=" * (w + 34))
-    print("%-*s %14s %14s" % (w, "指标", "现在", "2026-11-16"))
+    print("%-*s %14s %14s" % (w, "指标", "现在", "今日起点"))
     print("-" * (w + 34))
     for label, now, ref, better in rows:
         mark = ""
@@ -293,7 +298,7 @@ def main():
             mark = "  %s%d%s" % (sign, abs(now - ref), "  ↑" if worse else "  ↓")
         print("%-*s %14s %14s%s" % (w, label, now, "—" if ref is None else ref, mark))
     print("-" * (w + 34))
-    print("↑ 比那天多/差    ↓ 比那天少/好    只是参照，不是标准")
+    print("↑ 比起点多/差    ↓ 比起点少/好    只是参照，不是标准")
     size, where = longest_func()
     if where:
         print("最长函数是 %s（%d 行）。" % (where, size))
