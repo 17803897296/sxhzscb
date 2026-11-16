@@ -159,6 +159,9 @@ def main(argv=None):
                 "nature": nature,
                 "city": city,
                 "industry": industry,
+                # 这条纯规则采集只看得到 nature/city/industry，产不出主营；
+                # 留空位让下游字段齐整，真正的提取在 enrich_by_llm（读同一份 text）。
+                "biz_scope": "未知",
                 "jobSource": "未知",
                 "source": page or "未知",
                 "date": time.strftime("%Y-%m-%d"),
@@ -173,6 +176,7 @@ def main(argv=None):
             print("%3d/%d %-30s ERROR %s" % (i, len(names), name[:28], exc))
             out.append({
                 "name": name, "nature": "未知", "city": "未知", "industry": "未知",
+                "biz_scope": "未知",
                 "jobSource": "未知", "source": "未知", "date": time.strftime("%Y-%m-%d"),
                 "text": "未知", "jobs": [],
             })

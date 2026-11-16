@@ -63,7 +63,9 @@ REGISTRY = {
     },
     "biz_fit": {
         "path": "biz_fit_cache.json", "kind": "derived",
-        "deps": ["biz_fit.py"],
+        # 依赖 job_family / intent_semantics 是因为 _settle() 用岗位族判「证据与意向同方向」，
+        # 族表一改，缓存里的 yes/ask 结论就可能翻，必须跟着失效。
+        "deps": ["biz_fit.py", "job_family.py", "intent_semantics.py"],
         "desc": "按主营业务判企业是否与学生方向交叉（yes/ask/no，逐家）",
     },
     "hard_filter": {
@@ -73,8 +75,15 @@ REGISTRY = {
     },
     "hit_verify": {
         "path": "hit_verdicts.json", "kind": "derived",
-        "deps": ["hit_verify.py", "intent_semantics.py", "job_level.py"],
-        "desc": "本地规则候选命中的大模型批量复核（逐对 0/1，构建期算好）",
+        # 只依赖提示词文件！缓存里存的是**模型原判**，融合在 hit_verify.verify_pairs
+        # 读取时用当前规则现算。所以：
+        #   改 PROMPT（hit_prompt.py）      → 模型要答的东西变了，必须重问；
+        #   改 fuse / blocks / _general_enough → 只是融合变，原判照样有效；
+        #   改 intent_semantics / job_family   → 规则变，融合跟着变，也不必重问。
+        # 早先这里含 hit_verify.py 自身，改一行融合就整份缓存作废、重问模型，
+        # 而模型会抖（同一对出现过 1 和 0.5），命中家数在 19 / 13 之间跳。
+        "deps": ["hit_prompt.py"],
+        "desc": "本地规则候选命中的大模型批量复核（逐对三态，构建期算好）",
     },
     "lookup": {
         "path": "lookup_cache.json", "kind": "snapshot",
@@ -84,13 +93,20 @@ REGISTRY = {
     "llm_match": {
         "kind": "db", "table": "llm_match",
         "deps": ["fair_bridge.py", "intent_semantics.py", "job_level.py",
-                 "demo_v2/rules.py"],
+                 "demo_v2/rules.py", "job_family.py"],
         "desc": "模型判定的 hit/inferred/miss（历史画像生成，需按画像核对）",
     },
     "fair_payload": {
         "path": "fair_payload.json", "kind": "artifact",
         "deps": ["fair_bridge.py", "intent_semantics.py", "job_level.py", "unknown_infer.py",
-                 "biz_fit.py", "hard_filter.py", "demo_v2/rules.py", "demo_v2/core.py"],
+                 "biz_fit.py", "hard_filter.py", "demo_v2/rules.py", "demo_v2/core.py",
+                 # 族表改了，pair_verdict 的跨职能判定就变了，命中必须重算；
+                 # 漏登记会让 payload 显示「新鲜」，实际沿用旧结论。
+                 "job_family.py",
+                 # 与 hit_verify 缓存相反：融合逻辑（fuse）和提示词都会改变 payload
+                 # 里的融合结论，所以这两个都要登记。hit_prompt 变了会触发重问，
+                 # 重问结果也要落进 payload。
+                 "hit_verify.py", "hit_prompt.py"],
         "desc": "三端合并后的页面数据产物",
     },
 }
@@ -251,6 +267,73 @@ def db_stamp(name: str, rows: int = 0, model: str = "", extra=None):
         con.close()
 
 
+# ── 只读种子 ────────────────────────────────────────────────────
+# 这些活缓存不入库（*.seed 才入库）：服务一处理请求就会改写它们。
+# 与 REGISTRY 的区别——REGISTRY 管「体检」（该不该失效），
+# SEEDS 管「预置」（clone 后要不要自带一份结论）。两者目的不同，别合并。
+SEEDS = [
+    "intent_semantics_cache.json",     # 意向↔岗位名语义映射（重建的核心依据）
+    "intent_semantics_live.json",      # 前台按需补判的小缓存
+    "job_recommend_pool.json",         # 按专业生成的校招岗位池
+    "unknown_infer_cache.json",        # 无具体岗企业的意向推断
+    "biz_fit_cache.json",              # 企业主营业务与方向的交叉判断
+    "hit_verdicts.json",               # 命中复核的模型原判
+    "lookup_cache.json",               # 企业检索联网快照（重抓成本高）
+]
+
+
+def restore_seeds() -> list:
+    """活缓存缺失时从只读种子复制（与 careersafari.db.seed 同一套做法）。
+
+    仓库只提交 X.seed（冻结的结论快照），运行时用同名活文件 X；活文件全部被
+    .gitignore 排除。这样服务跑一遍 `git status` 不会脏——活库 careersafari.db
+    已经用这个办法解决过同样的问题，缓存原来没跟上：
+
+      · 缓存是派生结果，服务一处理请求就会重写它；
+      · 一旦被 git 跟踪，clone 出来什么都没干就已经是脏的，新人第一反应
+        一定是「我是不是搞坏了」，然后 `git checkout` 把刚算出的结论撤掉。
+
+    只在活文件**不存在**时复制：已存在的活文件不会被种子覆盖，所以本地跑出来
+    的新结论不会因为重启被回滚到旧快照。
+    """
+    out = []
+    if not os.path.isdir(DATA):
+        return out
+    for fn in sorted(os.listdir(DATA)):
+        if not fn.endswith(".seed") or fn.endswith(".db.seed"):
+            continue          # 数据库的初始化在 fair_server 里单独做（有 malformed 防护）
+        seed = os.path.join(DATA, fn)
+        live = seed[:-len(".seed")]
+        if os.path.exists(live):
+            continue
+        try:
+            shutil.copy2(seed, live)
+            out.append(fn[:-len(".seed")])
+        except Exception:
+            pass
+    return out
+
+
+def freeze_seeds(names=None) -> list:
+    """把当前活缓存冻结成只读种子（发布前用）。返回被冻结的文件名。
+
+    种子必须与代码同版本：里面的 _cg.fp 是「生成这份结论的代码」的指纹，
+    代码一变指纹就不符，clone 后第一次构建会自动判失效重算——这是对的，
+    不该继续沿用旧结论。
+    """
+    out = []
+    for fn in (names or SEEDS):
+        path = os.path.join(DATA, fn)
+        if not os.path.isfile(path):
+            continue
+        try:
+            shutil.copy2(path, path + ".seed")
+            out.append(fn + ".seed")
+        except Exception:
+            pass
+    return out
+
+
 # ── 归档 ────────────────────────────────────────────────────────
 def archive(name: str, keep: int = 6) -> str:
     """把失效缓存移到 data/_stale_cache/，可回溯，不直接删。"""
@@ -362,6 +445,20 @@ def main(argv):
     if cmd == "fp":
         for n in (argv[2:] or list(REGISTRY)):
             print("%-18s %s  deps=%s" % (n, code_fp(name=n), REGISTRY[n].get("deps")))
+        return 0
+    if cmd == "freeze":
+        out = freeze_seeds(argv[2:] or None)
+        print("已冻结 %d 份种子：%s" % (len(out), "、".join(out) or "（无）"))
+        print("种子要与代码同版本提交，否则 clone 后第一次构建会判失效重算。")
+        return 0
+    if cmd == "seeds":
+        for fn in SEEDS:
+            live = os.path.join(DATA, fn)
+            seed = live + ".seed"
+            print("  %-32s 活%s 种子%s" % (
+                fn,
+                "有" if os.path.isfile(live) else "无",
+                "有" if os.path.isfile(seed) else "无"))
         return 0
     print(__doc__)
     return 1

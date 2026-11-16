@@ -46,6 +46,8 @@ PROMPT = """你在把一段企业公开资料整理成结构化字段。只输�
   "nature": "央企|国企|民企|外企|合资|事业单位|未知",
   "city": "总部所在城市，查不到写 未知",
   "industry": "制造|医药|IT|金融|建筑|能源|消费|物流|教育|政府事业|其他|未知",
+  "biz_scope": "这家靠什么挣钱：主营产品/服务 + 应用领域，40~70 字，如「汽车空调压缩机及热管理系统的研发生产，配套新能源整车厂」；原文没有业务介绍就写 未知",
+  "bizEvidence": "支撑 biz_scope 的原文片段，逐字复制，不改写",
   "jobSource": "校招公告|社招信息|websearch|未知",
   "evidence": "从原文中逐字复制的一句话，必须是原文片段，不能改写",
   "jobs": [
@@ -74,7 +76,11 @@ PROMPT = """你在把一段企业公开资料整理成结构化字段。只输�
    写 "websearch"（意思是记录来自联网搜索，不保证岗位列表齐全）。
    jobSource 优先级：校招公告 → "校招公告"；只有社招 → "社招信息"；
    联网搜到岗位记录 → "websearch"；只找到主营业务介绍 → **"未知" 且 jobs 写 []**，
-   不许从业务描述里推测岗位（推测出来的不是事实，会让下游误判）。"""
+   不许从业务描述里推测岗位（推测出来的不是事实，会让下游误判）。
+7. **biz_scope 与岗位无关，任何情况下都要填**：jobs 为空时 biz_scope 只能是唯一的业务
+   线索，写空会让下游无法判断这家单位跟学生意向有没有交叉。只写原文说过的产品/服务，
+   不写「行业领先」「技术先进」这类空话；bizEvidence 必须逐字出现在原文里，
+   找不到可引的句子就 biz_scope 也写 "未知"（宁可空，不可编）。"""
 
 
 def load_env(path=".env"):
@@ -270,6 +276,15 @@ def build_entry(name, raw, page_text, source):
     source_kind = pick(raw.get("jobSource"), JOB_SOURCE)
     evidence = str(raw.get("evidence") or "").strip()
 
+    # 主营（biz_scope）：下游「岗位方向」判定的**唯一证据源**。必须能在原文里找到
+    # 出处，否则退成「未知」——实测量产后模型会凭企业名编一段像模像样的业务描述
+    # （「专注于高端装备制造」），编错方向的代价是误杀真匹配，比空着更糟。
+    # 注意与岗位解耦：jobs 全空、jobSource=未知 时，主营照样要留下。
+    biz_scope = str(raw.get("biz_scope") or "").strip()
+    biz_ev = str(raw.get("bizEvidence") or "").strip()
+    if not biz_scope or biz_scope == "未知" or not biz_ev or biz_ev not in page_text:
+        biz_scope = "未知"
+
     # 原文对不上就降级，绝不硬留
     if source_kind != "未知" and (not evidence or evidence not in page_text):
         source_kind, jobs, evidence = "未知", [], "未知"
@@ -281,6 +296,7 @@ def build_entry(name, raw, page_text, source):
         "nature": pick(raw.get("nature"), NATURE),
         "city": str(raw.get("city") or "未知").strip() or "未知",
         "industry": pick(raw.get("industry"), INDUSTRY),
+        "biz_scope": biz_scope,
         "jobs": jobs,
         "jobSource": source_kind,
         "jobEvidence": evidence,
@@ -351,7 +367,7 @@ def main(argv=None):
     if args.limit:
         names = names[:args.limit]
 
-    entries, report, ok_jobs, ok_fields, fail = [], [], 0, 0, 0
+    entries, report, ok_jobs, ok_fields, ok_biz, no_biz, fail = [], [], 0, 0, 0, [], 0
     t0 = time.time()
     for i, name in enumerate(names, 1):
         try:
@@ -365,16 +381,25 @@ def main(argv=None):
                 ok_jobs += 1
             if entry["jobSource"] != "未知":
                 ok_fields += 1
+            # 主营是匹配端判「岗位方向」的唯一证据源，覆盖率要单独报 —— 只统计
+            # 「拿到岗位」会掩盖「有岗无主营」的企业（岗位名不带方向时下游全靠主营）
+            if entry["biz_scope"] != "未知":
+                ok_biz += 1
+            else:
+                no_biz.append(name)
             if not entry["jobs"]:
                 report.append("%s：无岗位（%s）" % (name, entry["jobSource"]))
-            print("%3d/%d %-28s %-5s %-8s jobs=%d" % (
-                i, len(names), name[:26], entry["nature"], entry["city"][:8], len(entry["jobs"])))
+            print("%3d/%d %-28s %-5s %-8s jobs=%d 主营=%s" % (
+                i, len(names), name[:26], entry["nature"], entry["city"][:8],
+                len(entry["jobs"]), "有" if entry["biz_scope"] != "未知" else "无"))
         except Exception as exc:
             fail += 1
             print("%3d/%d %-28s 失败：%s" % (i, len(names), name[:26], exc))
             report.append("%s：采集失败（%s）" % (name, exc))
+            no_biz.append(name)
             entries.append({
                 "name": name, "nature": "未知", "city": "未知", "industry": "未知",
+                "biz_scope": "未知",
                 "jobs": [], "jobSource": "未知", "jobEvidence": "未知",
                 "source": "未知", "date": "未知", "text": "未知"})
         time.sleep(args.sleep)
@@ -383,10 +408,14 @@ def main(argv=None):
     lines = ["# 采集报告", "",
              "- 企业数：%d" % len(entries),
              "- 拿到岗位：%d" % ok_jobs,
+             "- 拿到主营：%d（缺 %d）" % (ok_biz, len(no_biz)),
              "- 有来源：%d" % ok_fields,
              "- 失败：%d" % fail,
              "- 耗时：%.1f 秒" % (time.time() - t0), "", "## 明细", ""]
     lines += ["- " + x for x in report] or ["- 无"]
+    if no_biz:
+        lines += ["", "## 主营缺失（匹配端判岗位方向会失效，需人工补或跑 _biz_fill2.py）", ""]
+        lines += ["- " + n for n in no_biz]
     Path(args.report).write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n完成：%d 家，带岗位 %d，失败 %d，耗时 %.1f 秒" %
           (len(entries), ok_jobs, fail, time.time() - t0))

@@ -8,17 +8,43 @@
 
 为什么它不会拖慢构建
     · 只判「本地规则认为可能命中」的候选对（当前 126 对），不扫 535×18 全量组合；
-    · 一次调用判完一批（126 对实测约 2.4s），输出紧凑「序号:0/1」，不产大 JSON；
+    · 一次调用判完一批（126 对实测约 2.4s），输出紧凑「序号:1/0.5/0」，不产大 JSON；
     · pair 级缓存：同一对 + 同一份代码指纹只判一次，第二次 0 次调用；
     · 构建期算好写进 payload，页面打开零等待。
 
-缓存失效
-    走 cache_guard REGISTRY["hit_verify"]，key 含 hit_verify.py / intent_semantics.py /
-    job_level.py 的语法树指纹。改任何一行判定逻辑，旧结论自动作废，不会静默沿用。
+缓存失效（为什么 key 只跟提示词走）
+    cache_guard REGISTRY["hit_verify"] 的 deps 只指 hit_prompt.py。因为缓存里存的是
+    **模型原判**，融合在读取时用当前规则现算：
+
+        改 PROMPT                    → 模型要答的东西变了 → 重问
+        改 fuse / blocks / _general_enough → 融合结论变，原判不用重答 → 不重问
+        改 intent_semantics / job_family   → 规则变，融合跟着变 → 不重问
+
+    早先 deps 含本文件自身，导致每改一次融合逻辑就归档整份 pair 缓存、重问一遍模型；
+    而 temperature=0.1 仍会抖（同一对实测出现过 1 和 0.5），命中家数在 19 / 13 之间
+    跳，构建不可复现。分开以后同一份缓存下融合结论只由代码决定，可复算。
+    payload 侧则相反：fair_payload 的 deps 含本文件，融合逻辑一改 payload 必须重算。
 
 失败策略
     模型不可用 / 超时 / 输出缺行 → 该对不出现在结果里，前端按「未复核」如实标注，
     继续用本地规则，不编结论、不把「没复核」说成「复核过」。
+
+三态复核（为什么不是二分类）
+    二分类逼模型在「同类」和「不同类」里选一个，于是「C++开发工程师 × 后端开发
+    工程师」这种技术栈相邻、信息不足以下结论的对子，只能被判成 1 —— 直接变成
+    误报（实测精确率 90.9%，但 40 对里 6 对是这种情况）。三态允许模型**弃权**：
+
+        1    确认同类，可作为命中证据
+        0.5  弃权：技术栈相邻 / 细分方向相邻 / 岗位名信息不足。不算命中证据，
+             也不记为「已否决」，产物里保留为「待问」
+        0    确认不同类，否决该对证据
+
+    弃权比判错便宜：双选会现场学生按报告跑企业，误报要白跑一趟（3.5 分钟 +
+    机会成本），漏报只是少看一家（名单里还有几十家）。代价函数按
+    Cost = 3×FP + 1×FN 计，所以「不确定」一律不进命中证据。
+
+    与本地规则融合见 fuse()：规则管确定性事实（跨职能 / 跨专业 / 档位），
+    模型管需要常识的族内细分；任何一方不确定时都不硬给结论。
 """
 from __future__ import annotations
 
@@ -30,6 +56,7 @@ import urllib.request
 
 import cache_guard
 import intent_semantics as IS
+from hit_prompt import PROMPT
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "data", "hit_verdicts.json")
@@ -40,32 +67,8 @@ BATCH = 160
 # 绝不悄悄截断后当成「已复核」。
 MAX_PAIRS = 640
 
-PROMPT = """你在复核校招岗位匹配。下面每行是「企业真实岗位名 × 学生意向岗位」。
-判断每一对是否属于同一类校招工作、应届生可以同样投递。
-
-只按岗位名判断，不看学生学过什么课程。
-只共享通用词（研发 / 工程 / 专员 / 管培生 / 经理 / 助理 / 技术 / 实验 / 分析 / 销售）不算同类。
-- 学科教师必须同学科；同一学科不同学段（高中 / 初中 / 小学）算同类。
-- 同一职能但业务方向明显不同（药品研发 vs 食品研发、电气测试 vs 光学测试、
-  药物分析 vs 质量研究）不算同类。
-- 设计类岗位按**设计对象**分方向：机械设计 / 结构设计 / 模具设计属机械结构方向；
-  电磁设计 / 电气设计 / 电路设计属电气方向；光学设计、外观造型设计、仿真热设计
-  各自是不同方向。只共享「设计工程师」不等于同一类岗位。
-- 岗位名里并列多个档位（「工艺工程师/主管/经理」「质量工程师/资深」）时，按其中
-  最接近应届的一档判断，不要因为出现主管 / 经理 / 资深就判 0。
-- 质量职能内部不按细分再切：质量技术 / 供应商品质 / 品质体系 / 客诉质量都是质量岗
-  的叫法差异，算同类；只有跨职能（质量 vs 研发 / 工艺 / 销售）才算不同类。
-- 「X管理员 / X管理岗」是现场或设备管理岗，不是设计 / 研发岗：机械管理员、
-  机械管理岗 与 机械设计工程师 不算同类；但 设备管理员 与 设备工程师 算同类
-  （同一台设备的运行维护）。
-- 岗位档位比意向高一级（主管 / 资深 / 高级 / 经理 / 总监 / 专家）不算同类。
-- 销售岗不算技术 / 专业 / 职能类意向。
-- 专业名、学科名、招聘批次名不是岗位名，一律不算。
-
-逐行输出，每行只写「序号:1」（算同类）或「序号:0」（不算同类）。
-不要解释、不要 JSON、不要多余文字、不要漏行。
-
-%s"""
+# 提示词在 hit_prompt.py：它是缓存 key 的唯一依据（改它才重问模型，
+# 改本文件的融合逻辑不重问）。导入即可，别在这里手改字符串。
 
 
 def _raw_call(cfg, prompt, timeout):
@@ -85,22 +88,135 @@ def _raw_call(cfg, prompt, timeout):
     return raw["choices"][0]["message"]["content"]
 
 
+# 复核结论的三种取值。0.5 是「弃权」，不是「半分」——见文件头「三态复核」。
+VERDICTS = (0, 0.5, 1)
+
+
+def _general_enough(title, intent):
+    """岗位名是否比意向更泛（大类岗，同族意向都能投）。
+
+    这是**包含关系**，属确定性事实，规则说了算：模型在「认泛」上弱（40 对实测
+    漏判全集中在这一类），它弃权时不该由它决定。
+    大类岗名（管培生 / 储备干部 / 研究员）例外——那类不能反推小类，由 align_jobs
+    走「现场问一句」，不升级成命中。
+    """
+    if not title or not intent:
+        return False
+    try:
+        # 轮岗类（管培生 / 培训生 / 储备干部）与纯大类名不能反推小类：
+        # 「技术管培生 × 后端开发」不是对口证据，只能现场问一句。
+        if IS.is_bare_generic(title) or IS.is_rotation_job(title):
+            return False
+        # 意向本身没方向词（初级软件工程师 / 开发工程师）：同职能的任何细分方向
+        # 都可投，这是 pair_verdict「意向没方向 → 收所有细分」的原有约定。模型对
+        # 「嵌入式软件工程师 × 初级软件工程师」这类组合会弃权，不能让它推翻规则。
+        # 跨职能的已在 pair_verdict 被挡掉，不会走到这里。
+        if not IS._dir_core(intent)[0]:
+            return not _cross(title, intent)
+        return bool(IS.is_wider_job(title, intent)) or not IS._dir_core(title)[0]
+    except Exception:
+        return False
+
+
+def _cross(title, intent):
+    """跨职能判定，单独包一层：族表异常时不要让整个复核流程崩掉。"""
+    try:
+        import job_family
+        return job_family.cross_function(title, intent)
+    except Exception:
+        return False
+
+
+def _same_dir(title, intent):
+    """同族同方向的细分说法 → 同一岗。判据与 align_jobs 共用一份（IS.same_dir）。
+
+    两处必须同一个判据：align_jobs 决定这一岗进不进命中候选，fuse 决定模型给出
+    原判后放不放行。两边各写一套就会重演「页面说命中、后端说不对口」的老问题。
+    """
+    try:
+        return IS.same_dir(title, intent)
+    except Exception:
+        return False
+
+
+def fuse(rule, model, title="", intent=""):
+    """把本地规则三态与模型三态合成最终结论。返回 None = 未复核（交回本地规则）。
+
+    分层原则：规则管确定性事实（跨职能 / 跨专业 / 档位 / 并列方向 / 更泛），模型
+    管需要常识的族内细分。任何一方不能确定时都不硬给结论——弃权（0.5）比判错便宜。
+
+    | 规则  | 模型 | 融合 | 理由                                        |
+    |-------|------|------|---------------------------------------------|
+    | no    | 1    | 0.5  | 多半是词表没覆盖某种叫法（服务端→后端），    |
+    |       |      |      | 不硬压成否，也不放行成命中                   |
+    | no    | 0/.5 | 0    | 双方都不认为同类                            |
+    | ask   | 1/.5 | 1/0.5| 岗位更细；同族同方向（AI算法工程师 × 算法）   |
+    |       |      |      | 放行，换对象/职责核的（器件测试 × 测试）弃权  |
+    | ask   | 0    | 0    | 双方都否决                                  |
+    | ok    | 1    | 1    | 双证据                                      |
+    | ok    | .5   | 1/0.5| 岗位比意向更泛（开发工程师 × 后端）或同族同 ▸ |
+    |       |      |      | 方向 → 规则裁定；其余弃权不进证据            |
+    | ok    | 0    | 0    | 模型明确否认（挡错是它的强项，精确率 90.9%） |
+    """
+    if model is None:
+        return None
+    if rule == "no":
+        return 0.5 if model == 1 else 0
+    if rule == "ask":
+        if model == 0:
+            return 0
+        # ask = 岗位比意向更细。原约定「确认同类也不升格」，但换意向实测发现这条把
+        # AI算法工程师 / 数据分析岗 这类同名同族的岗也挡在证据外——既不命中、也不进
+        # 「待问」，静默消失。同族 + 方向核包含 + 意向核不是职责词时，它就是同一岗的
+        # 细分说法，放行；其余（器件测试 × 测试、电商运营 × 运营、管培生）继续弃权。
+        try:
+            if _same_dir(title, intent) and not IS.is_rotation_job(intent):
+                return 1
+        except Exception:
+            pass
+        return 0.5
+    if model == 1:
+        return 1
+    if model == 0.5:
+        return 1 if (_general_enough(title, intent) or _same_dir(title, intent)) else 0.5
+    return 0
+
+
 def _parse(txt, n):
-    """把「序号:0/1」逐行解析成 {序号: 0|1}。只认 0/1，缺行不补、不猜。"""
+    """把「序号:1 / 序号:0.5 / 序号:0」逐行解析成 {序号: 0|0.5|1}。
+
+    只认这三个值，缺行不补、不猜（缺行 = 该对未复核，前端如实标注）。
+    """
     out = {}
     for line in str(txt or "").splitlines():
-        m = re.match(r"\s*(\d+)\s*[:：.\-]?\s*([01])\b", line)
+        m = re.match(r"\s*(\d+)\s*[:：.\-]?\s*(\.5|[01](?:\.5)?)\b", line)
         if m:
             i = int(m.group(1))
             if 0 <= i < n and i not in out:
-                out[i] = int(m.group(2))
+                out[i] = _num(m.group(2))
     if len(out) < n:
-        # 兜底：模型把多对挤在一行（「1:1 2:0 3:1」）时再扫一遍
-        for m in re.finditer(r"(\d+)\s*[:：]\s*([01])(?=\s|$)", str(txt or "")):
+        # 兜底：模型把多对挤在一行（「1:1 2:0 3:0.5」）时再扫一遍
+        for m in re.finditer(r"(\d+)\s*[:：]\s*(\.5|[01](?:\.5)?)(?=\s|$)", str(txt or "")):
             i = int(m.group(1))
             if 0 <= i < n and i not in out:
-                out[i] = int(m.group(2))
+                out[i] = _num(m.group(2))
     return out
+
+
+def blocks(v):
+    """这个复核结论是否挡掉命中证据。
+
+    0（否决）和 0.5（弃权）都挡——「不确定」不进证据，也不冒充「复核过」。
+    None（未复核）不挡：交回本地规则，前端按「未复核」如实标注。
+    """
+    return v in (0, 0.5)
+
+
+def _num(s):
+    """「0.5」→ 0.5，「1」→ 1（整数保持 int，缓存里好读）。"""
+    s = str(s)
+    return 0.5 if s.endswith(".5") else int(s)
+
 
 
 def candidate_pairs(intents, titles):
@@ -158,7 +274,7 @@ def verify_pairs(pairs, timeout=120):
     # 去重，保持稳定顺序
     pairs = list(dict.fromkeys(pairs))[:MAX_PAIRS]
     meta = {"total": len(pairs), "asked": 0, "cached": 0, "verified": 0,
-            "model": "", "failed": 0}
+            "abstain": 0, "model": "", "failed": 0}
     if not pairs:
         return {}, meta
 
@@ -173,7 +289,7 @@ def verify_pairs(pairs, timeout=120):
     for t, it in pairs:
         k = cache_guard.key("hit_verify", it, t) if have_key else None
         rec = items.get(it + "||" + t) or {}
-        if k and rec.get("k") == k and rec.get("v") in (0, 1):
+        if k and rec.get("k") == k and rec.get("v") in VERDICTS:
             meta["cached"] += 1
         else:
             todo.append((t, it, k))
@@ -203,8 +319,15 @@ def verify_pairs(pairs, timeout=120):
     verdicts = {}
     for t, it in pairs:
         rec = items.get(it + "||" + t) or {}
-        if rec.get("v") in (0, 1):
-            verdicts[it + "||" + t] = rec["v"]
+        v = rec.get("v")
+        if v not in VERDICTS:
+            continue                      # 未复核，交回本地规则
+        fv = fuse(IS.pair_verdict(t, it), v, t, it)
+        if fv is None:
+            continue
+        verdicts[it + "||" + t] = fv
+        if fv == 0.5:
+            meta["abstain"] += 1
     meta["verified"] = len(verdicts)
     return verdicts, meta
 
@@ -212,9 +335,11 @@ def verify_pairs(pairs, timeout=120):
 def build_verdicts(intents, titles, timeout=120):
     """返回 (verdicts, meta)。
 
-    verdicts: {"意向||岗位名": 0|1}——只含真正判过的对；没判的键不存在。
+    verdicts: {"意向||岗位名": 0|0.5|1}——只含真正判过的对；没判的键不存在。
+    0.5 = 最后确认不了（见 fuse）：不进命中证据，也不冒充「已否决」。
     meta:     {"total": 候选对数, "asked": 本次送判数, "cached": 命中缓存数,
-               "verified": 有结论数, "model": 模型名, "failed": 失败批次数}
+               "verified": 有结论数, "abstain": 其中弃权数, "model": 模型名,
+               "failed": 失败批次数}
     """
     pairs = candidate_pairs(intents, titles)
     verdicts, meta = verify_pairs(pairs, timeout)

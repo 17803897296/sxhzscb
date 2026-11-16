@@ -24,7 +24,10 @@ import re
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import job_family            # 岗位职能族表：只管「是否明确跨职能」，不负责放行
+
 import cache_guard
+import job_direction
 import job_level
 
 # 意向之间彼此独立（每个意向一次独立请求，提示词里不带别的意向），
@@ -389,10 +392,17 @@ def pair_verdict(title, intent):
     """
     a, at = _dir_core(intent)
     b, bt = _dir_core(title)
+    # 职能族先判一次：这是唯一能区分「更泛的同类岗」和「另一个职能」的判据。
+    # 放在最前面，是为了让「初级软件工程师」「开发工程师」这类意向本身没方向词
+    # 的情况也受约束——否则它们会无条件收下财务专员、UI 设计师。
+    # 任一侧认不出职能就不表态（管培生、储备干部这类），交回原有规则。
+    _cross = job_family.cross_function(title, intent)
     if not a:                       # 意向没方向 → 收所有细分（管培生 → 供应链管培生）
-        return "ok"
+        return "no" if _cross else "ok"
     if not b:                       # 岗位没方向 → 更泛的同类岗，可投
-        return "ok"
+        # ……但「没方向」不等于「同类」：UI 设计师、财务专员、产品经理都没有方向词，
+        # 却和开发不是同一个职能。先过族表，明确跨职能的不能按「更泛」放行。
+        return "no" if _cross else "ok"
     if b == a:
         return "ok"
     # —— 常识互斥判据（在「更宽/更细」的子串判定之前，先挡住共享字但方向相反的错配）——
@@ -430,7 +440,55 @@ def pair_verdict(title, intent):
         if _same_line(at, bt):       # 采购/物流/仓储 ⊂ 供应链：同一条线的细分，照旧算
             return "ok"
         return "no"
-    return "ok"
+    # 兜底：走到这里说明两边没互相包含、方向词也没有交集（多半是岗位名只有职能
+    # 没有方向，如「UI设计师」「财务专员」）。同职能的按原约定放行；明确跨职能的
+    # 不能兜底当成对口——原先这里一律 return "ok"，是规则误报的主要出口。
+    return "no" if _cross else "ok"
+
+
+# 纯职责/动作类方向核。这类词加上具体对象就是**另一个岗位**：器件测试 ≠ 测试、
+# 电商运营 ≠ 运营。意向核落在这里时不按「同岗的细分说法」放行。
+# 反过来，领域类核心词（算法 / 数据 / 电气 / 结构 / 质量 / 外贸 / 客户）加修饰
+# 仍是同一领域：AI算法 ⊂ 算法、电气设计 ⊂ 电气 —— 那才是同岗的不同叫法。
+ACT_CORE = ("测试", "开发", "设计", "运维", "实施", "支持", "运营", "策划",
+            "销售", "采购", "管理", "维护", "检修", "检验", "编辑", "翻译")
+
+
+def same_dir(title, intent):
+    """岗位是意向下**更细的同一方向**（不是换了对象、也不是并列的另一条路）。
+
+    判据两条同时成立：
+      1. 同职能族（job_family 认得出且一致）——排除「算法 × 财务」这类只是词形巧合；
+      2. 方向核互相包含——「ai算法」含「算法」、「电气设计」含「电气」、「数据分析」
+         含「数据」；真正换了方向的互不包含（「python」×「数据」）。
+    再加一道 ACT_CORE 闸：意向核本身是职责动作词时不放行，否则「器件测试工程师 ×
+    测试工程师」「电商运营 × 运营」会被当成同岗——那是换了对象，不是加修饰。
+
+    刻意不覆盖：同族但方向核互不包含（数据仓库 × 数据库研发、文案策划 × 新媒体运营）。
+    这类实测既可能对口、也可能是两个岗，交回模型原判。
+
+    为什么要它：pair_verdict 把「岗位比意向更细」一律判 ask（`a in b`），而 ask 既不
+    进命中证据、待问名额又只有 3 条，于是 AI算法工程师 / 数据分析岗 这类对口的岗在
+    页面上直接消失。这里给「确认过的细分说法」一条出口。
+    """
+    if not title or not intent:
+        return False
+    # 先做同义归一（自控 / 工控 / 仪控 / 集控 → 控制，机修 / 点检 → 设备…）：
+    # 归一是字面层的统一，族与方向核都必须在归一后的串上判，否则
+    # 「自控工程师」查不到 elec 族、「机修技术工」查不到 device 族，still False。
+    title, intent = _syn(title), _syn(intent)
+    try:
+        ft, fi = job_family.family_of(title), job_family.family_of(intent)
+        if not (ft and fi and ft == fi):
+            return False
+        tc, ic = _dir_core(title)[0], _dir_core(intent)[0]
+        if not tc or not ic:
+            return False
+        if ic in ACT_CORE:
+            return False
+        return ic in tc or tc in ic
+    except Exception:
+        return False
 
 
 # 公司业务侧的职能线索：只用来判「这家公司是不是就做这个细分」。
@@ -619,6 +677,15 @@ def _role_ok(intent, title, ignore_level=False):
                 continue
             if k in ("生产", "设备", "工艺") and supply_ctx and (
                     _func_family(intent) & _func_family(title)):
+                continue
+            # 业务环节词（生产 / 工艺 / 质检）只是岗位名的**前缀语境**，不改变方向：
+            # 「生产设备管理员」对「设备工程师」、 「生产计划」对「计划员」都是同一方向。
+            # 旧版只认供应链语境下的放行，于是药业的「生产设备管理员」「生产设备管理」
+            # 这两个最标准的设备岗被 role_ok 挡掉，企业明明有设备岗却显示「推断待核实」。
+            # 判据用 _share_core（与 align 同一套方向核），不另立词表：
+            # title 里若真有意向的方向核就放行；纯粹写「生产工艺」而意向是机械时，
+            # 方向核不共享，仍然拦。
+            if k in ("生产", "工艺", "质检") and _share_core(intent, title):
                 continue
             if k in ("研发", "开发工程师") and _is_eng_intent(intent):
                 # 软件研发岗（数据开发 / AI / 低代码 / 量化…）不算机械、电气、质量类意向的同类
@@ -832,7 +899,23 @@ def _grams(s):
 # 同义写法归一：只放「同义、且不会把别的职能拉进来」的替换。
 # 「营运」是「运营」的行业写法（营运管培生 / 营运中台管培生），
 # 不归一的话这类岗位对「运营管理培训生」一个字都对不上。
-SYNONYMS = (("营运", "运营"),)
+#
+# 2026-11-16 补「行业简称」这一批。原因是一个假阴性把 19 家有真实岗位公告的
+# 企业全推成了「推断待核实」：学生意向「控制工程师」，东明石化公告里写着
+# **自控工程师**，两字核一个都不共享 → 判成两个方向 → 企业掉进 inferred。
+# 石化 / 电力 / 化工 / 造纸这些行业的现场叫法本来就是「自控」「仪控」「集控」，
+# 跟招聘会上的「控制工程师」是同一个岗，字面不归一就永远对不上。
+#
+# 替换方向统一成**行业通用书面词**（不缩写），这样长词优先匹配不会被短词截断：
+#   自控 / 工控 / 仪控 / 集控 → 控制       （自动控制 / 工业控制 / 仪表控制 / 集中控制）
+#   机修 / 点检               → 设备维修 / 设备点检（设备岗的两种现场说法）
+# 刻意不收：「机电」（制造业是机+电两摊、建筑业指机电安装，两义并存）、
+# 「装置运行」（化工装置操作偏工艺，不是设备/控制）、「试验」（试验工程师是另一条线）。
+SYNONYMS = (
+    ("营运", "运营"),
+    ("自控", "控制"), ("工控", "控制"), ("仪控", "控制"), ("集控", "控制"),
+    ("机修", "设备维修"), ("点检", "设备点检"),
+)
 
 
 def _syn(s):
@@ -964,7 +1047,7 @@ def _strip_tag(r):
     return r
 
 
-def align_jobs(intended, jobs, sem=None, biz=""):
+def align_jobs(intended, jobs, sem=None, biz="", dir_hint=None, dir_notes=None):
     """把企业端「模型挑出的岗位」收紧到与意向真正同职能的范围。
 
     前端行里的 matched_jobs 是早期按**别的画像**跑的匹配结果，常出现
@@ -973,8 +1056,12 @@ def align_jobs(intended, jobs, sem=None, biz=""):
     确定性规则（_role_ok + _share_core）重新对齐，返回：
       kept   [(岗位名, 对应意向)]  按强度降序
       dropped [岗位名]             与任何意向都不同职能
+
+    dir_hint / dir_notes 透传给 align_jobs_detail：见那里的说明。
     """
-    kept, dropped, _, _ = align_jobs_detail(intended, jobs, sem, biz)
+    kept, dropped, _, _ = align_jobs_detail(intended, jobs, sem, biz,
+                                            dir_hint=dir_hint,
+                                            dir_notes=dir_notes)
     return kept, dropped
 
 
@@ -1036,7 +1123,46 @@ def _reason_by_direction(t, intent):
     return ""
 
 
-def align_jobs_detail(intended, jobs, sem=None, biz=""):
+def _ask_why_dir(t, intent, cn):
+    """岗位名不带方向、这家按主营是另一个方向：如实说清，不假装对口。
+
+    真实公告里的「工艺工程师」「质量工程师」在看名字这一步只能判定"同一个职能"，
+    方向得看这家单位做什么。化工厂的工艺岗是化工方向，汽车零部件厂的是注塑方向，
+    学生学化工投后者就白跑一趟 —— 所以宁可写清方向差异，也不给一个含混的命中。
+    """
+    return ("「%s」这个名字本身不带方向，但这家单位主营是%s方向，所以这个岗按%s方向招。"
+            "和你的「%s」不是一条线，除非你愿意转方向，否则不用优先跑。" %
+            (t, cn, cn, intent))
+
+
+def _intent_dirs(intent, intended):
+    """学生这一条意向的方向簇；意向本身不带方向时，用他勾过的所有意向的方向。
+
+    与 job_profile.match 同一口径：意向只写「质量工程师」时不算「没有专业」，
+    而是「他勾的其它意向里写过的方向」都算他的方向域。
+    """
+    d = job_direction.title_dir(intent)
+    if d:
+        return {d}
+    return {x for x in (job_direction.title_dir(i) for i in intended) if x}
+
+
+def _hint_of(dir_hint, t):
+    """从调用方准备的方向表里取这个岗位的方向簇与中文名。
+
+    dir_hint 结构：{岗位名: {"dirs": [簇], "cn": 中文, "src": "biz"}}
+    由调用方按**企业**准备（同一岗位名在不同企业方向不同），本模块不查库。
+    """
+    if not dir_hint:
+        return (), ""
+    h = dir_hint.get(t)
+    if not h:
+        return (), ""
+    return tuple(h.get("dirs") or ()), str(h.get("cn") or "")
+
+
+def align_jobs_detail(intended, jobs, sem=None, biz="", dir_hint=None,
+                      dir_notes=None):
     """同 align_jobs，另外挑出「只是层级不符」和「大类岗位名待问」两类岗位。
 
     层级不符（主管 / 资深 / 经理）：同职能但档位高，校招投不进 → `level_blocked`，
@@ -1045,6 +1171,14 @@ def align_jobs_detail(intended, jobs, sem=None, biz=""):
     大类岗位名（管培生 / 储备干部 / 研究员 / 专员）：名字不带方向，小类可以进大类、
     大类不能反推小类 → `ask`。**除非公司业务本身就是那个细分**（biz 参数，
     例：供应链公司的管培生），否则不算对口证据，只在提问里给一句。
+
+    dir_hint（2026-11-16 新增）：{岗位名: {"dirs": [方向簇], "cn": "化工"}}。
+    真实公告里的「工艺工程师」不带方向，字面规则只能判「同一个职能」，判不出
+    这家是化工工艺还是注塑工艺。带上这家单位的方向表之后：
+      · 方向相容 → 照常命中（并且放开「岗名比意向宽一层」那一关，否则会被
+        当成 wider 打回待问）；
+      · 方向不相容 → 不进 kept，改在 ask 里说清「这家这个岗是 X 方向」。
+    方向只由企业主营推定（job_direction），不看学生意向，避免用意向倒推断言。
     """
     intended = [str(x).strip() for x in (intended or []) if str(x).strip()]
     kept, dropped, level_blocked, ask = [], [], [], []
@@ -1085,19 +1219,50 @@ def align_jobs_detail(intended, jobs, sem=None, biz=""):
         # 非大类岗：只在「方向合法」的配对里挑最强的意向。同一岗位挂在「开发工程师」
         # 下合法、挂在「后端开发工程师」下不合法时取前者 —— 三个意向里只要有一个对得上，
         # 这一岗才算命中；并列方向的配对绝不生成命中。
+        hd, hcn = _hint_of(dir_hint, t)
+        # 只有「岗名自己不带方向」时才由主营补方向：名字里已经写了方向的
+        # （「电气测试工程师」）以名字为准，主营再准也不能改岗位名说的事。
+        # 判据用 job_direction.title_dir，不能用 _dir_core —— 后者把「工艺」这种
+        # 职能词也当成方向，会把「工艺工程师」误判成自带方向而放弃主营佐证。
+        hd = hd if not job_direction.title_dir(t) else ()
         best, best_s, asks = None, -1.0, []
         for it in intended:
             if not (_role_ok(it, t) and _share_core(it, t)):
                 continue
-            if is_wider_job(t, it) and not biz_ok(it, biz):
+            sds = _intent_dirs(it, intended)
+            if hd and sds and not any(job_direction.compatible(x, y, t)
+                                      for x in hd for y in sds):
+                # 岗名不带方向、这家主营是另一个方向：不进 kept，只留一句说明。
+                asks.append((it, "dir", hcn))
+                continue
+            hint_ok = bool(hd) and bool(sds)
+            if is_wider_job(t, it) and not (hint_ok or biz_ok(it, biz)):
                 # 岗名比意向宽一层（算法工程师 × AI算法研究工程师）：沾边但看不出细分。
                 asks.append((it, "wider"))
                 continue
             v = pair_verdict(t, it)
-            if v == "ok":
+            # ask = 岗位比意向更细。同族同方向的细分说法（AI算法工程师 × 算法工程师、
+            # 数据分析岗 × 数据分析师）就是同一岗，按命中收进来；换了对象的
+            # （器件测试 × 测试、电商运营 × 运营）仍走待问。见 same_dir 的判据。
+            if v == "ok" or (v == "ask" and same_dir(t, it)):
                 s = _strength(it, t, True)
                 if s > best_s:
                     best, best_s = it, s
+                    if hint_ok and dir_notes is not None:
+                        # 写「实际对上的那个方向」，不写首选方向：多恩做印染助剂，
+                        # 首方向被识别成纺织，但学生是化工，对上的其实是「化工」这一支。
+                        _pick = [job_direction.LABEL.get(x, x) for x in hd
+                                 if any(job_direction.compatible(x, y, t)
+                                        for y in sds)]
+                        dir_notes.append({"job": t, "intent": it,
+                                          "cn": "、".join(_pick) or hcn,
+                                          # 同向或相邻（化工×环保）算「方向一致」，
+                                          # 只有按职能交叉放开的（半导体厂的工艺岗收化工）
+                                          # 才写「不完全一致」——否则「脱硫脱硝工艺岗」
+                                          # 也会被说成方向不符，那是错的。
+                                          "exact": any(
+                                              job_direction.compatible(x, y)
+                                              for x in hd for y in sds)})
             else:
                 asks.append((it, v))
         if best:
@@ -1106,11 +1271,15 @@ def align_jobs_detail(intended, jobs, sem=None, biz=""):
         if asks:
             # 方向对不上：岗位更细 → 问一句；并列方向（后端 × 量化 / 前端）也说清
             # 「这家确实有开发岗，只是方向不是你的」，既不假装对口，也不说人家不招。
-            it, v = asks[0]
-            why = {"wider": _ask_why_wider, "ask": _ask_why_spec,
-                   "no": _ask_why_parallel}[v](t, it)
-            if len(ask) < 3 and not any(a["job"] == t for a in ask):
-                ask.append({"job": t, "intent": it, "why": why})
+            a = asks[0]
+            it, v = a[0], a[1]
+            if v == "dir":
+                why = _ask_why_dir(t, it, a[2] if len(a) > 2 else "")
+            else:
+                why = {"wider": _ask_why_wider, "ask": _ask_why_spec,
+                       "no": _ask_why_parallel}[v](t, it)
+            if len(ask) < 3 and not any(a2["job"] == t for a2 in ask):
+                ask.append({"job": t, "intent": it, "why": why, "kind": v})
             dropped.append(t)
             continue
         dropped.append(t)
@@ -1126,7 +1295,7 @@ def align_jobs_detail(intended, jobs, sem=None, biz=""):
     return kept, dropped, level_blocked, ask
 
 
-def ask_jobs(intended, titles, biz=""):
+def ask_jobs(intended, titles, biz="", dir_hint=None):
     """只写大类名、且属于「轮岗后再定岗」的岗位 → 现场问一句。
 
     这类岗位不是对口证据（大类不能反推小类），但值得去问一句：制造业企业招的
@@ -1141,6 +1310,11 @@ def ask_jobs(intended, titles, biz=""):
     for t in titles or []:
         t = str(t).strip()
         if not t or t in seen or not job_level.is_job_title(t):
+            continue
+        # 已经按主营业务推定出方向的岗位不必再问「是不是你的方向」：方向已经写进
+        # 报告与核对说明了，再挂一句「没写业务方向，问一句」会与命中结论自相矛盾
+        # （金田铜业的「工艺工程师/主管/经理」判成金属材料方向命中，列表底下却还问）。
+        if _hint_of(dir_hint, t)[0]:
             continue
         # 纯大类里只留轮岗类；定向岗与意向无关，不必逐条意向试。
         bare = is_bare_generic(t)

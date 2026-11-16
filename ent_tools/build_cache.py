@@ -57,7 +57,7 @@ URGENCY_MAP = {
 }
 
 JOB_KEYS = ("title", "requirements", "headcount", "urgency", "group", "salary")
-CACHE_KEYS = ("name", "nature", "city", "industry", "jobs", "jobSource",
+CACHE_KEYS = ("name", "nature", "city", "industry", "biz_scope", "jobs", "jobSource",
               "jobEvidence", "source", "date", "text")
 
 
@@ -182,6 +182,10 @@ def build_entry(item, report):
         "nature": nature,
         "city": str(item.get("city") or UNKNOWN).strip() or UNKNOWN,
         "industry": industry,
+        # 主营原样带过去（未知就是未知）。这里不校原文，因为 raw_research 的 text
+        # 常被 collect.py 截到 900 字，拿来校验「出处」会误杀真主营；
+        # 出处校验在 enrich_by_llm 里已经对着完整 page_text 做过一次。
+        "biz_scope": str(item.get("biz_scope") or UNKNOWN).strip() or UNKNOWN,
         "jobs": jobs,
         "jobSource": job_source,
         "jobEvidence": evidence,

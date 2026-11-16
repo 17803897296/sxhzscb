@@ -717,16 +717,66 @@ function _jobRecommendRules(major, exps, skills, exclude) {
     [["财务","会计","审计","预算","成本"],
      ["财务分析岗","成本分析专员","内审/风控专员"],"实习里接触过财务或成本"]
   ];
+  /* 学科大类兜底表：MAJOR 里查不到专业时按大类给岗。
+     旧版查不到就写死「管培生（综合方向）/数据分析岗/商业分析岗/项目管理培训生」——
+     那是管理学院 5 个方向的入口，食品 / 机械 / 土木 / 纺织的学生离线打开时
+     全被当成管培生。这里与服务端 CATEGORY_JOBS_MAP 对齐（大类名同）。 */
+  const CAT = [
+    [["食品","粮食","乳品"], ["食品研发工程师","品控专员","食品检验员","生产工艺员",
+      "质量管理专员","化验/质检岗","研发助理","感官评价专员","技术销售工程师","供应链专员"]],
+    [["农学","作物","园艺","植保","动物","畜牧","水产","兽医"], ["农艺师","育种技术员",
+      "植保技术员","养殖技术员","饲料配方师","农产品品控岗","化验/质检岗","技术销售工程师"]],
+    [["化学","化工","材料","冶金","高分子"], ["研发工程师（校招）","工艺工程师（校招）",
+      "质量工程师（校招）","化验/质检岗","分析测试岗","实验室技术员","EHS安全工程师（校招）"]],
+    [["数学","物理","统计"], ["数据分析岗","算法工程师（校招）","统计分析师","精算助理",
+      "量化研究岗","数据开发工程师（校招）"]],
+    [["计算机","软件","人工智能","数据科学","大数据","信息安全","物联网"],
+     ["软件开发工程师（校招）","前端开发工程师（校招）","测试开发工程师（校招）",
+      "数据开发工程师（校招）","算法工程师（校招）","网络安全工程师（校招）","运维工程师"]],
+    [["机械","车辆","汽车","航空","航天","船舶","能源","动力","机器人","智能制造"],
+     ["机械设计工程师","结构工程师","工艺工程师（校招）","设备工程师（校招）",
+      "质量工程师（校招）","仿真/CAE工程师","测试工程师","技术支持工程师"]],
+    [["电气","自动化","控制","通信","电子","微电子","光电","仪器"],
+     ["电气工程师","自动化工程师","硬件工程师","嵌入式软件工程师","测试工程师",
+      "工艺工程师（校招）","设备工程师（校招）","技术支持工程师"]],
+    [["土木","建筑","水利","测绘","给排水","工程造价"],
+     ["结构工程师","土建工程师","施工技术员","造价/预算岗","BIM工程师（校招）","安全工程师"]],
+    [["环境工程","环境科学","安全工程","矿业"], ["EHS工程师（校招）","环保工程师",
+      "水处理工程师","环境检测员","安全工程师","化验/质检岗"]],
+    [["纺织","服装","轻化","轻工","包装","印刷"], ["纺织工程师","面料开发工程师",
+      "染整技术员","工艺工程师（校招）","质量工程师（校招）","检测工程师"]],
+    [["生物","医学","临床","护理","药学","中医"], ["研发工程师（校招）","实验技术员",
+      "检测工程师","质量检验员（QC）","注册专员（校招）","临床研究助理","医药代表"]],
+    [["中文","外语","英语","新闻","传播","教育","历史","哲学","法学"], ["新媒体运营",
+      "内容编辑","文案策划","品牌市场专员","人力资源专员","行政专员","翻译","编辑/记者"]]
+  ];
+  /* 识别不出大类时的中性入口表：任何专业都投得进，且不含管培生这类经管专属入口 */
+  const NEUTRAL = ["生产技术员","质量管理专员","化验/质检岗","销售专员","采购专员",
+    "市场专员","行政专员","人事专员","客户服务专员","项目助理"];
+  const WIDE_MAJOR = ["管理","经济","金融","会计","营销","供应链","物流","计算机","软件",
+    "数据","数学","统计","信息"];
+  const DATA_NARROW = ["数据分析岗", "数据运营专员"];
   const text = (exps || []).concat(skills || []).join(" ").toLowerCase();
   let base = MAJOR[major] || [];
   if (!base.length) {
     for (const k in MAJOR) { if (major && (major.indexOf(k) >= 0 || k.indexOf(major) >= 0)) { base = MAJOR[k]; break; } }
   }
-  if (!base.length) base = ["管培生（综合方向）","数据分析岗","商业分析岗","项目管理培训生"];
+  if (!base.length) {
+    for (const row of CAT) {
+      if (row[0].some(function(k) { return (major || "").indexOf(k) >= 0; })) { base = row[1]; break; }
+    }
+  }
+  if (!base.length) base = NEUTRAL;
   const cands = [], seen = new Set();
+  /* 「数据」这条信号原来不分专业给 数据分析/商业分析/BI —— 食品专业写「SPSS 统计分析」
+     也会看到 BI 分析师。非经管 / 非计算机专业收窄到通用数据岗。 */
+  const wide = WIDE_MAJOR.some(function(k) { return (major || "").indexOf(k) >= 0; });
   RULES.forEach(function(pair) {
-    if (pair[0].some(function(k) { return text.indexOf(k.toLowerCase()) >= 0; }))
-      pair[1].forEach(function(j) { cands.push({ title: j, why: pair[2] }); });
+    if (pair[0].some(function(k) { return text.indexOf(k.toLowerCase()) >= 0; })) {
+      const isData = (pair[2] || "").indexOf("取数") >= 0;
+      const jobs = (isData && !wide) ? DATA_NARROW : pair[1];
+      jobs.forEach(function(j) { cands.push({ title: j, why: pair[2] }); });
+    }
   });
   base.forEach(function(j) { cands.push({ title: j, why: "与专业「" + (major || "未填") + "」的培养方向对口" }); });
   const out = [];
@@ -812,9 +862,23 @@ function jobRecommendStep() {
         const selTitles = new Set();
         const chipsBox = root.querySelector('#job-cands');
         const whyBox = root.querySelector('#job-why');
+        function _srcNote(c) {
+          if (!c) return '';
+          if (c.db_level === 'campus') return '（校招公告明确在招）';
+          if (c.db_level === 'other') return '（企业库在招，来源不是校招公告）';
+          if (c.db_level === 'inferred') return '（库内没有这个岗位名，属模型推断，建议现场核实）';
+          return '';
+        }
         function paint() {
           chipsBox.innerHTML = cands.map(function(c, i) {
-            return '<button type="button" class="chip" data-i="' + i + '" title="' + esc(c.why || '') + '">' + esc(c.title) + '</button>';
+            /* 「校招」标只说明来源是校招公告，不代表这岗更值得投 —— 其他来源的岗位
+               一样是企业真实在招的岗，命中就是命中，所以只在标题上加个小字，不改变
+               chip 是否能选、也不改变排序。 */
+            var _why = (c.why || '') + _srcNote(c);
+            var _mark = (c.db_level === 'campus')
+              ? '<span style="font-size:10px;font-weight:600;color:#0f766e;background:#ccfbf1;border-radius:3px;padding:0 3px;margin-left:4px;vertical-align:1px">校招</span>'
+              : '';
+            return '<button type="button" class="chip" data-i="' + i + '" title="' + esc(_why) + '">' + esc(c.title) + _mark + '</button>';
           }).join('') || '<span class="muted">这一批没有更多岗位了，可以直接手写。</span>';
           root.querySelector('#job-tag').textContent = tag;
           var tierEl = root.querySelector('#job-tier');
@@ -827,7 +891,7 @@ function jobRecommendStep() {
               if (!c) return;
               if (selTitles.has(c.title)) { selTitles.delete(c.title); b.style.background = ''; b.style.color = ''; }
               else { selTitles.add(c.title); b.style.background = 'var(--accent, #2563eb)'; b.style.color = '#fff'; }
-              whyBox.textContent = c.title + '：' + (c.why || '');
+              whyBox.textContent = c.title + '：' + (c.why || '') + _srcNote(c);
             };
           });
         }

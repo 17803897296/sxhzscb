@@ -41,6 +41,25 @@ class CompanyContractTests(unittest.TestCase):
         self.assertEqual([j["title"] for j in result[0]["jobs"]], ["研发岗位", "运营岗位"])
         self.assertEqual(result[0]["nature"], "国企")
 
+    def test_biz_scope_carried_from_cache(self):
+        """主营要跟着采集结果进契约：没有这一列，匹配端就判不出岗位方向。"""
+        raw = cache_record()
+        raw["biz_scope"] = "汽车空调压缩机及热管理系统的研发生产"
+        c = m.build_companies(["测试企业"], [raw])[0]
+        self.assertEqual(c["biz_scope"], "汽车空调压缩机及热管理系统的研发生产")
+        m.validate_companies([c])
+
+    def test_biz_scope_defaults_to_unknown(self):
+        """老缓存 / 抓不到业务介绍的企业：写「未知」，别写空串也别编。"""
+        c = m.build_companies(["测试企业"], [cache_record()])[0]
+        self.assertEqual(c["biz_scope"], "未知")
+
+    def test_biz_scope_rejects_non_string(self):
+        raw = cache_record()
+        raw["biz_scope"] = ["做压缩机"]
+        with self.assertRaises(m.ContractError):
+            m.build_companies(["测试企业"], [raw])
+
     def test_saved_enum_whitespace_is_invalid(self):
         c = m.build_companies(["甲企业"], [])[0]
         c["nature"] = " 民企 "

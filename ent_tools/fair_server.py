@@ -507,6 +507,15 @@ def main():
     if not os.path.isfile(db_path) and os.path.isfile(seed):
         shutil.copy2(seed, db_path)
         print("  已从只读种子初始化本地库 data/careersafari.db")
+    # 缓存同理：活缓存服务一跑就会被改写，跟踪它等于让 clone 出来的 git status
+    # 永久是脏的。仓库只放 *.seed，缺活文件时在这里复制出来。
+    try:
+        import cache_guard
+        _restored = cache_guard.restore_seeds()
+        if _restored:
+            print("  已从只读种子恢复缓存：%s" % "、".join(_restored))
+    except Exception as exc:
+        print("  缓存种子恢复失败：%s（首屏仍可读 payload，重建会重算）" % exc)
     if not os.path.exists(PAYLOAD):
         fair_bridge.build()
     # 企业端搜索/初筛接口复用 portal.py，需要先初始化模型；不初始化会静默降级成关键词规则

@@ -31,6 +31,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 DB = os.path.join(DATA, "careersafari.db")
 TODO = os.path.join(DATA, "_roster_todo.json")
+MISS = os.path.join(DATA, "_roster_miss.json")
 PROGRESS = os.path.join(os.path.dirname(HERE), "PROGRESS_采集.md")
 
 sys.path.insert(0, HERE)
@@ -60,6 +61,10 @@ def save_item(name, item):
         if old.get("enriched") and not patch.get("enriched"):
             for k in ENRICH_KEYS:
                 patch.pop(k, None)
+        # 主营只会「补进来」，不会被一次没抓到的采集抹掉：模型这次没从页面找到业务介绍，
+        # 不代表上次找到的那句失效了。空覆盖有值 = 平白丢一次人工/历史成果。
+        if str(patch.get("biz_scope") or "").strip() in ("", "未知") and old.get("biz_scope"):
+            patch.pop("biz_scope", None)
         merged.update(patch)
         merged.pop("roster_only", None)
         con.execute("INSERT OR REPLACE INTO company_jobs(name,item_json,updated_at) VALUES (?,?,?)",
@@ -73,9 +78,15 @@ def save_item(name, item):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--workers", type=int, default=4)
+    # 4 → 6：抓取是 I/O 等待，6 个线程对 bing / 企业官网都不算压；真正的并发上限
+    # 由 portal 里的 HTTP 信号量（12）和浏览器信号量（2）卡住，不会把无头渲染挤爆。
+    ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--force", action="store_true", help="已有岗位的也重采")
     ap.add_argument("--names", help="只采文件里列出的企业（每行一个名称），无视是否有岗位")
+    ap.add_argument("--retry-miss", action="store_true",
+                    help="只重跑上次没抓到岗位的企业（读 _roster_miss.json）")
+    ap.add_argument("--scope-only", action="store_true",
+                    help="只补主营业务：有岗位但主营为空的企业，走页面缓存跑一次模型")
     args = ap.parse_args()
 
     if not portal.setup_model():
@@ -83,8 +94,35 @@ def main():
     else:
         print("模型：%s" % portal.MODEL_ON.get("model"))
 
-    todo = json.load(open(TODO, encoding="utf-8"))
-    if args.names:
+    # 名单源头是展位表（booths.json），_roster_todo.json 只是它的派生快照。
+    # 快照丢了就当场重建——别让整条流程因为少一个中间文件跑不起来。
+    if os.path.isfile(TODO):
+        todo = json.load(open(TODO, encoding="utf-8"))
+    else:
+        booths = json.load(open(os.path.join(DATA, "booths.json"), encoding="utf-8"))
+        todo = [b["name"] for b in booths if b.get("name")]
+        with open(TODO, "w", encoding="utf-8") as f:
+            json.dump(todo, f, ensure_ascii=False, indent=1)
+        print("已从展位表重建名单：%d 家" % len(todo))
+    scope_only = args.scope_only
+    if scope_only:
+        # 只补主营。页面正文有缓存（portal.pages_for），所以这一步不重抓，
+        # 每家就是「读缓存 + 一次模型调用」。
+        con = sqlite3.connect(DB)
+        todo = []
+        for n, ij in con.execute("SELECT name,item_json FROM company_jobs"):
+            try:
+                it = json.loads(ij)
+            except Exception:
+                continue
+            if (it.get("jobs") or []) and str(it.get("biz_scope") or "").strip() in ("", "未知"):
+                todo.append(n)
+        con.close()
+        print("主营为空且有岗位：%d 家" % len(todo))
+    elif args.retry_miss and os.path.isfile(MISS):
+        todo = json.load(open(MISS, encoding="utf-8"))
+        print("上次未抓到岗位：%d 家" % len(todo))
+    elif args.names:
         # 指定名单：只采这些，且不管库里有没有岗位（用于定向补漏）
         want = [ln.strip() for ln in open(args.names, encoding="utf-8") if ln.strip()]
         idx = {n: i for i, n in enumerate(todo)}
@@ -113,9 +151,22 @@ def main():
     t0 = time.time()
     ok = miss = 0
     lines = []
+    results = []
+    miss_names = []
 
     def work(name):
         st = time.time()
+        if scope_only:
+            try:
+                got = portal.build(name)
+            except Exception as exc:
+                return name, {"biz_scope": "未知", "note": str(exc)[:60]}, time.time() - st
+            # 只挑主营回写：这次抽到的岗位可能有出入，别拿它覆盖库里已经核对过的岗位
+            scope = str(got.get("biz_scope") or "").strip() or "未知"
+            patch = {"biz_scope": scope}
+            if scope != "未知":
+                save_item(name, patch)      # 其它分支在 work 末尾落库，这条是提前 return，必须自己写
+            return name, patch, time.time() - st
         item = {}
         # 搜索这一步偶尔会瞬时失败（bing 返回空页）。只对「没抓到页面」立即再试一次，
         # 不 sleep、不循环：抓到了就没岗位说明确实没有，重试没意义。
@@ -136,11 +187,19 @@ def main():
         futs = {pool.submit(work, n): n for n in todo}
         for i, fut in enumerate(as_completed(futs), 1):
             name, item, dt = fut.result()
+            results.append((name, item, dt))
             n_jobs = len(item.get("jobs") or [])
+            if scope_only:
+                print("[%d/%d] %-28s 主营=%s %.1fs" % (
+                    i, len(todo), name[:26],
+                    "有" if str(item.get("biz_scope") or "") not in ("", "未知") else "无", dt),
+                    flush=True)
+                continue
             if n_jobs:
                 ok += 1
             else:
                 miss += 1
+                miss_names.append(name)
             line = "[%d/%d] %s %-28s jobs=%-3d %s %.0fs" % (
                 i, len(todo), "OK " if n_jobs else "MISS", name[:26], n_jobs,
                 item.get("city") or "?", dt)
@@ -150,8 +209,21 @@ def main():
                 with open(PROGRESS, "a", encoding="utf-8") as f:
                     f.write(line + "\n")
 
+    if not scope_only:
+        try:
+            with open(MISS, "w", encoding="utf-8") as f:
+                json.dump(miss_names, f, ensure_ascii=False, indent=1)
+        except Exception:
+            pass
     dur = time.time() - t0
-    summary = "\n完成：有岗位 %d 家 / 0 岗 %d 家，用时 %.1f 分钟\n" % (ok, miss, dur / 60)
+    if scope_only:
+        filled = sum(1 for n, it, _ in results if str(it.get("biz_scope") or "") not in ("", "未知"))
+        summary = "\n完成：主营补出 %d 家 / 仍为未知 %d 家，用时 %.1f 分钟\n" % (
+            filled, len(results) - filled, dur / 60)
+    else:
+        summary = "\n完成：有岗位 %d 家 / 0 岗 %d 家，用时 %.1f 分钟\n" % (ok, miss, dur / 60)
+        if miss_names:
+            summary += "未抓到岗位的名单已写入 %s（可用 --retry-miss 重跑）\n" % os.path.basename(MISS)
     print(summary)
     with open(PROGRESS, "a", encoding="utf-8") as f:
         f.write(summary)

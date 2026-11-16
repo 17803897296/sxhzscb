@@ -1,0 +1,50 @@
+{
+ "_cg": {
+  "name": "intent_semantics",
+  "fp": "ebb0e076454e",
+  "model": "deepseek-chat",
+  "schema": 1,
+  "ts": "2026-11-16 14:30:47",
+  "extra": {}
+ },
+ "items": {
+  "自动化工程师": {
+   "key": "fc5d52bb58f454bac77729eb37914533",
+   "value": {
+    "titles": [],
+    "reasons": {},
+    "terms": [],
+    "reason": "大模型判定为同类校招岗位",
+    "via": "llm"
+   }
+  },
+  "控制工程师": {
+   "key": "e8bd26b7193a5b51ef0b053dcd4dd5eb",
+   "value": {
+    "titles": [
+     "控制工程师"
+    ],
+    "reasons": {
+     "控制工程师": "本家岗位名与你的意向岗位同名"
+    },
+    "terms": [],
+    "reason": "大模型判定为同类校招岗位",
+    "via": "llm"
+   }
+  },
+  "设备工程师": {
+   "key": "c59c78ba893a6c74ac1cca8f070af001",
+   "value": {
+    "titles": [
+     "设备工程师"
+    ],
+    "reasons": {
+     "设备工程师": "「设备工程师」即「设备工程师」的另一种说法"
+    },
+    "terms": [],
+    "reason": "大模型判定为同类校招岗位",
+    "via": "llm"
+   }
+  }
+ }
+}

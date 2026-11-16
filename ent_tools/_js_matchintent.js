@@ -6,6 +6,11 @@ const MI_GEN=['专员','管培','培生','培训','训生','管理','助理','�
 /* 岗位名尾部后缀字：跨词边界的 2-gram 常以它们收尾（理岗 / 源专 / 究员），
    只共享到这种片段时不算同职能证据。与 intent_semantics.BOUNDARY_TAIL 同源。 */
 const MI_TAIL='岗员师专士长工部科组队站店厂所司局院校';
+/* 岗位职能族表（与 ent_tools/job_family.py 同源，构建时由 Python 侧序列化注入）。
+   解决「有职能、无方向」的岗位被兜底放行：UI设计师 / 财务专员 / 产品经理 都没有
+   方向词，却和「后端开发工程师」不是同一个职能。族表只回答「是否明确跨职能」，
+   认不出来就不表态，把结论交回原有规则。 */
+const MI_FUNC=[["android","dev"],["unity3d","dev"],["python","dev"],["golang","dev"],["软件工程师","dev"],["开发工程师","dev"],["unity","dev"],["web前端","dev"],["web开发","dev"],["大模型应用","dev"],["服务端开发","dev"],["大数据开发","dev"],["实施工程师","ops"],["计算机视觉","algo"],["cmf设计","design"],["电子工程师","hw"],["结构工程师","mech"],["控制工程师","elec"],["外贸业务员","sales"],["软件开发","dev"],["软件研发","dev"],["程序开发","dev"],["java","dev"],["go开发","dev"],[".net","dev"],["信息安全","dev"],["全栈开发","dev"],["数据开发","dev"],["系统运维","ops"],["网络运维","ops"],["机器学习","algo"],["深度学习","algo"],["推荐系统","algo"],["数据挖掘","algo"],["bi工程","data"],["报表开发","data"],["数据分析","data"],["产品经理","product"],["产品专员","product"],["产品助理","product"],["产品策划","product"],["产品规划","product"],["ui设计","design"],["交互设计","design"],["视觉设计","design"],["平面设计","design"],["工业设计","design"],["外观设计","design"],["造型设计","design"],["芯片设计","hw"],["结构设计","mech"],["电子电气","elec"],["自动控制","elec"],["仪表控制","elec"],["集中控制","elec"],["工业控制","elec"],["设备保全","device"],["制造工程","process"],["生产技术","process"],["生产管理","process"],["体系工程","quality"],["体系专员","quality"],["安全工程","ehs"],["安全管理","ehs"],["职业健康","ehs"],["成本会计","finance"],["财务分析","finance"],["人力资源","hr"],["hrbp","hr"],["组织发展","hr"],["员工关系","hr"],["客户经理","sales"],["业务拓展","sales"],["市场营销","sales"],["活动策划","sales"],["外贸业务","sales"],["国际贸易","sales"],["国际业务","sales"],["内容运营","media"],["电商运营","media"],["产品运营","media"],["工程管理","civil"],["项目管理","civil"],["临床研究","pharma"],["药品注册","pharma"],["医药代表","pharma"],["临床医学","medical"],["医学专员","medical"],["医学信息","medical"],["服务端","dev"],["客户端","dev"],["移动端","dev"],["ios","dev"],["嵌入式","dev"],["单片机","dev"],["上位机","dev"],["下位机","dev"],["程序员","dev"],["php","dev"],["c++","dev"],["低代码","dev"],["sre","ops"],["nlp","algo"],["大模型","algo"],["大数据","data"],["数据库","data"],["etl","data"],["cmf","design"],["pcb","hw"],["自动化","elec"],["plc","elec"],["sqe","quality"],["检验员","quality"],["ehs","ehs"],["安全员","ehs"],["业务员","sales"],["大客户","sales"],["进出口","sales"],["新媒体","media"],["短视频","media"],["公众号","media"],["小红书","media"],["供应链","supply"],["计划员","supply"],["预算员","civil"],["辅导员","edu"],["高分子","chem"],["后端","dev"],["前端","dev"],["全栈","dev"],["安卓","dev"],["固件","dev"],["c#","dev"],["鸿蒙","dev"],["测试","test"],["测开","test"],["运维","ops"],["算法","algo"],["数据","data"],["数仓","data"],["ui","design"],["ux","design"],["美工","design"],["硬件","hw"],["电路","hw"],["射频","hw"],["天线","hw"],["版图","hw"],["机械","mech"],["模具","mech"],["钣金","mech"],["液压","mech"],["传动","mech"],["电气","elec"],["电力","elec"],["配电","elec"],["工控","elec"],["设备","device"],["点检","device"],["机修","device"],["维修","device"],["保养","device"],["巡检","device"],["工艺","process"],["产线","process"],["精益","process"],["质量","quality"],["品质","quality"],["客诉","quality"],["质检","quality"],["化验","quality"],["环保","ehs"],["财务","finance"],["会计","finance"],["出纳","finance"],["审计","finance"],["税务","finance"],["资金","finance"],["人力","hr"],["人事","hr"],["招聘","hr"],["薪酬","hr"],["绩效","hr"],["行政","admin"],["前台","admin"],["后勤","admin"],["文员","admin"],["秘书","admin"],["法务","legal"],["律师","legal"],["合规","legal"],["销售","sales"],["渠道","sales"],["招商","sales"],["导购","sales"],["门店","sales"],["bd","sales"],["营销","sales"],["市场","sales"],["品牌","sales"],["推广","sales"],["广告","sales"],["外贸","sales"],["跟单","sales"],["报关","sales"],["单证","sales"],["文案","media"],["直播","media"],["社群","media"],["抖音","media"],["客服","serv"],["售后","serv"],["采购","supply"],["物流","supply"],["仓储","supply"],["库存","supply"],["调度","supply"],["施工","civil"],["土建","civil"],["造价","civil"],["监理","civil"],["教师","edu"],["老师","edu"],["讲师","edu"],["教研","edu"],["助教","edu"],["教培","edu"],["药品","pharma"],["药物","pharma"],["制剂","pharma"],["药理","pharma"],["药学","pharma"],["化工","chem"],["化学","chem"],["材料","chem"],["合成","chem"],["涂料","chem"],["试剂","chem"],["护理","medical"],["医师","medical"],["医生","medical"],["食品","food"],["饮料","food"],["乳品","food"],["烘焙","food"]];
 const MI_FAM={
   supply:['供应链','物流','采购','寻源','仓储','关务','库存','配送','物资','PMC','备件',
           '生产计划','物料计划','计划专员','计划管培','计划助理','综合计划','计划主管','计划岗'],
@@ -161,9 +166,37 @@ function miDirCore(t){
    ask 值得问一句（同向但岗位更细：测试 → 电气测试 / 器件测试）
    no  不成立（并列方向：后端 × 量化 / 前端 / 嵌入式，同大类两条路）
    与 intent_semantics.pair_verdict 同源。 */
+/* 岗位名归一化：与 job_family._norm 逐字符同源（全角括号、顿号、J 码要先抹掉）。 */
+function miFuncNorm(s){
+  return String(s==null?'':s).replace(/[\s（）()\[\]【】、，,·—\-\/_]+/g,'').toLowerCase();
+}
+/* 岗位名 → 职能族；认不出来返回 ''（'' 是「不表态」，不是「无职能」）。 */
+function miFuncOf(name){
+  const x=miFuncNorm(name);
+  if(!x) return '';
+  for(let i=0;i<MI_FUNC.length;i++){
+    if(x.indexOf(MI_FUNC[i][0])>=0) return MI_FUNC[i][1];
+  }
+  return '';
+}
+/* 两者是否**明确**属于不同职能。任一侧认不出来就返回 false（不表态）。 */
+function miCrossFunc(title,intent){
+  const a=miFuncOf(intent);
+  if(!a) return false;
+  const b=miFuncOf(title);
+  return !!b && a!==b;
+}
 function miPairVerdict(title,intent){
   const a=miDirCore(intent), b=miDirCore(title);
-  if(!a.t||!b.t||a.t===b.t) return 'ok';
+  /* 职能族先判一次：区分「更泛的同类岗」和「另一个职能」。
+     放在最前面，让「初级软件工程师 / 开发工程师」这类本身没方向词的意向也受约束。
+     与 intent_semantics.pair_verdict 同一处判据逐条同源。 */
+  const cross=miCrossFunc(title,intent);
+  if(!a.t) return cross?'no':'ok';
+  /* 岗位没方向词 ≠ 更泛的同类岗：UI 设计师、财务专员、产品经理都没有方向词，
+     却和开发不是同一个职能。 */
+  if(!b.t) return cross?'no':'ok';
+  if(a.t===b.t) return 'ok';
   /* 常识互斥判据（在「更宽/更细」子串判定之前，先挡住共享字但方向相反的错配）。
      与 intent_semantics.pair_verdict ① ② ③ 逐条同源。 */
   /* ① 教师 × 明确专业序列：一个教书、一个做技术/研究/医护，不是同一岗位。
@@ -196,7 +229,9 @@ function miPairVerdict(title,intent){
     if(miSameLine(a.k,b.k)) return 'ok';   /* 采购/物流/仓储 ⊂ 供应链：同一条线照旧算 */
     return 'no';
   }
-  return 'ok';
+  /* 兜底：没互相包含、方向词也没交集（多半是岗位名只有职能没有方向）。
+     同职能按原约定放行；明确跨职能的不能兜底当成对口。 */
+  return cross?'no':'ok';
 }
 /* 方向不一样时，不能说成「另一种说法」：写清是哪个大类下面的哪个方向。
    与 intent_semantics._reason_by_direction 同源。 */
@@ -391,8 +426,18 @@ function miIsJob(t){
   return true;
 }
 function miGrams(s){ s=String(s||''); const o=[]; for(let i=0;i+1<s.length;i++) o.push(s.substr(i,2)); return o; }
-/* 同义写法归一：「营运」就是「运营」（营运管培生 / 营运中台管培生） */
-function miSyn(s){ return String(s||'').replace(/营运/g,'运营'); }
+/* 同义写法归一：「营运」就是「运营」（营运管培生 / 营运中台管培生）。
+   行业简称同上：「自控 / 工控 / 仪控 / 集控」都是「控制」，「机修 / 点检」是设备岗的
+   两种现场说法——东明石化写「自控工程师」、学生意向「控制工程师」，不归一永远对不上。
+   与 intent_semantics.SYNONYMS 逐条同源。
+   注意替换顺序：先长后短在这里不敏感（各词互不为前缀），但保持与 Python 一致。 */
+function miSyn(s){
+  return String(s||'')
+    .replace(/营运/g,'运营')
+    .replace(/自控/g,'控制').replace(/工控/g,'控制')
+    .replace(/仪控/g,'控制').replace(/集控/g,'控制')
+    .replace(/机修/g,'设备维修').replace(/点检/g,'设备点检');
+}
 function miFam(t){ const o=[]; for(const k in MI_FAM){ if(miHas(t,MI_FAM[k])) o.push(k); } return o; }
 function miShare(a,b){
   a=miSyn(a); b=miSyn(b);
@@ -455,6 +500,11 @@ function miRole(a,b,ignoreLevel){
       if(soft && MI_DEV.indexOf(k)>=0) continue;
       if(qual && (k==='测试'||k==='研究员')) continue;
       if((k==='生产'||k==='设备'||k==='工艺') && supCtx && fam) continue;
+      /* 业务环节词只是岗位名的**前缀语境**，不改变方向：「生产设备管理员」对
+         「设备工程师」、「生产管培生」对「管培生」都是同一方向。旧版只认供应链
+         语境，于是药业的「生产设备管理员」这类最标准的设备岗被挡掉，企业明明
+         有设备岗却显示「推断待核实」。判据用 miShare（与 Python _share_core 同源）。 */
+      if((k==='生产'||k==='工艺'||k==='质检') && miShare(a,b)) continue;
       /* 研发 / 开发工程师：只放给真正做工程设计的意向（机械设计、电气、结构），
          且岗位名不能是软件研发岗（数据开发 / AI / 低代码）或别的设计方向（光学 / IC）。 */
       if((k==='研发'||k==='开发工程师') && miHas(a,['设计','工程师','研发','开发','机械','电气'])){
@@ -546,15 +596,21 @@ function miAskJobs(intended,titles,biz){
   return out.slice(0,3);
 }
 
-/* 命中复核表（构建期由大模型成批判好）：{"意向||企业岗位名": 0|1}。
-   0 = 复核否决，不算命中；1 = 确认同类；键不存在 = 未复核（模型不可用 / 该对不在
-   候选集）。未复核的继续用本地规则，但文案如实写「未复核」，不冒充复核结论。 */
+/* 命中复核表（构建期由大模型成批判好）：{"意向||企业岗位名": 0|0.5|1}。
+   1   = 确认同类；0 = 复核否决；0.5 = 模型弃权（技术栈相邻 / 信息不足以下结论）；
+   键不存在 = 未复核（模型不可用 / 该对不在候选集）。
+   0 和 0.5 都不算命中证据，未复核的继续用本地规则但文案如实写「未复核」。 */
 function hvGet(intent,job){
   const o=(typeof D!=='undefined'&&D&&D.hit_verdicts)||{};
   const k=String(intent)+'||'+String(job);
   return Object.prototype.hasOwnProperty.call(o,k) ? o[k] : null;
 }
-function matchIntent(titles,intended,sem,jobTitles,biz){
+/* 是否挡掉命中：否决与弃权都挡（「不确定」不进证据，也不冒充「复核过」）。 */
+function hvBlocks(intent,job){
+  const v=hvGet(intent,job);
+  return v===0 || v===0.5;
+}
+function matchIntent(titles,intended,sem,jobTitles,biz,dirOk){
   const pool=((jobTitles&&jobTitles.length)?jobTitles:titles)||[];
   const out=[];
   (intended||[]).forEach(function(x){
@@ -582,8 +638,9 @@ function matchIntent(titles,intended,sem,jobTitles,biz){
                前端按复核 1 算命中，10 家分歧由此而来）。 */
             && miPairVerdict(t,x)!=='no'
             && !(miPairVerdict(t,x)==='ask' && hvGet(x,t)===1)
-            /* 复核否决的跨方向岗位不能算命中（食品研发 × 药品研发 只共享「研发」） */
-            && hvGet(x,t)!==0;
+            /* 复核否决的跨方向岗位不能算命中（食品研发 × 药品研发 只共享「研发」）；
+               弃权（0.5）同样不算 —— C++ × 后端这种相邻技术栈不进证据 */
+            && !hvBlocks(x,t);
         })[0];
         if(ex){ picked={job:ex, reason:(miDirReason(ex,x)||reasons[s]||m.reason||'大模型判定为同类校招岗位')}; break; }
       }
@@ -597,7 +654,7 @@ function matchIntent(titles,intended,sem,jobTitles,biz){
             && !(miWider(t,x) && !miBizOk(x,biz))
             && miPairVerdict(t,x)!=='no'
             && !(miPairVerdict(t,x)==='ask' && hvGet(x,t)===1)
-            && hvGet(x,t)!==0;
+            && !hvBlocks(x,t);
         });
         if(kw.length){ hitJob=kw[0]; via='llm-term'; reason=m.reason||'同属一类校招岗位'; }
       }
@@ -611,7 +668,7 @@ function matchIntent(titles,intended,sem,jobTitles,biz){
       /* 逐个候选试，不能只试第一个：miMatch 命中的第一个如果是共享字的跨方向岗位
          （食品研发 × 药品研发），被复核否决后必须继续往下找，否则同一家企业里
          真正的同名岗位会被一起漏掉。
-         复核结论 1 → 确认命中并标明是大模型复核的；0 → 跳过这个候选；
+         复核结论 1 → 确认命中并标明是大模型复核的；0 / 0.5 → 跳过这个候选；
          没有结论 → 收下，但文案写「未复核」，不冒充复核过。 */
       let t=null, v=null;
       for(let i=0;i<pool.length;i++){
@@ -619,7 +676,7 @@ function matchIntent(titles,intended,sem,jobTitles,biz){
         if(!cand || cand===hitJob) continue;
         /* 字面同名不需要复核，也不许写成「大模型复核过」——它本来就是个同名岗位。 */
         const cv=(cand===x) ? null : hvGet(x,cand);
-        if(cv===0) continue;
+        if(cv===0 || cv===0.5) continue;
         /* 复核 1 只能确认「本地规则本就判为对口」的对子，不能把同向但更细的岗位
            （质量工程师 × 客诉质量工程师 = ask）提升成命中：后端 align_jobs 只收
            pair_verdict=='ok'，前端若放行，页面命中数就多于 payload。 */
@@ -633,6 +690,19 @@ function matchIntent(titles,intended,sem,jobTitles,biz){
           : (t===x ? '字面同名'
              : (t.indexOf(x)>=0 ? '岗位名里含你的意向岗位名（未复核）'
                 : '本地规则判定：同职能不同叫法（未复核）'));
+      }
+    }
+    /* 后端按主营业务方向判定的命中（岗位名不带方向：「工艺工程师」在化工厂是化工
+       方向，前端只有字面规则，判不出这一层）。直接采信后端结论，标 via:'dir'，
+       否则页面会出现「命中岗位」有、而「岗位语义命中」没有的两栏打架。
+       只在用服务端 payload 的当前画像时采信；本地换画像（recompute）不传 dirOk。 */
+    if(!hitJob && dirOk && dirOk.length){
+      for(let i=0;i<dirOk.length;i++){
+        if(pool.indexOf(dirOk[i])>=0){
+          hitJob=dirOk[i]; via='dir';
+          reason='岗位名不带方向，这家按主营业务判定的方向与你的意向一致';
+          break;
+        }
       }
     }
     if(hitJob) out.push({intent:x, job:hitJob, via:via, reason:reason});

@@ -35,6 +35,9 @@ ent_tools/_*.js
 ent_tools/_*.json
 # 例外：回归测试的旧规则基线模块，clone 跑 _rule_regress.py 必须有
 !ent_tools/_is_old_tmp.py
+# 例外：无头渲染 A/B 工具。它是「渲染路径改动到底快了多少、正文有没有变」
+# 的唯一证据来源，文档里直接让人跑它，所以必须随仓库走。
+!ent_tools/_js_ab.py
 # 测试运行时生成的差异报告（不入库）
 ent_tools/data/_parity_diff.json
 
@@ -45,8 +48,18 @@ demo/采集数据_*.html
 
 # 备份与本地缓存（不入库）
 *.bak_*
-ent_tools/data/hard_filter_cache.json
 ent_tools/test_photos/
+
+# 运行时活缓存不入库：仓库只放只读种子 X.seed，服务/构建启动时自动复制出活文件 X。
+# 这些文件服务一处理请求就会改写，一旦被 git 跟踪，clone 出来什么都没干就已经是
+# 脏的——新人会以为自己搞坏了，然后 git checkout 把刚算出的结论撤掉。
+# 活库 careersafari.db 早就用同一套办法解决了，缓存原来没跟上。
+# 重新冻结种子：cd ent_tools && python -X utf8 cache_guard.py freeze
+ent_tools/data/*_cache.json
+ent_tools/data/intent_semantics_live.json
+ent_tools/data/job_recommend_pool.json
+ent_tools/data/hit_verdicts.json
+ent_tools/data/lookup_cache.json
 
 # 本地改动前快照 / 临时脚本产物（每次改动都会生成，不该进版本库）
 _bak_*/
@@ -56,3 +69,11 @@ ent_tools/_stale_cache/
 ent_tools/data/_stale_cache/
 ent_tools/.runtime/
 ent_tools/.env.*.bak_*
+# data/ 下的本地快照与审计产物；两个例外是门禁要用的夹具（见 sync_repo.TEST_ASSETS）
+ent_tools/data/_profile_backup_before_*.json
+ent_tools/data/_rec_pool_audit.json
+
+# 采集期临时产物：页面正文缓存（体积大、可重建）、未抓到名单、待采名单快照
+ent_tools/data/_pages/
+ent_tools/data/_roster_miss.json
+ent_tools/data/_roster_todo.json

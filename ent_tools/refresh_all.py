@@ -38,12 +38,12 @@ ROOT = os.path.dirname(HERE)
 PAGE = os.path.join(ROOT, "demo", "fair.html")
 
 
-def _run(label, cmd, cwd=HERE, allow_fail=False):
+def _run(label, cmd, cwd=HERE, allow_fail=False, timeout=None):
     t0 = time.time()
     print("\n== %s ==" % label)
     print("   $ " + " ".join(cmd))
     p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace")
+                       encoding="utf-8", errors="replace", timeout=timeout)
     tail = (p.stdout or "").strip().splitlines()[-14:]
     for line in tail:
         print("   " + line)
@@ -61,7 +61,11 @@ def _run(label, cmd, cwd=HERE, allow_fail=False):
 
 
 def step_cache():
-    print("\n== 1/7 缓存体检 ==")
+    print("\n== 1/8 缓存体检 ==")
+    # 活缓存不入库，clone 后第一次跑要先从只读种子复制出来（同 careersafari.db.seed）。
+    restored = cache_guard.restore_seeds()
+    if restored:
+        print("   从只读种子恢复：" + "、".join(restored))
     moved = cache_guard.purge_invalid()
     if moved:
         for n, p in moved:
@@ -71,15 +75,26 @@ def step_cache():
     cache_guard.status()
 
 
+def step_dirfill():
+    """按主营业务重算「岗位方向」，写进 job_dir_hint 表。
+
+    放在重建 payload 之前：报告侧读这张表优先、算不出来才现算。新企业入库后
+    没跑这一步不会报错（会退回现算），但慢、而且 seed 库里的 hint 会缺，
+    下次干净 clone 就丢；所以固定成流水线的一步。纯本地规则，秒级。
+    """
+    print("\n== 2/8 重算岗位方向 ==")
+    _run("_dir_fill.py", [sys.executable, "-X", "utf8", "_dir_fill.py"])
+
+
 def step_build():
-    print("\n== 2/7 重建 payload ==")
+    print("\n== 3/8 重建 payload ==")
     p = _run("fair_bridge.build()", [sys.executable, "-X", "utf8", "-c",
                                      "import fair_bridge;fair_bridge.build()"])
     return p
 
 
 def step_page():
-    print("\n== 3/7 重建页面 ==")
+    print("\n== 4/8 重建页面 ==")
     _run("build_fair_page.py", [sys.executable, "-X", "utf8", "build_fair_page.py"])
 
 
@@ -90,7 +105,7 @@ def step_test_users():
     结果后面重建时没人记得跑它，页面上就找不到入口了。
     现在每次 refresh 都重生成，并保证服务端能直接访问。
     """
-    print("\n== 4/7 重建测试数据页 ==")
+    print("\n== 5/8 重建测试数据页 ==")
     _run("build_test_users_page.py",
          [sys.executable, "-X", "utf8", "build_test_users_page.py"])
 
@@ -112,7 +127,7 @@ def step_fixtures():
     parity 测试就用旧规则算出「一致」，等于白跑。这里直接切页面源码里的
     `const MI_GEN=` … `function matchIntent(` 之间那段，测的就是线上跑的那份规则。
     """
-    print("\n== 5/7 生成测试夹具 ==")
+    print("\n== 6/8 生成测试夹具 ==")
     import json
 
     from fair_report_js import REPORT_JS
@@ -146,7 +161,7 @@ def step_fixtures():
 
 
 def step_js():
-    print("\n== 6/7 JS 语法校验 ==")
+    print("\n== 7/8 JS 语法校验 ==")
     if not os.path.isfile(PAGE):
         print("   [失败] 找不到 " + PAGE)
         sys.exit(1)
@@ -169,7 +184,7 @@ def step_js():
 
 
 def step_tests():
-    print("\n== 7/7 一致性测试 ==")
+    print("\n== 8/8 一致性测试 ==")
     _run("前后端匹配一致（_test_match.js）", ["node", "_test_match.js"])
     _run("24 意向 × 岗位前后端 parity（_test_parity.js）", ["node", "_test_parity.js"])
     # 规则回归脚本只打印退化数，没有退出码约定，从输出里抓关键行
@@ -181,11 +196,30 @@ def step_tests():
         sys.exit(1)
 
 
+def step_collect(argv):
+    """联网采集（可选）：从展位表出发，搜企业 → 抓页面 → 模型抽取 → 落库。
+
+    以前采集和收尾是两个入口，人得记住「先跑 collect_roster，再跑 refresh_all」，
+    中间漏一步就会出现「库里有新企业、报告还是旧的」。现在 --collect 串在一起。
+    """
+    print("\n== 采集中（联网，可跳过） ==")
+    cmd = [sys.executable, "-X", "utf8", "collect_roster.py"]
+    for i, a in enumerate(argv):
+        if a == "--workers" and i + 1 < len(argv):
+            cmd += ["--workers", argv[i + 1]]
+    mode = [x for x in ("--scope-only", "--retry-miss", "--force") if x in argv]
+    cmd += mode
+    _run("collect_roster.py", cmd, timeout=3600)
+
+
 def main(argv):
     skip_build = "--skip-build" in argv
     skip_tests = "--skip-tests" in argv
     t0 = time.time()
+    if "--collect" in argv:
+        step_collect(argv)
     step_cache()
+    step_dirfill()
     if not skip_build:
         step_build()
     step_page()
@@ -195,7 +229,8 @@ def main(argv):
     if not skip_tests:
         step_tests()
     print("\n全部通过，用时 %.0fs。页面：%s" % (time.time() - t0, PAGE))
-    print("服务端读到的是刚写入的 data/fair_payload.json，无需重启 8102。")
+    print("服务端读到的是刚写入的 data/fair_payload.json，无需重启 %s。"
+          % os.environ.get("FAIR_PORT", "8102"))
     return 0
 
 

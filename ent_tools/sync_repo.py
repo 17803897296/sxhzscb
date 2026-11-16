@@ -36,6 +36,10 @@ GLOBS = [
     ("ent_tools", "*.md"),
     ("ent_tools", ".env.example"),
     ("ent_tools/data/test_users", "*.json"),
+    # 只读种子：活缓存（*_cache.json / *_live.json / hit_verdicts.json 等）不入库，
+    # clone 后由 cache_guard.restore_seeds() 从这些 .seed 复制出活文件。
+    # 忘了同步种子 → clone 出来的实例首屏仍能读 payload，但一重建就退化成规则匹配。
+    ("ent_tools/data", "*.seed"),
     ("demo", "*.js"),
     ("demo", "questionnaire.json"),
 ]
@@ -57,6 +61,7 @@ TEST_ASSETS = [
     "ent_tools/_test_parity.js",
     "ent_tools/data/_parity.json",   # _test_parity.js 直接读它，缺了 clone 跑不了门禁
     "ent_tools/_is_old_tmp.py",      # _rule_regress.py 的旧规则基线模块
+    "ent_tools/_js_ab.py",           # 无头渲染 A/B（耗时 + 正文长度 + 岗位词命中）
     "ent_tools/data/_v5_verify.json",  # _rule_regress.py 的验证夹具
 ]
 

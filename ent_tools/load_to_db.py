@@ -78,12 +78,30 @@ def load():
     return companies, cache, match
 
 
+def item_of(c):
+    """companies.json 的一条 → company_jobs.item_json。
+
+    主营在库里的键名是 `biz_scope`（下划线，历史字段，job_direction / fair_bridge
+    都按这个名字读）。契约文件沿用同一个名字，全链路只此一个键，避免
+    「采集抓到了主营、下游仍当没写」这种谁都不报错的错位。
+    早期版本用过驼峰 `bizScope`，这里顺手兼容一下，免得旧文件重建时丢主营。
+    「未知」不落键，让读取方回退到 industry/segment 兜底。
+    """
+    item = dict(c)
+    a = item.pop("biz_scope", "")
+    b = item.pop("bizScope", "")
+    scope = str(a or b or "").strip()
+    if scope and scope != "未知":
+        item["biz_scope"] = scope
+    return item
+
+
 def build(con, companies, cache, match):
     ts = now()
     # 1) 企业岗位主表（给 JobStore.lookup 用）
     for c in companies:
         con.execute("INSERT OR REPLACE INTO company_jobs(name,item_json,updated_at) VALUES (?,?,?)",
-                    (c["name"], json.dumps(c, ensure_ascii=False), ts))
+                    (c["name"], json.dumps(item_of(c), ensure_ascii=False), ts))
 
     # 2) 原表 jd_records：每家一条，正文是岗位标题 + 要求原文
     for c in companies:
@@ -179,6 +197,15 @@ def main():
             print("  企业 %d 家 / 岗位 %d 条 / 模型结果 %d 行" % (
                 len(companies), sum(len(c.get("jobs") or []) for c in companies),
                 len(match["rows"])))
+            # 主营体检：这一列以前只有离线脚本在补，采集链路根本不产出，
+            # 于是每批新企业进库都是空的、方向判定静默失效。入库时把它报出来。
+            _no_biz = [c["name"] for c in companies
+                       if str(c.get("biz_scope") or "未知").strip() in ("", "未知")]
+            if _no_biz:
+                print("  主营为空 %d 家（匹配端判不出这些企业的岗位方向，"
+                      "岗位名不带方向时只能退成「去现场问」）" % len(_no_biz))
+                print("     " + "、".join(_no_biz[:8]) + ("…" if len(_no_biz) > 8 else ""))
+                print("     补法：python -X utf8 _biz_fill2.py → _biz_fill.py → _dir_fill.py")
             print()
         print("=== 数据库统计 ===")
         stats(con)

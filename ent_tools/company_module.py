@@ -11,7 +11,7 @@ import tempfile
 
 UNKNOWN = "未知"
 COMPANY_KEYS = (
-    "id", "name", "nature", "city", "industry", "jobs", "jobSource",
+    "id", "name", "nature", "city", "industry", "biz_scope", "jobs", "jobSource",
     "jobEvidence", "source", "date",
 )
 JOB_KEYS = ("title", "requirements", "headcount", "urgency", "group", "salary")
@@ -186,6 +186,10 @@ def build_companies(names, cache):
             "nature": enum_value(raw.get("nature"), NATURE, "nature"),
             "city": text_value(raw.get("city"), "city"),
             "industry": enum_value(raw.get("industry"), INDUSTRY, "industry"),
+            # 主营业务：匹配端判「岗位方向」的唯一证据源（岗位名不带方向时全靠它）。
+            # 采集链路里由 enrich_by_llm 从网页原文提取，且要和原文逐字对得上才留下；
+            # 老数据没有这一列，按「未知」补，下游判不出方向就地转成「去现场问」。
+            "biz_scope": text_value(raw.get("biz_scope"), "biz_scope"),
             "jobs": [],
             "jobSource": enum_value(raw.get("jobSource"), JOB_SOURCE, "jobSource"),
             "jobEvidence": text_value(raw.get("jobEvidence"), "jobEvidence"),

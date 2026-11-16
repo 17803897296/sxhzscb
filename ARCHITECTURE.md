@@ -136,10 +136,20 @@ python -X utf8 ent_tools/sync_repo.py --apply     # 重建问卷+页面 → 同�
 cd sxhzscb-deploy && git pull        # 或干脆删掉重新 git clone
 ```
 
-> 验收实例跑起来后，`data/` 下的推荐池等缓存 JSON 会被服务端改写，
-> `git status` 出现这类改动是**正常运行时副产物**，不要提交、也不要拿去和
-> 开发正本对比；要恢复用 `git checkout -- ent_tools/data`。
-> **运行时活库 `careersafari.db` 已被 .gitignore 排除、不再被 git 跟踪**。
+> **运行时文件一律不入库，仓库只放只读种子（`*.seed`）**：活库 `careersafari.db`
+> 和 `data/` 下的缓存共用同一套做法——服务/构建启动时缺哪个就从对应 `.seed`
+> 复制出活文件，活文件本身被 `.gitignore` 排除。所以跑完服务 `git status`
+> 仍然是干净的，不需要再靠 `git checkout -- ent_tools/data` 手工撤掉刚算出的结论。
+>
+> 种子必须与代码同版本：里面的 `_cg.fp` 是「生成这份结论的代码」的指纹，
+> 代码一变就不符，clone 后第一次构建会自动判失效重算（这是对的，不沿用旧结论）。
+> 改了判定逻辑想让种子跟上，发布前冻结一次：
+>
+> ```bash
+> cd ent_tools
+> python -X utf8 cache_guard.py seeds     # 看活文件/种子是否配对
+> python -X utf8 cache_guard.py freeze    # 把当前结论冻结成 *.seed
+> ```
 
 - 自动同步：`ent_tools/*.py`（排除 `_*.py` 调试脚本）、`ent_tools/*.md`、
   `.env.example`、`data/test_users/*.json`、`demo/*.js`、`questionnaire.json`、

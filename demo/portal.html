@@ -3,87 +3,529 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>双选会助手 · 统一入口</title>
+<title>双选会助手 · 四端工作台</title>
 <style>
-  :root{--bg:#f5f7fb;--card:#fff;--line:#e2e7f0;--text:#1f2a3d;--muted:#7a869c;--blue:#2563eb}
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0}
-  body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;display:flex;flex-direction:column}
-  header{background:#fff;border-bottom:1px solid var(--line);padding:10px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;flex:none}
-  .brand{font-size:16px;font-weight:700;white-space:nowrap}
-  .brand small{font-weight:400;color:var(--muted);font-size:12px;margin-left:8px}
-  nav{display:flex;gap:6px;flex-wrap:wrap}
-  nav button{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;white-space:nowrap}
-  nav button:hover{color:var(--blue);background:#f0f5ff}
-  nav button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
-  .status{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
-  .hint{background:#fffbeb;border-bottom:1px solid #f3e2b8;color:#8a6d1f;font-size:12px;padding:5px 18px;flex:none}
-  main{flex:1;min-height:0;padding:8px 10px 0;display:flex}
-  iframe{flex:1;width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;min-height:0}
-  footer{flex:none;padding:4px 18px 8px;font-size:12px;color:var(--muted)}
-  footer a{color:var(--blue);text-decoration:none}
+:root{
+  --ink:#16181d; --ink2:#3f4653; --muted:#727a89; --faint:#9aa1ad;
+  --line:#e6e8ec; --line2:#eef0f4; --bg:#f4f5f7; --card:#fff;
+  --blue:#2f5bd3; --blue-d:#284fbe; --blue-soft:#eef2fd; --blue-line:#c9d6f8;
+  --green:#0f7b57; --green-soft:#eaf7f1;
+  --amber:#9a6212; --amber-soft:#fff8ec;
+  --r:14px;
+  --hd:62px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column;
+}
+
+/* ══════════════ 顶栏 ══════════════ */
+header{
+  flex:none;height:var(--hd);display:flex;align-items:center;gap:14px;
+  padding:0 20px;background:rgba(255,255,255,.86);backdrop-filter:saturate(180%) blur(12px);
+  border-bottom:1px solid var(--line);position:relative;z-index:30;
+}
+.brand{display:flex;align-items:center;gap:10px;flex:none}
+.logo{
+  width:30px;height:30px;border-radius:9px;flex:none;
+  background:linear-gradient(135deg,#3f6fe0,#2f5bd3 60%,#2446a8);
+  box-shadow:0 2px 8px rgba(47,91,211,.32);position:relative;overflow:hidden;
+}
+.logo::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.55),transparent 55%);
+}
+.brand h1{font-size:15px;margin:0;letter-spacing:.2px;font-weight:700;white-space:nowrap}
+.brand .sub{font-size:11px;color:var(--faint);margin:0;white-space:nowrap}
+
+.sig{
+  display:flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;
+  background:#f1f3f6;border:1px solid var(--line);font-size:11.5px;color:var(--muted);
+  max-width:360px;overflow:hidden;white-space:nowrap;min-width:0;flex:0 1 auto;
+  transition:.2s;
+}
+.sig b{color:var(--ink2);font-weight:600}
+.sig #sig-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sig.empty{background:var(--amber-soft);border-color:#f3e2b8;color:var(--amber)}
+.sig .dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex:none}
+.sig.empty .dot{background:#d99a2b}
+.sig.stale{background:#fff4e5;border-color:#f0d9a8;color:#8a6d1f}
+.sig.stale .dot{background:#d97706;animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.hsp{flex:1}
+
+.tool{
+  display:inline-flex;align-items:center;gap:7px;border:1px dashed #d6dbe4;
+  background:#fbfcfd;color:var(--muted);border-radius:9px;padding:6px 12px;
+  font:inherit;font-size:12.5px;cursor:pointer;transition:.15s;white-space:nowrap;
+}
+.tool:hover{border-color:var(--blue-line);color:var(--blue);background:#fff}
+.tool.on{border-style:solid;border-color:var(--blue);background:var(--blue-soft);color:var(--blue);font-weight:600}
+.tool i{font-style:normal;font-size:13px}
+
+/* ══════════════ 步骤条 ══════════════ */
+.steps{
+  flex:none;display:flex;align-items:stretch;
+  padding:14px 20px 12px;background:var(--bg);
+  border-bottom:1px solid var(--line);position:relative;z-index:20;
+}
+.step{
+  flex:1;min-width:0;display:flex;align-items:center;gap:11px;
+  padding:10px 14px;border-radius:12px;background:var(--card);
+  border:1px solid var(--line);cursor:pointer;transition:.18s;
+  position:relative;text-align:left;font:inherit;color:inherit;
+  box-shadow:0 1px 2px rgba(16,24,40,.03);
+}
+.step:hover{border-color:#d6dbe4;transform:translateY(-1px);box-shadow:0 3px 12px rgba(16,24,40,.07)}
+.step + .step{margin-left:28px}
+.step + .step::before{
+  content:"";position:absolute;left:-23px;top:50%;width:18px;height:1.5px;
+  background:var(--line);transition:.2s;
+}
+.step + .step::after{
+  content:"";position:absolute;left:-7px;top:50%;margin-top:-4px;
+  border-left:6px solid var(--line);border-top:4px solid transparent;border-bottom:4px solid transparent;
+  transition:.2s;
+}
+.step.done + .step::before{background:var(--green)}
+.step.done + .step::after{border-left-color:var(--green)}
+
+.sn{
+  flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:#f1f3f6;color:var(--faint);font-size:13px;font-weight:700;
+  font-variant-numeric:tabular-nums;transition:.2s;
+}
+.step.done .sn{background:var(--green-soft);color:var(--green)}
+.step.cur .sn{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(47,91,211,.3)}
+.step.locked .sn{background:#f4f5f7;color:#c2c8d2}
+
+.stxt{min-width:0;flex:1;display:flex;flex-direction:column}
+.sname{font-size:13.5px;font-weight:600;letter-spacing:.1px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.sdesc{font-size:11.5px;color:var(--faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step.locked .sname{color:#a0a7b3}
+.step.locked .sdesc{color:#c2c8d2}
+
+.badge{
+  flex:none;font-size:10.5px;padding:2px 7px;border-radius:5px;font-weight:600;
+  background:#f1f3f6;color:var(--faint);white-space:nowrap;
+}
+.step.done .badge{background:var(--green-soft);color:var(--green)}
+.step.cur .badge{background:var(--blue-soft);color:var(--blue)}
+.step.locked .badge{background:#f6f7f9;color:#c2c8d2}
+
+.step.cur{border-color:var(--blue);box-shadow:0 4px 16px rgba(47,91,211,.14);background:#fff}
+.step.shake{animation:shake .34s}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-5px)}40%{transform:translateX(5px)}
+  60%{transform:translateX(-3px)}80%{transform:translateX(3px)}
+}
+
+/* ══════════════ 提示条 ══════════════ */
+.notice{
+  flex:none;display:none;align-items:flex-start;gap:10px;padding:9px 20px;
+  font-size:12.5px;border-bottom:1px solid var(--line);line-height:1.6;
+}
+.notice.on{display:flex}
+.notice #notice-t{flex:1;min-width:0}
+.notice.warn{background:var(--amber-soft);color:var(--amber);border-color:#f3e2b8}
+.notice.info{background:var(--blue-soft);color:#26418f;border-color:var(--blue-line)}
+.notice b{font-weight:600}
+.notice .x{margin-left:0;border:0;background:none;color:inherit;opacity:.5;
+  cursor:pointer;font-size:16px;padding:0 4px;line-height:1.4;flex:none}
+.notice .x:hover{opacity:1}
+
+/* ══════════════ 内容 ══════════════ */
+main{flex:1;min-height:0;position:relative;display:flex;background:var(--bg);min-width:0}
+iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
+.loading{
+  position:absolute;inset:0;display:grid;place-items:center;background:var(--bg);
+  color:var(--faint);font-size:13px;z-index:5;transition:opacity .3s;
+}
+.loading.off{opacity:0;pointer-events:none}
+.spin{
+  width:26px;height:26px;border:2.5px solid var(--line);border-top-color:var(--blue);
+  border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px;
+}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.lock{
+  position:absolute;inset:0;z-index:10;display:none;place-items:center;
+  background:rgba(244,245,247,.94);backdrop-filter:blur(3px);padding:24px;
+}
+.lock.on{display:grid}
+.lockbox{
+  background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px 34px;
+  max-width:430px;text-align:center;box-shadow:0 12px 40px rgba(16,24,40,.1);
+  animation:pop .22s ease;
+}
+@keyframes pop{from{opacity:0;transform:scale(.96) translateY(6px)}to{opacity:1;transform:none}}
+.lockbox .ic{font-size:28px;margin-bottom:10px;opacity:.85}
+.lockbox h3{margin:0 0 8px;font-size:16px;line-height:1.4}
+.lockbox p{margin:0 0 20px;font-size:13px;color:var(--muted);line-height:1.75;text-align:left}
+.lockbox button{
+  font:inherit;font-size:13.5px;font-weight:600;border:0;border-radius:10px;
+  background:var(--blue);color:#fff;padding:11px 24px;cursor:pointer;
+}
+.lockbox button:hover{background:var(--blue-d)}
+
+@media(max-width:860px){
+  :root{--hd:56px}
+  header{padding:0 14px;gap:10px}
+  .brand .sub{display:none}
+  .sig{max-width:132px;font-size:11px;padding:3px 9px}
+  .tool{padding:5px 9px;font-size:11.5px}
+  .tool span{display:none}
+  .steps{padding:10px 12px;gap:8px;overflow-x:auto;scrollbar-width:none;min-width:0}
+  .steps::-webkit-scrollbar{display:none}
+  .step{flex:1 0 auto;min-width:102px;padding:8px 10px;gap:8px}
+  .step + .step{margin-left:0}
+  .step + .step::before,.step + .step::after{display:none}
+  .sn{width:24px;height:24px;font-size:12px;border-radius:7px}
+  .sdesc{display:none}
+  .sname{font-size:12.5px}
+  .badge{display:none}
+  .lockbox{padding:24px 22px}
+}
 </style>
 </head>
 <body>
+
 <header>
-  <div class="brand">双选会助手 <small>一个入口 · 全流程</small></div>
-  <nav>
-    <button data-tab="flow" class="on">① 填写问卷（含教培）</button>
-    <button data-tab="report">② 排行报告</button>
-    <button data-tab="tests">③ 测试记录</button>
-    <button data-tab="users">④ 测试数据</button>
-  </nav>
-  <span class="status" id="status">读取状态中…</span>
+  <div class="brand">
+    <div class="logo"></div>
+    <div>
+      <h1>双选会助手</h1>
+      <p class="sub">采集 → 企业 → 匹配</p>
+    </div>
+  </div>
+
+  <div class="sig empty" id="sig"><span class="dot"></span><span id="sig-t">还没有画像</span></div>
+
+  <div class="hsp"></div>
+
+  <button class="tool" id="btn-test" title="工程自用，独立于主流程"><i>⚙</i><span>测试端</span></button>
 </header>
-<div class="hint" id="hint">从「填写问卷」开始：简历上传 → 偏好 → 岗位推荐 → 排序追问 → 硬约束 → <b>是否接受教培</b> → 生成画像并出报告。</div>
-<main><iframe id="frame" src="/fair.html" title="双选会助手"></iframe></main>
-<footer>当前服务 <b id="host"></b> ｜ 各页也可单独打开：
-  <a href="/fair.html" target="_blank">问卷</a> ·
-  <a href="/fair.html?report=1" target="_blank">报告</a> ·
-  <a href="/tests.html" target="_blank">测试记录</a> ·
-  <a href="/test_users.html" target="_blank">测试数据</a>
-</footer>
+
+<div class="steps" id="steps">
+  <button class="step" data-tab="collect">
+    <span class="sn">1</span>
+    <span class="stxt">
+      <span class="sname">采集端 <span class="badge" data-b="collect">未开始</span></span>
+      <span class="sdesc">简历 + 偏好，随时可改</span>
+    </span>
+  </button>
+  <button class="step" data-tab="enterprises">
+    <span class="sn">2</span>
+    <span class="stxt">
+      <span class="sname">企业端 <span class="badge" data-b="enterprises">待解锁</span></span>
+      <span class="sdesc">全量名录，未做匹配筛选</span>
+    </span>
+  </button>
+  <button class="step" data-tab="match">
+    <span class="sn">3</span>
+    <span class="stxt">
+      <span class="sname">匹配端 <span class="badge" data-b="match">待解锁</span></span>
+      <span class="sdesc">排行、依据、现场问什么</span>
+    </span>
+  </button>
+</div>
+
+<div class="notice" id="notice">
+  <span id="notice-t"></span>
+  <button class="x" id="notice-x" aria-label="关闭">×</button>
+</div>
+
+<main>
+  <div class="loading" id="loading"><div><div class="spin"></div>正在打开…</div></div>
+  <iframe id="frame" title="双选会助手"></iframe>
+  <div class="lock" id="lock">
+    <div class="lockbox">
+      <div class="ic" id="lock-ic">🔒</div>
+      <h3 id="lock-h">这一步还没解锁</h3>
+      <p id="lock-p"></p>
+      <button id="lock-go">去完成上一步</button>
+    </div>
+  </div>
+</main>
 
 <script>
 (function(){
-  var TABS = {
-    flow:   {url:'/fair.html',             hint:'从「填写问卷」开始：简历上传 → 偏好 → 岗位推荐 → 排序追问 → 硬约束 → <b>是否接受教培</b> → 生成画像并出报告。'},
-    report: {url:'/fair.html?report=1',    hint:'报告页按排序分从高到低展示全部企业；底部「实验记录」可保存本次结果，也可跳到独立测试记录页。'},
-    tests:  {url:'/tests.html',            hint:'测试记录管理：查看每次跑的输入与输出、逐条删除、批量清理测试脏数据，只留真人跑的。'},
-    users:  {url:'/test_users.html',       hint:'测试数据：三套随机画像（药学 / 工程造价 / 能源与动力工程）。可直接「用这套画像打开排行」，也可「提交入库」跑完整链路（约 1–3 分钟，会调大模型）。'}
-  };
-  var frame=document.getElementById('frame');
-  var hint=document.getElementById('hint');
-  document.getElementById('host').textContent=location.host;
-  function go(tab){
-    var t=TABS[tab]; if(!t) return;
-    document.querySelectorAll('nav button').forEach(function(b){
-      b.classList.toggle('on', b.dataset.tab===tab);
-    });
-    // 带时间戳强制重载，避免切回来时看到旧画像 / 旧测试记录
-    frame.src=t.url+(t.url.indexOf('?')>=0?'&':'?')+'_t='+Date.now();
-    hint.innerHTML=t.hint;
-    location.hash=tab;
-  }
-  document.querySelectorAll('nav button').forEach(function(b){
-    b.onclick=function(){ go(b.dataset.tab); };
-  });
-  var init=location.hash.replace('#','');
-  if(TABS[init]) go(init); else go('flow');
+  "use strict";
 
-  // 顶部状态：生效画像 + 榜单家数 + 测试记录条数
-  function status(){
-    var s=document.getElementById('status');
-    Promise.all([
-      fetch('/api/fair/payload').then(function(r){return r.json();}),
-      fetch('/api/fair/test-list?limit=100').then(function(r){return r.json();})
-    ]).then(function(a){
-      var p=a[0]||{}, items=(a[1]&&a[1].items)||[];
-      s.textContent='生效画像 '+(p.active_fair_id||'—')+' ｜ 榜单 '+((p.rows||[]).length)+' 家 ｜ 测试记录 '+items.length+' 条';
-    }).catch(function(){ s.textContent='服务未就绪'; });
+  var KEY = 'sxfd.gate.v1';
+
+  var TABS = {
+    collect: {
+      url: '/fair.html',
+      name: '采集端',
+      need: function(){ return true; }
+    },
+    enterprises: {
+      url: '/enterprises.html',
+      name: '企业端',
+      need: function(s){ return !!s.sig; },
+      why: function(){
+        return '企业名录要对着<b>你的画像</b>看才有意义 —— 先做完采集，这里才知道哪些岗位值得重点看。';
+      },
+      go: 'collect'
+    },
+    match: {
+      url: '/fair.html?report=1',
+      name: '匹配端',
+      need: function(s){ return !!(s.sig && s.ent); },
+      why: function(s){
+        if (!s.sig) return '还没有画像，排行无从算起。先做完采集。';
+        return '排行是<b>企业名录 × 你的画像</b>算出来的。先去企业端看一眼池子里都有什么，回来才知道这个名次意味着什么。';
+      },
+      go: function(s){ return s.sig ? 'enterprises' : 'collect'; }
+    },
+    test: {
+      url: '/test_users.html',
+      name: '测试端',
+      need: function(){ return true; }
+    }
+  };
+
+  var G = load();
+  var cur = null;
+  var frame = document.getElementById('frame');
+  var loading = document.getElementById('loading');
+  var lock = document.getElementById('lock');
+  var pollTimer = null;
+  var entTimer = null;
+
+  // 企业端要「真看过」才算通过：点进去立刻就算，等于门禁白设 ——
+  // 学生一进来就直接点匹配端，池子里有什么根本没看。
+  // 停留满 EN_DWELL 毫秒才解锁匹配端；中途切走则计时作废。
+  var EN_DWELL = 2600;
+
+  function load(){
+    try{
+      var o = JSON.parse(localStorage.getItem(KEY) || '{}');
+      return { sig: o.sig || '', ent: !!o.ent, prevSig: o.prevSig || '' };
+    }catch(e){ return { sig:'', ent:false, prevSig:'' }; }
   }
-  status();
-  setInterval(status, 30000);
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(G)); }catch(e){} }
+
+  function sigOf(p){
+    if (!p) return '';
+    var major = p.major || '';
+    var jobs = p.intended_jobs || [];
+    if (!major && !jobs.length) return '';
+    return major + '|' + jobs.join(',');
+  }
+
+  function pullProfile(){
+    return fetch('/api/fair/active-profile', {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d || !d.ok || !d.document) return '';
+        var doc = d.document;
+        return sigOf({
+          major: (doc.identity && doc.identity.major) || doc.major || '',
+          intended_jobs: (doc.answers && doc.answers.intended_jobs) || doc.intended_jobs || []
+        });
+      })
+      .catch(function(){ return ''; });
+  }
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  /* ───────── 状态渲染 ───────── */
+  function render(){
+    var states = {
+      collect: G.sig ? 'done' : 'todo',
+      enterprises: G.sig ? (G.ent ? 'done' : 'todo') : 'locked',
+      match: G.sig ? (G.ent ? 'todo' : 'locked') : 'locked'
+    };
+    if (cur && cur !== 'test' && states[cur] !== 'locked') states[cur] = 'cur';
+
+    document.querySelectorAll('.step').forEach(function(el){
+      var t = el.dataset.tab, st = states[t];
+      el.classList.toggle('cur', st === 'cur');
+      el.classList.toggle('done', st === 'done');
+      el.classList.toggle('locked', st === 'locked');
+
+      var sn = el.querySelector('.sn');
+      sn.textContent = (st === 'done') ? '✓' : (t === 'collect' ? '1' : t === 'enterprises' ? '2' : '3');
+
+      var b = el.querySelector('[data-b]');
+      var map = {
+        done: t === 'collect' ? '已采集' : t === 'enterprises' ? '已浏览' : '可查看',
+        cur: '当前',
+        locked: '待解锁',
+        todo: t === 'collect' ? '未开始' : '可进入'
+      };
+      b.textContent = map[st];
+      el.title = (st === 'locked') ? '需要先完成上一步' : '';
+    });
+
+    var sigEl = document.getElementById('sig');
+    var sigT = document.getElementById('sig-t');
+    sigEl.classList.remove('empty','stale');
+    if (!G.sig) {
+      sigEl.classList.add('empty');
+      sigT.textContent = '还没有画像';
+    } else {
+      var parts = G.sig.split('|');
+      sigT.innerHTML = '<b>' + esc(parts[0] || '—') + '</b>'
+        + (parts[1] ? ' · ' + esc(parts[1].split(',').slice(0, 2).join('、')) : '');
+      if (G.prevSig && G.prevSig !== G.sig) sigEl.classList.add('stale');
+    }
+
+    document.getElementById('btn-test').classList.toggle('on', cur === 'test');
+  }
+
+  /* ───────── 提示条 ───────── */
+  var noticeTimer = null;
+  function notice(text, kind, ms){
+    var el = document.getElementById('notice');
+    document.getElementById('notice-t').innerHTML = text;
+    el.className = 'notice on ' + (kind || 'info');
+    clearTimeout(noticeTimer);
+    if (ms !== 0) noticeTimer = setTimeout(function(){ el.classList.remove('on'); }, ms || 6000);
+  }
+  document.getElementById('notice-x').onclick = function(){
+    document.getElementById('notice').classList.remove('on');
+  };
+
+  /* ───────── 跳转 ───────── */
+  function open(tab, opts){
+    opts = opts || {};
+    var t = TABS[tab];
+    if (!t) return;
+
+    if (!t.need({ sig: G.sig, ent: G.ent })) {
+      var btn = document.querySelector('.step[data-tab="' + tab + '"]');
+      if (btn) {
+        btn.classList.remove('shake');
+        void btn.offsetWidth;
+        btn.classList.add('shake');
+      }
+      showLock(tab);
+      return;
+    }
+
+    hideLock();
+    cur = tab;
+
+    // 企业端：停留够久才解锁匹配端，切走就作废
+    clearTimeout(entTimer);
+    if (tab === 'enterprises' && G.sig && !G.ent) {
+      entTimer = setTimeout(function(){
+        if (cur !== 'enterprises') return;
+        G.ent = true;
+        save();
+        render();
+        notice('看过名录了，<b>匹配端已解锁</b> —— 排行就是把这 145 家按你的方向排出来的。', 'info', 9000);
+      }, EN_DWELL);
+    } else if (tab === 'enterprises' && G.sig) {
+      G.ent = true; save();
+    }
+
+    frame.src = t.url;
+    loading.classList.remove('off');
+
+    if (location.hash !== '#' + tab) history.replaceState(null, '', '#' + tab);
+    render();
+
+    clearInterval(pollTimer);
+    if (tab === 'collect') {
+      pollTimer = setInterval(function(){
+        pullProfile().then(function(sig){
+          if (sig && sig !== G.sig) {
+            if (G.sig) {
+              G.prevSig = G.sig;
+              G.sig = sig;
+              save(); render();
+              notice('画像已更新。企业端与匹配端的结论要按新画像重算 —— 回去刷新一下。', 'warn', 0);
+            } else {
+              G.sig = sig;
+              save(); render();
+              notice('画像采集完成，<b>企业端已解锁</b> —— 先看看来的都是些什么单位。', 'info', 9000);
+            }
+          }
+        });
+      }, 2500);
+    }
+  }
+
+  function showLock(tab){
+    var t = TABS[tab];
+    var st = { sig: G.sig, ent: G.ent };
+
+    // 人已经在企业端、只是还没看够时间：这不是「跳过」，别把人赶走
+    if (tab === 'match' && cur === 'enterprises') {
+      lock.classList.add('on');
+      document.getElementById('lock-ic').textContent = '👀';
+      document.getElementById('lock-h').textContent = '名录刚打开';
+      document.getElementById('lock-p').innerHTML =
+        '排行是把这批单位按你的方向排出来的。不知道池子里都是些什么单位，<b>第几名是没有意义的</b> —— 就快好了，看两眼。';
+      var b = document.getElementById('lock-go');
+      b.textContent = '继续看名录';
+      b.onclick = hideLock;
+      render();
+      return;
+    }
+
+    lock.classList.add('on');
+    document.getElementById('lock-ic').textContent = '🔒';
+    document.getElementById('lock-h').textContent = '还差一步';
+    document.getElementById('lock-p').innerHTML = t.why(st);
+    var goTab = (typeof t.go === 'function') ? t.go(st) : t.go;
+    var btn = document.getElementById('lock-go');
+    btn.textContent = '去' + (TABS[goTab] ? TABS[goTab].name : '采集端');
+    btn.onclick = function(){ open(goTab); };
+    render();
+  }
+  function hideLock(){ lock.classList.remove('on'); }
+
+  /* ───────── 事件 ───────── */
+  document.querySelectorAll('.step').forEach(function(el){
+    el.addEventListener('click', function(){ open(el.dataset.tab); });
+  });
+
+  document.getElementById('btn-test').addEventListener('click', function(){
+    if (cur === 'test') {
+      open(G.sig ? (G.ent ? 'match' : 'enterprises') : 'collect');
+    } else {
+      open('test');
+    }
+  });
+
+  frame.addEventListener('load', function(){
+    loading.classList.add('off');
+  });
+
+  window.addEventListener('hashchange', function(){
+    var t = location.hash.replace('#','');
+    if (TABS[t] && t !== cur) open(t);
+  });
+
+  /* ───────── 启动 ───────── */
+  pullProfile().then(function(sig){
+    if (sig !== G.sig) {
+      if (G.sig) { G.prevSig = G.sig; G.ent = false; }
+      G.sig = sig;
+      save();
+    }
+    var init = location.hash.replace('#','');
+    if (!TABS[init]) {
+      init = G.sig ? (G.ent ? 'match' : 'enterprises') : 'collect';
+    }
+    if (init === 'match' && !G.ent) init = 'enterprises';
+    open(init);
+  });
 })();
 </script>
 </body>

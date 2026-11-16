@@ -11,6 +11,7 @@
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -22,10 +23,12 @@ import threading
 import time
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import cdp                       # 常驻浏览器 + 多标签页渲染（失败自动退回一次性 --dump-dom）
 import enrich_by_llm as enrich   # 复用模型调用与模板拼装
 import job_store
 
@@ -325,10 +328,27 @@ def setup_model():
     return True
 
 
+# 并发度靠「每家一个线程」提升，但真正在飞的 HTTP / 浏览器实例必须有上限：
+# 无头浏览器尤其贵，6 个线程各开一个会互相拖死（实测比串行还慢）。
+# 限流只挡并发数，不改变任何一家拿到的是哪个页面。
+#
+# 2026-11-16 改：浏览器改成「一个常驻进程 + N 个标签页」（见 cdp.py），
+# 冷启动只付一次，标签页只有几十 ms，所以不再卡在 2 个进程。
+# _TAB_SEM 管同时渲染几个页面（实测 6 是甜点：8 页 4.9s，8 个并行反而更慢）；
+# _BROWSER_SEM 只在 CDP 不可用的兜底路径上生效，语义与改动前一致。
+_HTTP_SEM = threading.Semaphore(12)
+_BROWSER_SEM = threading.Semaphore(2)
+JS_TABS = max(1, int(os.environ.get("FAIR_JS_TABS", "6")))
+_TAB_SEM = threading.Semaphore(JS_TABS)
+# FAIR_JS_CDP=0 强制走旧的一次性 --dump-dom：A/B 对照和线上应急都在用这个开关
+JS_CDP = os.environ.get("FAIR_JS_CDP", "1") == "1"
+
+
 def fetch(url, timeout=12):
     req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        raw = resp.read()
+    with _HTTP_SEM:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read()
     for enc in ("utf-8", "gbk", "gb18030"):
         try:
             return raw.decode(enc)
@@ -374,10 +394,31 @@ def browser_exe():
 
 
 def fetch_js(url, timeout=35, budget=8000):
-    """用本机 Edge/Chrome 无头模式渲染 JS 页面，返回渲染后的 HTML。"""
+    """用本机 Edge/Chrome 无头模式渲染 JS 页面，返回渲染后的 HTML。
+
+    两条路，优先第一条：
+
+    1. **常驻浏览器 + 多标签页**（`cdp.py`）。一个 Edge 进程从进程生命期开头
+       活到结尾，每次调用只开一个标签页（几十 ms），并发靠 `_TAB_SEM` 卡在
+       `FAIR_JS_TABS`（默认 6）。这是 2026-11-16 的改动：旧做法每次调用都
+       `spawn msedge --dump-dom`，冷启动 1.5~3s 全白付，还只能 2 并发。
+
+    2. **一次性 `--dump-dom`**（`_fetch_js_locked`）。CDP 不可用、连续失败、
+       或返回空时自动退回。这条路径的行为与改动前逐字一致，所以最坏情况等于没改。
+    """
     exe = browser_exe()
     if not exe:
         return ""
+    if JS_CDP and cdp.enabled():
+        with _TAB_SEM:
+            html = cdp.render(url, exe, timeout=timeout, budget=budget)
+        if html is not None:
+            return html
+    with _BROWSER_SEM:
+        return _fetch_js_locked(url, exe, timeout, budget)
+
+
+def _fetch_js_locked(url, exe, timeout=35, budget=8000):
     profile = tempfile.mkdtemp(prefix="fair-js-")
     try:
         cmd = [
@@ -557,7 +598,45 @@ JOB_HINT = ("招聘", "校招", "校园招聘", "岗位", "职位", "人才", "�
             "recruit", "zhaopin", "campus", "job", "career", "hr")
 
 
-def pages_for(name):
+PAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "_pages")
+
+
+def _page_cache_path(name):
+    h = hashlib.sha1(name.encode("utf-8")).hexdigest()[:16]
+    return os.path.join(PAGE_DIR, h + ".json")
+
+
+def pages_for(name, use_cache=True):
+    """多查询、多页面找招聘页（页面缓存 + 搜索并发）。
+
+    为什么要缓存「最终选中的正文」：补主营、补漏、换规则重采，需要的都只是这段
+    正文，而拿到它要付三笔钱——多次搜索、多次抓页、若干次无头渲染。缓存后这类
+    二次任务从「重抓一遍」变成「读文件 + 一次模型调用」。
+    TTL 默认 12 小时（会前数据一天内不变）；FAIR_PAGE_CACHE_TTL=0 可关闭。
+    """
+    ttl = int(os.environ.get("FAIR_PAGE_CACHE_TTL", "43200"))
+    path = _page_cache_path(name)
+    if use_cache and ttl > 0:
+        try:
+            with open(path, encoding="utf-8") as f:
+                d = json.load(f)
+            if d.get("name") == name and time.time() - float(d.get("ts") or 0) < ttl:
+                return d.get("text") or "", d.get("url") or "未知"
+        except Exception:
+            pass
+    text, url = _pages_for_uncached(name)
+    if use_cache and ttl > 0 and text:
+        try:
+            os.makedirs(PAGE_DIR, exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump({"name": name, "text": text, "url": url,
+                           "ts": time.time()}, f, ensure_ascii=False)
+        except Exception:
+            pass
+    return text, url
+
+
+def _pages_for_uncached(name):
     """多查询、多页面找招聘页；优先学校就业网/招聘站点，正文取招聘段落。"""
     variants = brand_names(name)
     # 搜索可以用品牌名，但页面必须能对上全称/短名，避免把“腾讯音乐”“徽商银行”当成这家
@@ -581,11 +660,20 @@ def pages_for(name):
     keys = [name, short_name(name)] + variants
     seen_urls = set()
     results = []
-    for query in queries:
+
+    def _search(q):
         try:
-            found = zh_search.search(query, n=6, keys=keys, want=2)
+            return zh_search.search(q, n=6, keys=keys, want=2)
         except Exception:
-            continue
+            return []
+
+    # 最多 6 个 query 串行 = 6 次往返，是这条链路里第二贵的一步（仅次于无头渲染）。
+    # ex.map 保序，候选集的合并顺序与串行完全相同——只省时间，不改结果。
+    batches = []
+    if queries:
+        with ThreadPoolExecutor(max_workers=min(6, len(queries))) as ex:
+            batches = list(ex.map(_search, queries))
+    for found in batches:
         for r in found:
             url = r.get("url") or ""
             if not url or url in seen_urls:
@@ -699,6 +787,72 @@ def guess_industry(text):
     return best if score >= 2 else "未知"
 
 
+SCOPE_ANCHORS = ("主营业务", "经营范围", "主营", "主要从事", "专注于", "致力于",
+                 "专业从事", "业务涵盖", "核心业务")
+
+# 只有「导航栏目」才会成串出现的词。一行里命中两个以上，这段就是导航条不是业务描述。
+NAV_NOISE = ("产品中心", "联系我们", "网站地图", "关于我们", "加入我们", "人才招聘",
+             "新闻中心", "客户服务", "首页", "登录", "注册", "English",
+             "集团简介", "发展历程", "全球布局", "企业文化", "奖项荣誉", "解决方案",
+             "投资者关系", "新闻动态", "研发智造", "研发成果", "专利标准", "可持续发展")
+
+# 业务描述是用来说「干什么」的，必然带这些动词。导航条只有名词堆叠。
+SCOPE_VERBS = ("从事", "生产", "研发", "制造", "销售", "提供", "服务", "设计",
+               "加工", "开发", "经营", "集成", "承接", "生产销售", "研制")
+
+
+def _scope_ok(seg):
+    """这段像不像业务描述（而不是导航条 / 页脚）。
+
+    实测出来的两个坑：官网首页的「集团简介 发展历程 全球布局 企业文化…」会命中
+    「集团简介」锚点；招聘页的「产品中心 联系我们 网站地图」会被当成经营范围。
+    这两类垃圾一旦进了主营，下游就会拿它判岗位方向，比留空危险得多。
+    """
+    # 8 字下限：「有色金属压延加工」按分号截断后就 8 个字，它足够判方向。
+    # 更短的基本是栏目名，交给下面的 NAV_NOISE / 平均词长两道判定兜。
+    if len(seg) < 8:
+        return False
+    if sum(1 for w in NAV_NOISE if w in seg) >= 2:
+        return False
+    if not any(v in seg for v in SCOPE_VERBS):
+        return False
+    toks = [t for t in seg.split() if t]
+    if len(toks) >= 4 and sum(len(t) for t in toks) / float(len(toks)) < 4.0:
+        return False
+    return True
+
+
+def guess_scope(text):
+    """没走模型时，从页面正文里切一句主营业务。
+
+    「锚点 + 截一句」之后再过 _scope_ok 判定；不合格就接着找下一个锚点，
+    最后仍没有就返回「未知」。宁可空着让匹配端去问，也不拿导航条充数。
+    """
+    s = str(text or "")
+    if not s:
+        return "未知"
+    for kw in SCOPE_ANCHORS:
+        start = 0
+        while True:
+            i = s.find(kw, start)
+            if i < 0:
+                break
+            start = i + len(kw)
+            seg = s[i:i + 240]
+            # 锚点后面通常紧跟冒号/破折号，从冒号后开始截
+            m = re.match(r"[^：:—\-]{0,8}[：:—\-]\s*", seg)
+            seg = seg[m.end():] if m else seg.lstrip("：:—- 　")
+            cut = len(seg)
+            for ch in ("。", "；", ";", "！", "\n"):
+                j = seg.find(ch)
+                if 0 <= j < cut:
+                    cut = j
+            seg = seg[:cut].strip()[:120]
+            if _scope_ok(seg):
+                return seg
+    return "未知"
+
+
 def extract_jobs(text, city):
     """从招聘页里抽岗位。只认原文里出现过的词，不编。"""
     found, seen = [], set()
@@ -798,6 +952,43 @@ def import_jobs(name, text, source="手动粘贴"):
     }
 
 
+def scope_from_about(name):
+    """招聘页通常只写岗位、不写业务介绍，主营得单独去官网「关于我们」找一次。
+
+    搜索用**纯企业名**（不加「公司简介」「主营业务」这类修饰词）：实测给中文长名
+    加修饰词后，Bing 会退化成按地名召回（搜「"宁波金田铜业" 公司简介」返回的是
+    「宁波市」词条、市政府、地图），而只搜 `"宁波金田铜业"` 反而能直接命中官网。
+    抽不到就返回空字符串——宁可空着让匹配端去问，也不能拿导航条当主营。
+    """
+    variants = brand_names(name)
+    strong = [re.sub(r"\s+", "", v) for v in (name, short_name(name)) if len(v) >= 4]
+    cands, seen = [], set()
+    for qn in [short_name(name)] + variants[:2]:
+        qn = (qn or "").strip()
+        if not qn:
+            continue
+        for r in enrich.bing('"%s"' % qn, 6):
+            url = r.get("url") or ""
+            if not url or url in seen or any(k in url for k in SKIP):
+                continue
+            seen.add(url)
+            cands.append(r)
+    for r in cands[:6]:
+        url = r["url"]
+        try:
+            text = strip_html(fetch(url))
+        except Exception:
+            continue
+        if len(text) < 200:
+            continue
+        if not page_matches(text, r.get("title", ""), url, strong, variants):
+            continue
+        got = guess_scope(text)
+        if got != "未知":
+            return got
+    return ""
+
+
 def build(name):
     text, source = pages_for(name)
     if not text:
@@ -816,6 +1007,11 @@ def build(name):
                 entry["id"] = "web-" + str(abs(hash(name)) % 10 ** 8)
                 entry.pop("text", None)
                 entry["note"] = "大模型抽取 · " + MODEL_ON["model"]
+                if str(entry.get("biz_scope") or "").strip() in ("", "未知"):
+                    # 抓到的多半是招聘页，里面没有业务介绍；再去关于页找一次
+                    _s = scope_from_about(name)
+                    if _s:
+                        entry["biz_scope"] = _s
                 return entry
             except Exception as exc:
                 sys.stderr.write("  model fail %s(%d/2): %s\n" % (name[:16], attempt, str(exc)[:60]))
@@ -846,9 +1042,13 @@ def build(name):
             if m:
                 evidence = m.group(0).strip()[:120]
 
+    # 规则版也要给主营：模型不可用时这批企业全靠它判岗位方向
+    scope = guess_scope(text)
+    if scope == "未知":
+        scope = scope_from_about(name) or "未知"
     return {"id": "web-" + str(abs(hash(name)) % 10 ** 8), "name": name,
             "nature": guess_nature(text), "city": city,
-            "industry": guess_industry(text), "jobs": jobs,
+            "industry": guess_industry(text), "biz_scope": scope, "jobs": jobs,
             "jobSource": source_kind, "jobEvidence": evidence,
             "source": source, "date": time.strftime("%Y-%m-%d"),
             "note": "规则抽取，未用大模型" +
@@ -1081,8 +1281,13 @@ def api_lookup(payload):
                         "jobEvidence": "未知", "source": "未知", "date": "未知",
                         "note": str(exc)[:80]}
             base = LIB.get(n) or db_partial.get(n)
+            if base:
+                # 主营只补不抹：这次没从页面找到业务介绍，不能把库里已有那句冲掉
+                if str(item.get("biz_scope") or "").strip() in ("", "未知") and base.get("biz_scope"):
+                    item["biz_scope"] = base["biz_scope"]
             if base and not item.get("jobs"):
-                for key in ("nature", "city", "industry", "source", "date"):
+                for key in ("nature", "city", "industry", "source", "date",
+                            "biz_scope"):
                     if item.get(key) in (None, "", "未知") and base.get(key) not in (None, "", "未知"):
                         item[key] = base[key]
                 if item.get("note") in (None, "", "未知"):
