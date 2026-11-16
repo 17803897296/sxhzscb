@@ -87,6 +87,18 @@ def normalize(doc):
     doc.setdefault("quality", {})
     doc.setdefault("privacy", {})
     doc["privacy"]["storage"] = "sqlite:fair_profiles"
+    # 采集端偶尔会把空格子照原样塞进意向列表（None / "" / 纯空格 / 非字符串），
+    # 后端多处要 "、".join(intended_jobs)、按名字查表。留一个 None 进去，
+    # 重算 worker 在打印日志时就崩，payload 卡在上一个学生的结果且接口报 500。
+    # 在入口一次性洗成干净的字符串列表，比在每个 join 点补补丁彻底。
+    ans = doc.get("answers")
+    if isinstance(ans, dict) and "intended_jobs" in ans:
+        raw_jobs = ans.get("intended_jobs")
+        if isinstance(raw_jobs, list):
+            ans["intended_jobs"] = [str(j).strip() for j in raw_jobs
+                                    if j is not None and str(j).strip()]
+        else:
+            ans["intended_jobs"] = []
     return doc
 
 

@@ -350,6 +350,10 @@ def profile_from(profile):
         "experiences": [e.get("text", "") for e in (profile.get("resume", {})
                         .get("extraction", {}).get("experiences") or [])] or DEFAULT_PROFILE["experiences"],
         "intended_jobs": ans.get("intended_jobs") or DEFAULT_PROFILE["intended_jobs"],
+        # 学生一个意向都没勾时会回退到 DEFAULT_PROFILE 的意向（让 demo 能跑）。
+        # 但那不是学生选的：命中判定必须知道这件事，否则「数据分析师 / 供应链计划」
+        # 这些默认岗会被当成学生亲口勾的，判出「明确命中」——学生根本没填过它们。
+        "intents_defaulted": not any(str(x).strip() for x in (ans.get("intended_jobs") or [])),
         "home_city": fair.get("home_city") or DEFAULT_PROFILE["home_city"],
         "region": ans.get("region") or DEFAULT_PROFILE["region"],
         "values": ans.get("values") or {},
@@ -1120,13 +1124,20 @@ def _final_state_notes(m, m_eff, trust, check_notes, fbrow, dropped_jobs, dir_no
     """
     state_final = m_eff["state"]
     trust_final, notes_final = trust, list(check_notes)
+
     # 对齐剔除的岗位名要在页面上说清楚，否则学生看到「明确命中」却少了几个岗位会以为丢数据。
     # 剔除清单里混着两类：「不同职能」和「同职能但档位太高（主管/资深）」。
     # 旧版一律说成「不同职能」，学生看到「结构工程师（资深）被剔」会以为专业不对口，
     # 实则是校招投不进那一档 —— 分开说，档位那类直接引用 job_level 的原文理由。
     _lvl_jobs = {a.get("job") for a in (level_blocked or [])}
-    _lvl_dropped = [t for t in dropped_jobs if t in _lvl_jobs]
-    _func_dropped = [t for t in dropped_jobs if t not in _lvl_jobs]
+    # 部分职级岗在 align_jobs 阶段就被剔了，没走到 job_level（level_blocked 为空），
+    # 于是「高级药物分析研究员」「资深有机合成研究员」「项目主管工程师」被算进
+    # 「不同职能」——学生看到会以为自己专业不对口，实则是校招投不进那一档。
+    # 岗名里带明确职级前缀的，从「不同职能」清单里摘出来，按档位说。
+    _LV_STRICT = re.compile(r"高级|资深|主管|副经理")
+    _lvl_named = {t for t in dropped_jobs if _LV_STRICT.search(t)}
+    _lvl_dropped = [t for t in dropped_jobs if t in _lvl_jobs or t in _lvl_named]
+    _func_dropped = [t for t in dropped_jobs if t not in _lvl_jobs and t not in _lvl_named]
     if _func_dropped:
         notes_final.append(
             "已按你选的意向剔除 %d 个不同职能的岗位名（%s）；企业仍照常参与排序"
@@ -1170,8 +1181,17 @@ def _final_state_notes(m, m_eff, trust, check_notes, fbrow, dropped_jobs, dir_no
             notes_final.append(
                 "原「明确命中」的岗位名与你的意向是相邻说法，复核未下结论，"
                 "已改为推断待核实；%s留作现场问一句（不是不同职能、也没说这家不招）" % _names)
-        else:
+        elif _lvl_dropped:
+            # 降级原因是「同职能但档位太高」，不是职能不对口 —— 别再误称不同职能。
+            notes_final.append(
+                "原「明确命中」的岗位是资深/主管档、校招一般投不进，"
+                "已改为推断待核实（不是职能不对口）")
+        elif _func_dropped:
             notes_final.append("原「明确命中」的岗位名与你的意向不同职能，已改为推断待核实")
+        else:
+            # 对齐后没剩任何对口证据，但也说不清是职能/职级/弃权哪一类
+            # （例如只是同名跨方向），用中性话术，不硬扣「不同职能」的帽子。
+            notes_final.append("原「明确命中」的岗位对齐后没有留下对口证据，已改为推断待核实")
     # 岗位名不带方向、这家按主营是别的方向：不假装对口，把方向差异写出来。
     # （align_jobs_detail 的 dir 类 ask，与「管培生轮岗」那类 ask 分开说）
     dir_ask = [a for a in asks if a.get("kind") == "dir"]
@@ -1295,10 +1315,22 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     if real and m_eff["state"] != "hit" and not guard["state_fix"]:
         m_eff["state"] = "hit"
         m_eff["matched_jobs"] = _dedup(real)
+    # 学生没勾任何意向、上面按 DEFAULT_PROFILE 的默认意向判出的 hit 不算「明确命中」：
+    # 默认意向（供应链计划 / 数据分析师 / 商业分析）只是让 demo 有结果的兜底，
+    # 不是学生选的岗位。一律降成推断待核实并写明原因；默认意向仍留在 profile
+    # 供现场提问，但绝不能伪装成「你的意向岗位命中了」。
+    # 现场已确认招（feedback=yes）的企业会在 _final_state_notes 里按事实升回 hit，
+    # 那是企业亲口说的，不是拿默认意向推断的，不在这里压。
+    _intents_defaulted = bool(profile.get("intents_defaulted")) and m_eff["state"] == "hit"
+    if _intents_defaulted:
+        m_eff["state"] = "inferred"
+        m_eff["matched_jobs"] = []
     # 证据等级修正后重跑一次事实校验，让行业不吻合检测也能生效
     m_audit = dict(m)
     m_audit["state"] = m_eff["state"]
     trust, check_notes = audit(c, m_audit, by_title, by_title)
+    if _intents_defaulted:
+        check_notes.append("未填写意向岗位，命中按默认方向推断、不算明确命中")
     m_gap = dict(m_eff)
     # 0 岗 / 岗位已按未知处理的企业没有可念的岗位名，改念学生自己勾选的意向岗位：
     # 既不出现「对口岗位」这种空占位，也不再念早期从主营业务推测出来的假岗位。
