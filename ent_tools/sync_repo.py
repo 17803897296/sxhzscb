@@ -30,6 +30,11 @@ DEV = HERE.parent                              # .../default-workspace  ← 唯�
 REPO = DEV / "careersafari-fair"               # 发布仓库（GitHub 的工作副本）
 CLONE = DEV.parent / "sxhzscb-deploy"          # 从 GitHub 克隆的验收实例（无常驻服务）
 
+# 2026-11-17 起的新布局：ent_tools 已并入发布仓库本体（careersafari-fair 既是正本也是
+# git 仓库）。旧布局（正本与仓库分居两个目录）下 REPO 才单独存在；布局一变就自适应。
+if not (REPO / ".git").is_dir() and (DEV / ".git").is_dir():
+    REPO = DEV
+
 # 需要同步的「活源文件」。改了这些文件，发布/验收两边必须跟上。
 GLOBS = [
     ("ent_tools", "*.py"),
@@ -237,6 +242,53 @@ def compare(target: Path, rels):
     return same, diff, missing
 
 
+def _release(ver, apply, no_rebuild, no_payload):
+    """按版本号发版：先同步（可选），再在发布仓库 HEAD 打 annotated tag。
+
+    纪律：只创建本地 tag，绝不自动 commit / push——那一步仍由人决定。
+    tag 钉在已提交的 HEAD 上；有未提交改动就拒绝打，避免「tag 和仓库内容对不上」。
+    """
+    if not re.match(r"^v\d+\.\d+(\.\d+)?$", ver):
+        print("✗ 版本号格式应为 vX.Y / vX.Y.Z（v3.0 起语义化递增）：%s" % ver)
+        raise SystemExit(1)
+    if apply:
+        main(["--apply"] + (["--no-rebuild"] if no_rebuild else [])
+             + (["--no-payload"] if no_payload else []))
+    if not (REPO / ".git").is_dir():
+        print("✗ %s 不是 git 仓库" % REPO)
+        raise SystemExit(1)
+    exists = subprocess.run(["git", "-C", str(REPO), "tag", "--list", ver],
+                            capture_output=True, text=True).stdout.strip()
+    if exists:
+        print("⚠ tag %s 已存在，不重复打。" % ver)
+        return
+    dirty = subprocess.run(["git", "-C", str(REPO), "status", "--porcelain"],
+                           capture_output=True, text=True).stdout.strip()
+    if dirty:
+        print("⚠ 发布仓库有未提交改动，先 commit 再发版（tag 只钉在已提交的 HEAD 上）：")
+        for line in dirty.splitlines()[:10]:
+            print("   ", line)
+        raise SystemExit(1)
+    subject = subprocess.run(
+        ["git", "-C", str(REPO), "log", "-1", "--format=%s"],
+        capture_output=True, text=True).stdout.strip()
+    head = subprocess.run(
+        ["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
+        capture_output=True, text=True).stdout.strip()
+    r = subprocess.run(["git", "-C", str(REPO), "tag", "-a", ver,
+                        "-m", "%s：%s" % (ver, subject)],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        print("✗ 打 tag 失败：%s" % (r.stderr or "").strip())
+        raise SystemExit(1)
+    print("✓ 已打 tag %s（钉在 %s：%s）" % (ver, head, subject))
+    print("  推送（由人决定，本工具绝不自动 push）：")
+    print("    git -C %s push origin main" % REPO)
+    print("    git -C %s push origin %s" % (REPO, ver))
+    print("  旧版本永远留着：GitHub 页面切 Tags 可浏览/下载 zip，"
+          "git checkout %s 可回退。" % ver)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="开发正本 → 发布仓库 / 克隆验收目录")
     ap.add_argument("--check", action="store_true", help="只比对，不写文件（默认）")
@@ -249,7 +301,14 @@ def main(argv=None):
                     help="兼容旧用法；现在 payload 默认就随发布同步")
     ap.add_argument("--no-payload", action="store_true",
                     help="本次不带 fair_payload.json（两端数据会不同源）")
+    ap.add_argument("--release", metavar="V", default=None,
+                    help="同步后按版本号打 tag（如 --release v3.1）。"
+                         "只创建本地 annotated tag，不自动 push——推送仍由人决定："
+                         "git push origin main && git push origin <tag>")
     a = ap.parse_args(argv)
+
+    if a.release:
+        _release(a.release, a.apply, a.no_rebuild, a.no_payload)
 
     if not DEV.is_dir() or not REPO.is_dir():
         print("✗ 目录布局不对：开发正本应在 %s，其下应有 careersafari-fair/" % DEV)
