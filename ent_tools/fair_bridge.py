@@ -583,6 +583,22 @@ INDUSTRY_OK = {
 }
 
 
+# 工商信息页（爱企查 / 企查查 / 天眼查 / 启信宝 / 国家企业信用公示）。
+# 这些页面能查到企业名称、经营范围、注册地址，但**不是招聘公告**：
+# 从上面抓来的「岗位名」只是经营范围或简介里的词，不等于这家在招这个岗。
+# 中建一局曾凭 aiqicha 工商页拿到 state=hit / trust=high，页面显示「真实 JD 命中」，
+# 实际没有任何招聘原文。这里统一按来源域名挡一次，不删企业、不清岗位，
+# 只降证据等级、改成推断待核实，让「有真实 JD」这组名副其实。
+_NON_JD_HOSTS = ("aiqicha.baidu.com", "qcc.com", "tianyancha.com",
+                 "qixin.com", "11315.com", "gsxt.gov.cn")
+
+
+def _is_non_jd_source(c):
+    """证据 URL 指向工商信息页（不是招聘公告）时为真。"""
+    u = str(c.get("source") or "").lower()
+    return any(h in u for h in _NON_JD_HOSTS)
+
+
 def audit(c, m, all_titles=None, by_title=None):
     """企业端事实校验：把模型结论与企业真实 JD / 行业 / 全库岗位名对一遍。"""
     notes, trust = [], "high"
@@ -590,6 +606,11 @@ def audit(c, m, all_titles=None, by_title=None):
     jobs = _clean_jobs(c.get("jobs"))
     titles = {j.get("title", "") for j in jobs}
     ind = c.get("industry", "未知")
+
+    if _is_non_jd_source(c) and titles:
+        notes.append("岗位记录来自工商信息页（非招聘公告），只作线索，请现场核实是否真招")
+        if trust == "high":
+            trust = "medium"
 
     if jobs and m["matched_jobs"]:
         hit = [t for t in m["matched_jobs"] if t in titles]
@@ -691,7 +712,9 @@ def hallucination_guard(c, m, trust, by_title):
     原文全部保留在 original_matched_jobs / original_state 供追溯。
     """
     titles = {j.get("title", "") for j in (c.get("jobs") or [])}
-    has_jd = bool(titles)
+    # 工商信息页不是招聘公告：即便上面挂着几条「岗位」，也不算真实 JD，
+    # 否则 hit 组会混进「标成明确命中、点开却是工商页」的企业（中建一局那类）。
+    has_jd = bool(titles) and not _is_non_jd_source(c)
     ind = c.get("industry", "未知")
     ok_words = INDUSTRY_OK.get(ind, [])
     bad, reasons, industry_warn = [], [], False
@@ -721,7 +744,10 @@ def hallucination_guard(c, m, trust, by_title):
     if trust == "low" and not bad:
         parts.append("模型结论与企业端事实对不上，请以现场问句为准")
     if not has_jd and m["state"] == "hit":
-        parts.append("企业端没有岗位记录，模型却标「明确命中」，已下调为推断待核实")
+        if titles and _is_non_jd_source(c):
+            parts.append("岗位记录只来自工商信息页、不是招聘公告，模型标「明确命中」依据不足，已下调为推断待核实")
+        else:
+            parts.append("企业端没有岗位记录，模型却标「明确命中」，已下调为推断待核实")
     if bad or trust == "low" or industry_warn or (not has_jd and m["state"] == "hit"):
         parts.append("本企业仍照常参与排序，现场问一句即可确认；没有就顺延")
     return {
@@ -1085,7 +1111,7 @@ def _hits_and_misses(matched_jobs, jobs):
 
 
 def _final_state_notes(m, m_eff, trust, check_notes, fbrow, dropped_jobs, dir_notes,
-                       real, asks):
+                       real, asks, level_blocked=None):
     """v7 现场核实回流 + 证据说明，返回 (最终状态, 可信度, 说明清单, 是否现场确认招)。
 
     「现场确认招了」要同时做三件事：状态从推断升为明确命中、可信度抬一档、
@@ -1094,11 +1120,24 @@ def _final_state_notes(m, m_eff, trust, check_notes, fbrow, dropped_jobs, dir_no
     """
     state_final = m_eff["state"]
     trust_final, notes_final = trust, list(check_notes)
-    # 对齐剔除的岗位名要在页面上说清楚，否则学生看到「明确命中」却少了几个岗位会以为丢数据
-    if dropped_jobs:
+    # 对齐剔除的岗位名要在页面上说清楚，否则学生看到「明确命中」却少了几个岗位会以为丢数据。
+    # 剔除清单里混着两类：「不同职能」和「同职能但档位太高（主管/资深）」。
+    # 旧版一律说成「不同职能」，学生看到「结构工程师（资深）被剔」会以为专业不对口，
+    # 实则是校招投不进那一档 —— 分开说，档位那类直接引用 job_level 的原文理由。
+    _lvl_jobs = {a.get("job") for a in (level_blocked or [])}
+    _lvl_dropped = [t for t in dropped_jobs if t in _lvl_jobs]
+    _func_dropped = [t for t in dropped_jobs if t not in _lvl_jobs]
+    if _func_dropped:
         notes_final.append(
             "已按你选的意向剔除 %d 个不同职能的岗位名（%s）；企业仍照常参与排序"
-            % (len(dropped_jobs), "、".join(dropped_jobs[:3])))
+            % (len(_func_dropped), "、".join(_func_dropped[:3])))
+    if _lvl_dropped:
+        _why = next((a.get("why") for a in (level_blocked or [])
+                     if a.get("job") in _lvl_dropped and a.get("why")), "")
+        notes_final.append(
+            "另有 %d 个同职能岗位属资深/主管档、校招一般投不进（%s）%s；企业仍照常参与排序"
+            % (len(_lvl_dropped), "、".join(_lvl_dropped[:3]),
+               "：" + _why if _why else ""))
     # 命中的岗位名里，有些本身不带方向（「工艺工程师」「质量工程师」）。方向是按
     # 这家主营推定的，必须写明，否则学生会以为企业自己写了「化工工艺」。
     dir_hit = [d for d in dir_notes if d["job"] in real]
@@ -1124,8 +1163,15 @@ def _final_state_notes(m, m_eff, trust, check_notes, fbrow, dropped_jobs, dir_no
                 "「%s」不带方向，这家主营是%s方向；这一支的工艺岗也收相邻专业，"
                 "算可投，但方向不完全一致，投递前问清具体做什么"
                 % ("、".join(cr_jobs[:3]), coarse[0]["cn"]))
+    abstain_ask = [a for a in asks if a.get("kind") == "abstain"]
     if m["state"] == "hit" and m["matched_jobs"] and not real:
-        notes_final.append("原「明确命中」的岗位名与你的意向不同职能，已改为推断待核实")
+        if abstain_ask:
+            _names = "、".join("「%s」" % a.get("job") for a in abstain_ask[:3])
+            notes_final.append(
+                "原「明确命中」的岗位名与你的意向是相邻说法，复核未下结论，"
+                "已改为推断待核实；%s留作现场问一句（不是不同职能、也没说这家不招）" % _names)
+        else:
+            notes_final.append("原「明确命中」的岗位名与你的意向不同职能，已改为推断待核实")
     # 岗位名不带方向、这家按主营是别的方向：不假装对口，把方向差异写出来。
     # （align_jobs_detail 的 dir 类 ask，与「管培生轮岗」那类 ask 分开说）
     dir_ask = [a for a in asks if a.get("kind") == "dir"]
@@ -1188,12 +1234,33 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     aligned_all, _, lvl_blocked, asks = intent_semantics.align_jobs_detail(
         intended, title_all, intent_sem, biz_text,
         dir_hint=dir_hint, dir_notes=dir_notes)
-    # 复核否决（0）和弃权（0.5）的对子都不算命中：只共享「研发 / 工程」这类词的
-    # 跨方向岗位、以及模型不敢下结论的相邻岗位（C++ × 后端），都不写进证据。
+    # 复核否决（0）不算命中：只共享「研发 / 工程」这类词的跨方向岗位不写进证据。
+    # 弃权（0.5）也不算命中证据——「不确定」不冒充复核过的对口——但按 hit_verify
+    # 的三态设计，它**不是否决**：不删、不记成「不同职能」，转成一条现场待问。
+    # 原实现把 0.5 和 0 一起 blocks 掉，QC/QR 这类质量岗同义说法被静默剔除，
+    # 企业从 hit 降成 inferred 却只说「不同职能」，与复核结论自相矛盾。
     # 判过的才算；没判过的（模型不可用）保持原样并在前端标「未复核」。
+    abstain_pairs = []
     if hit_verdicts:
-        aligned_all = [(t, it) for (t, it) in aligned_all
-                       if not hit_verify.blocks(hit_verdicts.get(str(it) + "||" + t))]
+        _kept, abstain_pairs = [], []
+        for pair in aligned_all:
+            v = hit_verdicts.get(str(pair[1]) + "||" + pair[0])
+            if v == 0.5:
+                abstain_pairs.append(pair)
+            elif not hit_verify.blocks(v):
+                _kept.append(pair)
+        aligned_all = _kept
+    _abstain_titles = {t for t, _ in abstain_pairs}
+    for t, it in abstain_pairs:
+        if any(a.get("job") == t for a in asks):
+            continue
+        asks.append({"job": t, "intent": it, "kind": "abstain",
+                     "why": ("「%s」与你的「%s」是相邻说法，复核没敢下结论；"
+                             "不算明确命中，现场问一句是不是同一个岗。" % (t, it))})
+    # 弃权岗名不是「不同职能」：从剔除清单里摘掉，否则页面一边说「待现场核实」、
+    # 一边又把它列进「按你的意向剔除的不同职能岗位」，两套话打架。
+    if _abstain_titles:
+        dropped_jobs = [t for t in dropped_jobs if t not in _abstain_titles]
     # 同职能、只是写着主管 / 资深 / 经理 → 校招投不进。单独列出来给报告写一句
     # 「有同职能的主管岗，可现场问是否按应届招」，既不假装对口，也不说人家不招。
     lvl_blocked = intent_semantics.level_blocked(intended, title_all)
@@ -1420,6 +1487,14 @@ def build():
         else:
             ask_question = "请问今年是否招%s？" % _askX
 
+        # 岗位名只在现场问句里念一次：infer_text 正文曾自带「建议现场确认是否招X」，
+        # _questions 又拼「（现场问一句：请问今年是否招Y）」，X 取自模型给的 fit.jobs、
+        # Y 取自学生勾的意向，两者常不是一组（华海：正文「原料药质量研究员」、
+        # 问句「原料药质量研究员、医学专员」）。显著提示里抹掉正文那句，岗位统一由
+        # ask_question 给出，学生不会看到同一件事问了两遍、还问出两个不同的岗位。
+        import re as _re
+        infer_text = _re.sub(r"建议现场确认是否招[^。]+。$", "", infer_text)
+        infer_text = _re.sub(r"建议现场问一句是否招[^。]+。$", "", infer_text)
         # 现场提问：权重 × (1 - 证据可信度)，取前 2；推断岗位固定排第一
         qs = _questions(gaps, W, m_eff["state"], _fit, infer_text, ask_question)
 
@@ -1431,7 +1506,8 @@ def build():
         fbrow = fb.get(name)
         (state_final, trust_final, notes_final,
          _confirmed, _dir_hit) = _final_state_notes(
-            m, m_eff, trust, check_notes, fbrow, _dropped_jobs, _dir_notes, _real, _asks)
+            m, m_eff, trust, check_notes, fbrow, _dropped_jobs, _dir_notes, _real, _asks,
+         _lvl_blocked)
 
         if _confirmed:
             qs = [q for q in qs if not q.get("infer")]
@@ -1558,11 +1634,18 @@ def build():
     # 唯一例外：「现场确认不招」属于事实出局，仍顺延到队尾。
     # 同分并列时要给确定性次序，否则顺序取决于数据库返回顺序（页面上同分企业
     # 谁在前谁在后会莫名其妙地变）。规则：命中 > 推断，再按展位号，最后按名称。
-    rows.sort(key=lambda r: (1 if (r.get("feedback") or {}).get("result") == "no" else 0,
-                             -r["score"],
-                             0 if r["state"] == "hit" else 1,
-                             str(r.get("booth") or "999"),
-                             r["name"]))
+    # 顺延到队尾的两类：现场确认不招（事实出局）、fit=no（主营方向与意向不交叉，
+    # 页面已收进「与你的方向无关」折叠组）。fit=no 此前只折叠展示、名次仍靠前，
+    # 主榜第 6 位却出现在页面底部折叠组里，导逛顺序和卡片名次对不上。
+    # 注意：fit=no 只顺延，不删数据、不动展位号、不进 excluded —— 0 岗≠不招仍是红线。
+    rows.sort(key=lambda r: (
+        1 if (r.get("feedback") or {}).get("result") == "no" else 0,
+        1 if (r.get("fit") == "no" and (r.get("biz_fit") or {}).get("via") == "llm"
+             and r["state"] == "inferred") else 0,
+        -r["score"],
+        0 if r["state"] == "hit" else 1,
+        str(r.get("booth") or "999"),
+        r["name"]))
     by_booth = sorted([r for r in rows if r["booth"]], key=lambda r: str(r["booth"]))
     booth_pos = {r["name"]: i for i, r in enumerate(by_booth)}
     for i, r in enumerate(rows):
@@ -1576,6 +1659,9 @@ def build():
             r["rank_reason"] += "；现场已确认招，升级为明确命中"
         if (r.get("feedback") or {}).get("result") == "no":
             r["rank_reason"] += "；现场确认不招，已顺延（保留在队尾供核对）"
+        if (r.get("fit") == "no" and (r.get("biz_fit") or {}).get("via") == "llm"
+                and r["state"] == "inferred"):
+            r["rank_reason"] += "；主营方向与你的意向不交叉，已顺延到队尾"
         p = booth_pos.get(r["name"])
         r["nearby"] = ([by_booth[p - 1]["name"]] if p and p > 0 else []) + \
                       ([by_booth[p + 1]["name"]] if p is not None and p + 1 < len(by_booth) else [])

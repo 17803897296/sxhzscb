@@ -1224,7 +1224,26 @@ def align_jobs_detail(intended, jobs, sem=None, biz="", dir_hint=None,
         # （「电气测试工程师」）以名字为准，主营再准也不能改岗位名说的事。
         # 判据用 job_direction.title_dir，不能用 _dir_core —— 后者把「工艺」这种
         # 职能词也当成方向，会把「工艺工程师」误判成自带方向而放弃主营佐证。
-        hd = hd if not job_direction.title_dir(t) else ()
+        #
+        # 例外（多义方向词）：「结构工程师」在家具厂是产品结构（mech）、在建筑
+        # 公司是建筑结构（civil）。岗名写着「结构」不能一刀切判成 civil 就放行
+        # —— 否则办公家具企业的结构工程师被建筑学生当成同名明确命中。
+        # 这类岗名按主营补一个方向进去，让下面的 compatible 判实际方向：
+        # FUNC_NOCROSS 会挡掉「家具结构 × 建筑」的交叉，建筑公司自身仍是 civil。
+        _td = job_direction.title_dir(t)
+        _multisense = False
+        if _td:
+            # 原规则：自带方向就以名字为准，清空主营补的方向
+            hd = ()
+            _biz_dirs = {c for c, _k in job_direction.biz_dirs(biz)}
+            if _biz_dirs and _td not in _biz_dirs and any(
+                    job_direction.FUNC_NOCROSS.get((_td, c)) or
+                    job_direction.FUNC_NOCROSS.get((c, _td))
+                    for c in _biz_dirs):
+                # 多义方向词 + 主营明确是另一个方向 → 按主营补回来做相容核验
+                hd = tuple(_biz_dirs)
+                hcn = "、".join(job_direction.LABEL.get(c, c) for c in hd)
+                _multisense = True
         best, best_s, asks = None, -1.0, []
         for it in intended:
             if not (_role_ok(it, t) and _share_core(it, t)):
@@ -1233,7 +1252,8 @@ def align_jobs_detail(intended, jobs, sem=None, biz="", dir_hint=None,
             if hd and sds and not any(job_direction.compatible(x, y, t)
                                       for x in hd for y in sds):
                 # 岗名不带方向、这家主营是另一个方向：不进 kept，只留一句说明。
-                asks.append((it, "dir", hcn))
+                # 多义方向词（家具厂「结构工程师」）走专用文案，别误说成「名字不带方向」。
+                asks.append((it, "dir", hcn, _multisense))
                 continue
             hint_ok = bool(hd) and bool(sds)
             if is_wider_job(t, it) and not (hint_ok or biz_ok(it, biz)):
@@ -1274,7 +1294,12 @@ def align_jobs_detail(intended, jobs, sem=None, biz="", dir_hint=None,
             a = asks[0]
             it, v = a[0], a[1]
             if v == "dir":
-                why = _ask_why_dir(t, it, a[2] if len(a) > 2 else "")
+                if len(a) > 3 and a[3]:
+                    why = ("「%s」在这家是%s方向的叫法（比如产品结构），"
+                            "和你的「%s」不是一条线；除非愿意转方向，否则不用优先跑。"
+                            % (t, a[2] if len(a) > 2 else "", it))
+                else:
+                    why = _ask_why_dir(t, it, a[2] if len(a) > 2 else "")
             else:
                 why = {"wider": _ask_why_wider, "ask": _ask_why_spec,
                        "no": _ask_why_parallel}[v](t, it)
@@ -1382,8 +1407,10 @@ def align_reason(pairs, sem=None):
         r = ((sem or {}).get(it) or {}).get("reasons", {}).get(t) or ""
         r = _strip_tag(r)
         ts, its = _syn(t), _syn(it)
-        if ts == its:
-            # 本家岗位名就是学生勾的意向名时，不要写「「X」即「X」的另一种说法」
+        if t == it or ts == its:
+            # 本家岗位名就是学生勾的意向名时，不要写「「X」即「X」的另一种说法」。
+            # 两个判断都要：字面全等（模型 reason 里两个占位符撞同一个词）和
+            # 归一同名（EHS安全工程师 / EHS 安全工程师）都会造成岗位名重复。
             r = "本家岗位名与你的意向岗位同名"
         elif not r:
             if its in ts and len(its) >= 4:

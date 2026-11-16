@@ -1176,6 +1176,15 @@ function recompute(P){
       x.level_blocked = miLevelBlocked(P.intended_jobs||[], jt);
       x.ask_jobs = miAskJobs(P.intended_jobs||[], jt, biz);
       x.state_recalc = true;
+      // 工商信息页（爱企查 / 企查查 / 天眼查…）不是招聘公告：换画像重算也不能
+      // 把 payload 里已降级的这类企业重新抬成「明确命中」（与后端同源规则）。
+      const _src=String((r.evidence&&r.evidence.source)||'').toLowerCase();
+      if(x.state==='hit'&&/aiqicha\.baidu\.com|qcc\.com|tianyancha\.com|qixin\.com|11315\.com|gsxt\.gov\.cn/.test(_src)){
+        x.state='inferred';
+        x.matched_jobs=[];
+        x.intent_matches=[];
+        x.check_notes=(x.check_notes||[]).concat(['岗位记录只来自工商信息页、非招聘公告，换画像重算仍按推断待核实']);
+      }
       if(!jobs.length){
         const ii=(P.intended_jobs||[]).slice(0,3);
         x.reason = '按当前画像（意向：'+(ii.join('、')||'—')
@@ -1205,8 +1214,13 @@ function recompute(P){
     const bn=(feedback[b.name]||{}).result==='no'?1:0;
     // 同分并列必须给确定性次序，且与后端 rank 完全同规则：
     // 命中 > 推断 → 展位号 → 名称。否则同分企业前后端名次会不一样。
+    // fit=no 与「现场确认不招」一样顺延到队尾（后端 fair_bridge 同规则）：
+    // 主营方向与意向不交叉的企业在页面底部折叠组，名次不该还占着主榜前排。
+    const fn=function(x){return x.fit==='no'&&x.biz_fit&&x.biz_fit.via==='llm'
+        &&x.state==='inferred'&&!x.state_recalc?1:0;};
+    const afn=fn(a), bfn=fn(b);
     const ah=a.state==='hit'?0:1, bh=b.state==='hit'?0:1;
-    return (an-bn) || (b.score-a.score) || (ah-bh)
+    return (an-bn) || (afn-bfn) || (b.score-a.score) || (ah-bh)
         || String(a.booth||'999').localeCompare(String(b.booth||'999'))
         || a.name.localeCompare(b.name);
   });
@@ -1218,6 +1232,8 @@ function recompute(P){
     const fb=feedback[r.name];
     if(fb&&fb.result==='yes') r.rank_reason+='；现场已确认招，推断升级为明确命中';
     if(fb&&fb.result==='no') r.rank_reason+='；现场确认不招，已顺延（保留在队尾供核对）';
+    if(r.fit==='no'&&r.biz_fit&&r.biz_fit.via==='llm'&&r.state==='inferred'&&!r.state_recalc)
+      r.rank_reason+='；主营方向与你的意向不交叉，已顺延到队尾';
   });
   return rows;
 }

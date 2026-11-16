@@ -96,6 +96,15 @@ FUNC_CROSS = {
     ("mech", "elec2"): ("工艺", "制程", "结构", "封装"),
 }
 
+# 与 FUNC_CROSS 反向：某些相邻方向的「整体可换」在特定岗名上不成立。
+# mech~civil 整体相容是因为机械 / 土木在设备、力学岗上确实交叉；但家具厂、
+# 机械厂的「结构工程师」做的是**产品结构**（家具 / 钣金），不是建筑结构。
+# 学生照着建筑结构去投，白跑一趟。这里按岗名里的词精准关掉这一对交叉，
+# 不改 COMPAT 全局（那样会把真的机械×土木交叉也误杀）。
+FUNC_NOCROSS = {
+    ("mech", "civil"): ("结构",),
+}
+
 # 会「跟着行业走」的职能岗：这些岗的方向由行业决定。
 # 「工艺工程师」在化工厂是化工工艺，在汽车厂是注塑工艺。
 # 而「财务主管」「人力资源专员」不会因为是化工厂就变成「化工财务」——
@@ -345,12 +354,22 @@ def pick(dirs, want, title=""):
 def compatible(a, b, title=""):
     """两个方向簇能不能算同一方向（含相邻可换，以及按职能成立的方向交叉）。
 
-    title 给出岗位名时，额外检查 FUNC_CROSS：同样是 chem × elec2，
-    「刻蚀工艺工程师」算通（工艺岗收化工），「器件研发工程师」不算通。
+    title 给出岗位名时，额外检查两件事：
+      · FUNC_CROSS：同样是 chem × elec2，「刻蚀工艺工程师」算通（工艺岗收化工），
+        「器件研发工程师」不算通；
+      · FUNC_NOCROSS：相邻方向里个别岗名**不能**换，家具厂的「结构工程师」是
+        产品结构（机械），不是建筑结构（土木），尽管 mech~civil 整体可换。
+    同簇永远相容，不受这两张表影响。
     """
     if not a or not b:
         return False
-    if a == b or (a, b) in COMPAT or (b, a) in COMPAT:
+    if a == b:
+        return True
+    if title:
+        banned = FUNC_NOCROSS.get((a, b)) or FUNC_NOCROSS.get((b, a))
+        if banned and any(w in str(title) for w in banned):
+            return False
+    if (a, b) in COMPAT or (b, a) in COMPAT:
         return True
     if title:
         key = (a, b) if (a, b) in FUNC_CROSS else (
