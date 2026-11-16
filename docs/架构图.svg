@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="860" viewBox="0 0 1280 860" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b93a3"/>
+    </marker>
+    <marker id="arBlue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f5bd3"/>
+    </marker>
+    <marker id="arGreen" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0f8a6a"/>
+    </marker>
+    <marker id="arPurple" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6b46c1"/>
+    </marker>
+    <style>
+      .t{font-size:15px;font-weight:700;fill:#16181d}
+      .b{font-size:13.5px;font-weight:700}
+      .m{font-size:11.5px;fill:#5b6472}
+      .o{font-size:11px;font-weight:600}
+      .n{font-size:10.5px;fill:#9aa1ad}
+      .fl{font-size:11px;font-family:ui-monospace,Consolas,Menlo,monospace;fill:#3f4653}
+      .lk{stroke:#8b93a3;stroke-width:1.8;fill:none}
+      .lkb{stroke:#2f5bd3;stroke-width:1.8;fill:none}
+      .lkg{stroke:#0f8a6a;stroke-width:1.8;fill:none}
+      .lkp{stroke:#6b46c1;stroke-width:1.8;fill:none}
+      .chip{fill:#fff;stroke:#e2e5eb;stroke-width:1}
+      .lbl{font-size:10.5px;font-weight:600;fill:#6b7280}
+    </style>
+  </defs>
+
+  <rect width="1280" height="860" fill="#ffffff"/>
+
+  <!-- 标题 -->
+  <text x="48" y="46" font-size="21" font-weight="700" fill="#16181d">双选会助手 · 三端架构与数据流</text>
+  <text x="48" y="72" class="m">三端互不直接调用，全部通过 careersafari.db + 派生文件交接 · 数据规模：145 家 / 真实岗 1329 / 推断岗 591</text>
+
+  <!-- ===== 输入源 ===== -->
+  <rect x="48" y="120" width="168" height="80" rx="12" fill="#f2f4f7" stroke="#c8cdd6"/>
+  <text x="132" y="155" text-anchor="middle" class="t">学生</text>
+  <text x="132" y="178" text-anchor="middle" class="m">对话问卷 6 段 + 简历</text>
+
+  <rect x="48" y="430" width="168" height="80" rx="12" fill="#f2f4f7" stroke="#c8cdd6" stroke-dasharray="4 3"/>
+  <text x="132" y="465" text-anchor="middle" class="t">企业名单</text>
+  <text x="132" y="488" text-anchor="middle" class="m">booths.json · 145 家</text>
+
+  <!-- ===== ① 采集端 ===== -->
+  <rect x="268" y="112" width="300" height="160" rx="16" fill="#eef3fe" stroke="#2f5bd3" stroke-width="1.5"/>
+  <text x="418" y="146" text-anchor="middle" class="b" style="fill:#1e3f9e">① 采集端</text>
+  <text x="418" y="168" text-anchor="middle" class="fl">fair_server.py · fair_ingest.py</text>
+  <text x="418" y="186" text-anchor="middle" class="fl">resume_parse.py</text>
+  <text x="288" y="212" class="m">输入：问卷答案 + 简历（可选）</text>
+  <text x="288" y="231" class="m">处理：normalize 清洗 / 脏意向过滤</text>
+  <text x="288" y="252" class="o" style="fill:#2f5bd3">输出：fair_profiles + fair_active</text>
+
+  <!-- ===== ② 企业搜索端 ===== -->
+  <rect x="268" y="410" width="300" height="220" rx="16" fill="#e9f6f1" stroke="#0f8a6a" stroke-width="1.5"/>
+  <text x="418" y="444" text-anchor="middle" class="b" style="fill:#0b6b52">② 企业搜索端</text>
+  <text x="418" y="466" text-anchor="middle" class="fl">collect_roster.py · portal.py</text>
+  <text x="418" y="484" text-anchor="middle" class="fl">enrich_by_llm.py · cdp.py</text>
+  <text x="288" y="510" class="m">搜索 → 认领 → 渲染 → 抽取 → 合并</text>
+  <text x="288" y="529" class="m">真实岗贴 source_url；推断岗单独标注</text>
+  <text x="288" y="548" class="m">MISS 不冲空 / HIT 只增不减</text>
+  <text x="288" y="567" class="o" style="fill:#0f8a6a">输出：company_jobs / job_evidence</text>
+  <text x="288" y="589" class="o" style="fill:#0f8a6a">旁产出：campus_recheck.db（校招核实）</text>
+  <text x="288" y="611" class="n">6 workers 并发 · Edge CDP 常驻复用 · 页面缓存 12h</text>
+
+  <!-- ===== 中央 DB ===== -->
+  <rect x="628" y="196" width="290" height="424" rx="18" fill="#fdf1e4" stroke="#c2711a" stroke-width="2"/>
+  <text x="773" y="234" text-anchor="middle" class="t" style="fill:#9a570f">careersafari.db</text>
+  <text x="773" y="256" text-anchor="middle" class="o" style="fill:#c2711a">唯一事实源 · SQLite</text>
+  <line x1="652" y1="270" x2="894" y2="270" stroke="#e8cfae" stroke-width="1"/>
+  <text x="650" y="296" class="fl">company_jobs</text><text x="894" y="296" text-anchor="end" class="n">岗位库</text>
+  <text x="650" y="320" class="fl">fair_profiles / fair_active</text><text x="894" y="320" text-anchor="end" class="n">画像 + 生效指针</text>
+  <text x="650" y="344" class="fl">llm_match</text><text x="894" y="344" text-anchor="end" class="n">模型预判</text>
+  <text x="650" y="368" class="fl">job_evidence</text><text x="894" y="368" text-anchor="end" class="n">逐岗证据</text>
+  <text x="650" y="392" class="fl">job_dir_hint</text><text x="894" y="392" text-anchor="end" class="n">岗位方向（本地规则）</text>
+  <text x="650" y="416" class="fl">fair_feedback</text><text x="894" y="416" text-anchor="end" class="n">现场回流</text>
+  <text x="650" y="440" class="fl">jd_records / positions</text><text x="894" y="440" text-anchor="end" class="n">JD 原文</text>
+  <text x="650" y="464" class="fl">test_sessions</text><text x="894" y="464" text-anchor="end" class="n">实验日志（只追加）</text>
+  <line x1="652" y1="482" x2="894" y2="482" stroke="#e8cfae" stroke-width="1"/>
+  <text x="650" y="506" class="m" style="fill:#9a570f">派生 / 读缓存（带代码指纹）</text>
+  <text x="650" y="528" class="fl">campus_recheck.db · fair_payload.json</text>
+  <text x="650" y="548" class="fl">hit_verdicts / *_cache.json</text>
+  <text x="650" y="576" class="n">换库先 cp；FAIR_DB / FAIR_INFER_FILL 可切</text>
+  <text x="650" y="598" class="n">活库不是 git 正本（见技术手册 §4）</text>
+
+  <!-- ===== ③ 匹配端 ===== -->
+  <rect x="968" y="140" width="264" height="230" rx="16" fill="#f0ecfd" stroke="#6b46c1" stroke-width="1.5"/>
+  <text x="1100" y="174" text-anchor="middle" class="b" style="fill:#54329e">③ 匹配端</text>
+  <text x="1100" y="196" text-anchor="middle" class="fl">fair_bridge.py · build()</text>
+  <text x="988" y="222" class="m">读：生效画像 × 岗位库</text>
+  <text x="988" y="241" class="m">七维加权打分（可复算）</text>
+  <text x="988" y="260" class="m">hit / inferred / miss 三态</text>
+  <text x="988" y="279" class="m">推断岗只提示、不进命中证据</text>
+  <text x="988" y="298" class="m">0.5 弃权 → 现场待问，不签证据</text>
+  <text x="988" y="321" class="o" style="fill:#6b46c1">输出：fair_payload.json</text>
+  <text x="988" y="343" class="n">删除必公示 · 模型不可用不编结论</text>
+
+  <!-- ===== 展示 ===== -->
+  <rect x="968" y="406" width="264" height="92" rx="14" fill="#f4f5f7" stroke="#b9bfc9" stroke-width="1.5"/>
+  <text x="1100" y="436" text-anchor="middle" class="b">fair.html（展示端）</text>
+  <text x="1100" y="458" text-anchor="middle" class="m">build_fair_page.py 内联 payload</text>
+  <text x="1100" y="480" text-anchor="middle" class="o" style="fill:#4b5563">排行榜 + 理由 + 现场问句</text>
+
+  <!-- ===== 现场反馈 ===== -->
+  <rect x="968" y="534" width="264" height="88" rx="14" fill="#fff8ef" stroke="#c2711a" stroke-width="1.5"/>
+  <text x="1100" y="564" text-anchor="middle" class="b" style="fill:#9a570f">现场反馈回流</text>
+  <text x="1100" y="586" text-anchor="middle" class="m">POST /api/fair/feedback</text>
+  <text x="1100" y="607" text-anchor="middle" class="o" style="fill:#c2711a">招 → 升 hit · 不招 → 顺延队尾</text>
+
+  <!-- ===== 箭头 ===== -->
+  <path class="lkb" d="M216,160 L262,160" marker-end="url(#arBlue)"/>
+  <path class="lkg" d="M216,470 L262,470" marker-end="url(#arGreen)"/>
+  <path class="lkb" d="M568,200 L624,240" marker-end="url(#arBlue)"/>
+  <path class="lkg" d="M568,500 L624,470" marker-end="url(#arGreen)"/>
+  <path class="lkp" d="M918,268 L962,268" marker-end="url(#arPurple)"/>
+  <path class="lkp" d="M1100,370 L1100,400" marker-end="url(#arPurple)"/>
+  <path class="lk" d="M1100,498 L1100,528" marker-end="url(#ar)"/>
+  <!-- 现场回流：反馈框 → DB（写回 fair_feedback） -->
+  <path class="lk" d="M968,578 L936,578 Q920,578 920,560 L920,410 Q920,396 906,396 L900,396" marker-end="url(#ar)"/>
+
+  <!-- 箭头标签 -->
+  <rect class="chip" x="600" y="196" width="66" height="22" rx="6"/>
+  <text x="633" y="211" text-anchor="middle" class="lbl">画像</text>
+  <rect class="chip" x="600" y="452" width="74" height="22" rx="6"/>
+  <text x="637" y="467" text-anchor="middle" class="lbl">岗位/证据</text>
+  <rect class="chip" x="922" y="246" width="40" height="22" rx="6"/>
+  <text x="942" y="261" text-anchor="middle" class="lbl">读取</text>
+  <rect class="chip" x="1110" y="376" width="62" height="22" rx="6"/>
+  <text x="1141" y="391" text-anchor="middle" class="fl">payload</text>
+  <rect class="chip" x="824" y="560" width="96" height="22" rx="6"/>
+  <text x="872" y="575" text-anchor="middle" class="lbl">写回 fair_feedback</text>
+
+  <!-- 底部说明 -->
+  <line x1="48" y1="664" x2="1232" y2="664" stroke="#e8eaee" stroke-width="1"/>
+  <text x="48" y="690" class="m" style="font-weight:600;fill:#4b5563">读图要点</text>
+  <text x="48" y="714" class="n">① 三端只通过 DB / 文件交接，谁都不直接调谁——改一端不要直接改另一端的数据结构，先改契约。</text>
+  <text x="48" y="736" class="n">② 匹配端的名次只由可复算的 score 决定；state、可信度、待核实都不进分数；仅「现场不招 / fit=no」顺延队尾。</text>
+  <text x="48" y="758" class="n">③ 校招核实库覆盖只改内存对象、不写回产品库；FAIR_CAMPUS_RECHECK=0 / FAIR_INFER_FILL=0 可分别回退。</text>
+  <text x="48" y="780" class="n">④ 字段与口径详见 docs/三端技术手册.md；改动纪律见 docs/改动守则.md；踩坑见 docs/采集流水线与并行调度.md 第 7/8 节。</text>
+  <text x="48" y="818" class="n">生成口径：145 家 · 真实岗 1329（892 带 URL）· 推断岗 591 · 校招库 90 家 / 615 岗 · 2026-11-16</text>
+</svg>

@@ -209,6 +209,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
 
   <div class="hsp"></div>
 
+  <button class="tool" id="btn-tests" title="测试记录：查看 / 删除 / 批量清理每次跑的输入输出"><i>📋</i><span>测试记录</span></button>
   <button class="tool" id="btn-test" title="工程自用，独立于主流程"><i>⚙</i><span>测试端</span></button>
 </header>
 
@@ -271,7 +272,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
       name: '企业端',
       need: function(s){ return !!s.sig; },
       why: function(){
-        return '企业名录要对着<b>你的画像</b>看才有意义 —— 先做完采集，这里才知道哪些岗位值得重点看。';
+        return '企业端是<b>岗位上传入口</b> —— 先完成画像采集，再来这边把单位岗位信息交上去。';
       },
       go: 'collect'
     },
@@ -281,13 +282,18 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
       need: function(s){ return !!(s.sig && s.ent); },
       why: function(s){
         if (!s.sig) return '还没有画像，排行无从算起。先做完采集。';
-        return '排行是<b>企业名录 × 你的画像</b>算出来的。先去企业端看一眼池子里都有什么，回来才知道这个名次意味着什么。';
+        return '排行是<b>交上来的岗位 × 你的画像</b>算出来的。先去企业端过一眼岗位入口，回来才知道这个名次意味着什么。';
       },
       go: function(s){ return s.sig ? 'enterprises' : 'collect'; }
     },
     test: {
       url: '/test_users.html',
       name: '测试端',
+      need: function(){ return true; }
+    },
+    tests: {
+      url: '/tests.html',
+      name: '测试记录',
       need: function(){ return true; }
     }
   };
@@ -361,7 +367,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
 
       var b = el.querySelector('[data-b]');
       var map = {
-        done: t === 'collect' ? '已采集' : t === 'enterprises' ? '已浏览' : '可查看',
+        done: t === 'collect' ? '已采集' : t === 'enterprises' ? '已查看' : '可查看',
         cur: '当前',
         locked: '待解锁',
         todo: t === 'collect' ? '未开始' : '可进入'
@@ -384,6 +390,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
     }
 
     document.getElementById('btn-test').classList.toggle('on', cur === 'test');
+    document.getElementById('btn-tests').classList.toggle('on', cur === 'tests');
   }
 
   /* ───────── 提示条 ───────── */
@@ -427,7 +434,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
         G.ent = true;
         save();
         render();
-        notice('看过名录了，<b>匹配端已解锁</b> —— 排行就是把这 145 家按你的方向排出来的。', 'info', 9000);
+        notice('企业端看过了，<b>匹配端已解锁</b> —— 排行就是把交上来的岗位按你的方向排出来的。', 'info', 9000);
       }, EN_DWELL);
     } else if (tab === 'enterprises' && G.sig) {
       G.ent = true; save();
@@ -452,7 +459,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
             } else {
               G.sig = sig;
               save(); render();
-              notice('画像采集完成，<b>企业端已解锁</b> —— 先看看来的都是些什么单位。', 'info', 9000);
+              notice('画像采集完成，<b>企业端已解锁</b> —— 过一眼岗位上传入口。', 'info', 9000);
             }
           }
         });
@@ -468,11 +475,11 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
     if (tab === 'match' && cur === 'enterprises') {
       lock.classList.add('on');
       document.getElementById('lock-ic').textContent = '👀';
-      document.getElementById('lock-h').textContent = '名录刚打开';
+      document.getElementById('lock-h').textContent = '企业端刚打开';
       document.getElementById('lock-p').innerHTML =
-        '排行是把这批单位按你的方向排出来的。不知道池子里都是些什么单位，<b>第几名是没有意义的</b> —— 就快好了，看两眼。';
+        '排行是把交上来的岗位按你的方向排出来的。先在企业端过一眼岗位入口，<b>第几名才有意义</b> —— 就快好了，看两眼。';
       var b = document.getElementById('lock-go');
-      b.textContent = '继续看名录';
+      b.textContent = '继续查看';
       b.onclick = hideLock;
       render();
       return;
@@ -500,6 +507,14 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
       open(G.sig ? (G.ent ? 'match' : 'enterprises') : 'collect');
     } else {
       open('test');
+    }
+  });
+
+  document.getElementById('btn-tests').addEventListener('click', function(){
+    if (cur === 'tests') {
+      open(G.sig ? (G.ent ? 'match' : 'enterprises') : 'collect');
+    } else {
+      open('tests');
     }
   });
 

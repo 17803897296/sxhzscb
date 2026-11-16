@@ -1035,6 +1035,12 @@ def build(name):
     scope = guess_scope(text)
     if scope == "未知":
         scope = scope_from_about(name) or "未知"
+    # 与模型路径一致：岗位来自这一页，就把这一页的地址贴回去；抓不到就留空，不编。
+    source_url = str(source or "").strip()
+    if not source_url.startswith("http"):
+        source_url = ""
+    for _job in jobs:
+        _job["source_url"] = source_url
     return {"id": "web-" + str(abs(hash(name)) % 10 ** 8), "name": name,
             "nature": guess_nature(text), "city": city,
             "industry": guess_industry(text), "biz_scope": scope, "jobs": jobs,

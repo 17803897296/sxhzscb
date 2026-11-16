@@ -85,3 +85,9 @@ ent_tools/data/_roster_todo.json
 # 页面构建戳：build_fair_page.py 每次构建都刷新，入库等于永远 dirty。
 # clone 出来第一件事就是构建一次页面，戳会自己长出来。
 ent_tools/data/.page_stamp.json
+
+# v3.0 发布前补盖：测试/并行期间的活库副本、本机备份目录与临时名单
+*.db
+ent_tools/data/_backup_before_*/
+ent_tools/data/_*_names.txt
+demo/*.old.html

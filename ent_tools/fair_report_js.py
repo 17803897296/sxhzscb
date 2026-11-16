@@ -454,7 +454,22 @@ function miPairVerdict(title,intent){
      放在最前面，让「初级软件工程师 / 开发工程师」这类本身没方向词的意向也受约束。
      与 intent_semantics.pair_verdict 同一处判据逐条同源。 */
   const cross=miCrossFunc(title,intent);
-  if(!a.t) return cross?'no':'ok';
+  if(!a.t){
+    if(cross) return 'no';
+    /* ⓪ 泛研发意向 × 带方向岗位 → ask（与 intent_semantics.pair_verdict ⓪ 同源，
+       2026-11-16 用户拍板：宽泛选择要附和方向）。研发工程师不再无条件吃下
+       C++研发 / 自动化 / 电控硬件；岗位职能明确是非研发条线（财务 / 人事 /
+       销售 / 设计……且名字里没有研发字样）→ 直接 no，不生成问一句的噪音。 */
+    /* 软件条线补闸：miDirCore 剥不出「软件」的方向核，泛研发意向 × 编程条线岗
+       必须转 ask（软件工程师 ↔ 研发工程师 曾漏网硬命中）。意向自己含软件条线词
+       （学生勾的「软件工程师」）时不触发——同条线互配照常命中。与 ⓪ 同源。 */
+    if(miSoftBroad(intent) && (b.t || (miHas(title,MI_SOFTLINE) && !miHas(intent,MI_SOFTLINE)))){
+      const tf=miFuncOf(title);
+      if(MI_NONRD.indexOf(tf)>=0 && !miHas(title,['研发','研究','开发'])) return 'no';
+      return 'ask';
+    }
+    return 'ok';
+  }
   /* 岗位没方向词 ≠ 更泛的同类岗：UI 设计师、财务专员、产品经理都没有方向词，
      却和开发不是同一个职能。 */
   if(!b.t) return cross?'no':'ok';
@@ -481,7 +496,18 @@ function miPairVerdict(title,intent){
   if(dgt.length&&dgi.length&&!dgt.some(function(g){ return dgi.indexOf(g)>=0; })) return 'no';
   /* 注意方向：a=意向方向，b=岗位方向。
      b ⊃ a → 岗位更细（测试 → 器件测试）→ ask；
-     b ⊂ a → 岗位更泛（AI算法研究 → 算法）→ ok（小类能进大类）。 */
+     b ⊂ a → 岗位更泛（AI算法研究 → 算法）→ ok（小类能进大类）。
+     ⑤ 共享动作核 + 不同领域限定词 → no：人工智能算法 × 运动控制算法——都以
+     「算法」结尾，前面的领域限定互不包含，是并列领域不是同一个岗（与
+     intent_semantics.pair_verdict ⑤ 同源）。ai ≡ 人工智能 先归一。 */
+  for(let _i=0;_i<MI_ACTSUF.length;_i++){
+    const act=MI_ACTSUF[_i];
+    if(a.t.slice(-act.length)===act && b.t.slice(-act.length)===act){
+      let pa=a.t.slice(0,a.t.length-act.length), pb=b.t.slice(0,b.t.length-act.length);
+      pa=MI_AISYN[pa]||pa; pb=MI_AISYN[pb]||pb;
+      if(pa&&pb&&pa.indexOf(pb)<0&&pb.indexOf(pa)<0) return 'no';
+    }
+  }
   if(a.t.indexOf(b.t)>=0) return 'ok';
   /* 职责词不算方向：设备维护工程师 × 设备工程师 → 同一岗位，不是「更细的方向」 */
   let b2=b.t; MI_DUTY.forEach(function(w){ b2=b2.split(w).join(''); });
@@ -604,6 +630,18 @@ function miSoftBroad(t){
   MI_SOFTWIDE.forEach(function(w){ s=s.split(w).join(''); });
   return !s.trim();
 }
+/* 动作核后缀 / AI 同义 / 非研发职能族：与 intent_semantics.ACTIVITY_SUFFIXES、
+   _AI_SYN、NON_RD_FAMILIES 逐条同源（2026-11-16 泛意向方向对齐）。 */
+const MI_ACTSUF=['算法'];
+const MI_AISYN={'ai':'人工智能','ml':'机器学习'};
+const MI_NONRD=['product','design','finance','hr','admin','legal','sales',
+                'media','serv','edu','supply','quality','ehs','device','process'];
+/* 软件条线提示词：岗位名剥不出方向核（「软件」在 DIR_NEUTRAL 里），但名字里的
+   「软件/程序/编程」明确是编程条线的岗。泛研发意向撞上它们必须问一句，不能硬
+   命中——「软件工程师 ↔ 研发工程师」是用户二次点名的漏网对（2026-11-16）。
+   意向自己就写了这些词时不触发：软件条线互配是同条线正常命中，不是泛选。
+   与 intent_semantics.DEV_SOFTLINE 同源。 */
+const MI_SOFTLINE=['软件','程序','编程','编码','代码','信息技术'];
 const MI_FIN=['财务','会计','审计','税务','核算','出纳','资金'];
 /* 跨专业设计方向词：机械设计不吃 IC / 光学 / 电磁 / 逻辑 这类设计岗 */
 const MI_DESIGN=['IC','芯片','光学','光机','电磁','逻辑','物理','数字','模拟','射频','FPGA','版图','PCB'];
@@ -807,11 +845,23 @@ function miMatch(a,pool,biz){
   for(let i=0;i<pool.length;i++){
     const t=pool[i];
     if(!t) continue;
-    if(t===a || t.indexOf(a)>=0 || (t.length>=4 && a.indexOf(t)>=0)) return t;
-    /* 大类岗位名：只有公司业务就是这个细分时才算对口（供应链公司的管培生），
-       否则留给 miAskJobs 变成现场提问。 */
+    if(t===a) return t;
+    if(t.indexOf(a)>=0 || (t.length>=4 && a.indexOf(t)>=0)){
+      /* 泛研发意向不能靠「字面包含」吃下带方向的岗位（研发工程师 ⊂ C++研发工程师）：
+         方向必须与学生方向域或主营相容、由后端裁决；本地重算时只留给现场问。
+         软件条线岗同理——miDirCore 剥不出「软件」的方向核，必须用词表补闸
+         （软件研发工程师 ⊂ 研发工程师 曾绕过闸硬命中）。与 ⓪ 同源。 */
+      if(miSoftBroad(a) && ((miDirCore(t).t && miDirCore(t).t!==miDirCore(a).t)
+                            || (miHas(t,MI_SOFTLINE) && !miHas(a,MI_SOFTLINE)))) continue;
+      return t;
+    }
+    /* 大类岗位名：只有公司业务就是这个细分**且不是轮岗类**时才算对口
+       （供应链公司的「商务专员」）；轮岗类（管培生 / 培训生 / 储备干部）
+       即使业务对口也不硬命中 —— 先轮岗后定岗，岗位名没有「就是干这个」的
+       证据（科力普「管理培训生」×物流专员 曾被 biz_ok 短路成语义命中）。
+       一律留给 miAskJobs 变成现场提问。与 intent_semantics 同源（2026-11-16）。 */
     if(miBareGeneric(t) && !miBareGeneric(a)){
-      if(miBizOk(a,biz)) return t;
+      if(!miIsRotation(t) && miBizOk(a,biz)) return t;
       continue;
     }
     /* 岗位名比意向宽一层（算法工程师 × AI算法研究工程师）：不算对口，
@@ -821,6 +871,9 @@ function miMatch(a,pool,biz){
       continue;
     }
     if(miPairVerdict(t,a)==='no') continue;   /* 并列方向不算命中（后端 × 量化 / 前端） */
+    /* 泛研发意向的 ask（量化开发 × 开发工程师）：方向未定，不冒充命中，
+       转现场问 —— 与后端 align_jobs_detail 的 ⓪/R2 出口同一口径。 */
+    if(miPairVerdict(t,a)==='ask' && miSoftBroad(a)) continue;
     if(miRole(a,t) && miShare(a,t)) return t;
   }
   return null;
@@ -838,7 +891,11 @@ function miAskJobs(intended,titles,biz){
     if(bare && !miIsRotation(t)) return;
     for(let i=0;i<(intended||[]).length;i++){
       const a=intended[i];
-      if(!a || miBareGeneric(a) || miBizOk(a,biz)) continue;
+      if(!a || miBareGeneric(a)) continue;
+      /* 业务对口：定向大类岗按对口处理不重复问；轮岗类照问——问句升级为
+         「主业对口，大概率往这个方向培养」。与 intent_semantics.ask_jobs 同源。 */
+      const hot=miBizOk(a,biz);
+      if(hot && !miIsRotation(t)) continue;
       /* 企业主营和这个意向方向毫不相关 → 连问一句都不该有
          （保险公司 / 教育公司的管培生不会定向培养成化学工程师）。 */
       if(!miBizRelated(a,biz)) continue;
@@ -848,8 +905,11 @@ function miAskJobs(intended,titles,biz){
       seen[t]=1;
       out.push({job:t, intent:a,
         why: bare
-          ? ('岗位名只写「'+t+'」，没写业务方向；不同企业的「'+t
-             +'」按不同条线培养。现场问一句：是招「'+a+'」这个方向，还是统一轮岗后再定岗。')
+          ? (hot
+             ? ('这家主业就是「'+a+'」所在的方向，「'+t+'」大概率会往这个条线培养，'
+                +'但岗位名没写死方向。现场问一句：轮岗后能否定岗到「'+a+'」。')
+             : ('岗位名只写「'+t+'」，没写业务方向；不同企业的「'+t
+                +'」按不同条线培养。现场问一句：是招「'+a+'」这个方向，还是统一轮岗后再定岗。'))
           : ('岗位名「'+t+'」只写到「'+(miDirText(t)||t)+'」这一层，比「'+a
              +'」宽，看不出是不是这个细分方向。现场问一句：这个岗具体做「'+a+'」吗。')});
       return;
@@ -899,6 +959,10 @@ function matchIntent(titles,intended,sem,jobTitles,biz,dirOk){
                不一致（2026-11-15 实测：客诉质量 × 质量 被判 ask，后端 drop、
                前端按复核 1 算命中，10 家分歧由此而来）。 */
             && miPairVerdict(t,x)!=='no'
+            /* 泛研发意向的 ask 不能因「模型挑过」就吃下（研发工程师 × C++研发）：
+               复核确认(1)除外——但 ask+复核1 本就不许提升成命中（见下条），
+               所以泛意向的 ask 一律转现场问。与后端 ⓪ 同源。 */
+            && !(miPairVerdict(t,x)==='ask' && miSoftBroad(x))
             && !(miPairVerdict(t,x)==='ask' && hvGet(x,t)===1)
             /* 复核否决的跨方向岗位不能算命中（食品研发 × 药品研发 只共享「研发」）；
                弃权（0.5）同样不算 —— C++ × 后端这种相邻技术栈不进证据 */
@@ -915,6 +979,7 @@ function matchIntent(titles,intended,sem,jobTitles,biz,dirOk){
             /* 比意向宽一层的岗（算法工程师 × AI算法研究工程师）不能走这条兜底 */
             && !(miWider(t,x) && !miBizOk(x,biz))
             && miPairVerdict(t,x)!=='no'
+            && !(miPairVerdict(t,x)==='ask' && miSoftBroad(x))
             && !(miPairVerdict(t,x)==='ask' && hvGet(x,t)===1)
             && !hvBlocks(x,t);
         });
@@ -970,6 +1035,75 @@ function matchIntent(titles,intended,sem,jobTitles,biz,dirOk){
     if(hitJob) out.push({intent:x, job:hitJob, via:via, reason:reason});
   });
   return out;
+}
+
+/* ── 画像×主营复检（2026-11-17，与后端 biz_recheck.py 同源）────────────
+   命中不能只看「岗位名 ↔ 意向」字面，还要看「企业主营业务 + 岗位名」是否
+   对得上「意向岗位 + 专业」。反面案例：金融公司「管培生」 × 物流专业学生
+   选的「管培生」—— 字面全同，但金融公司培养不出物流方向。
+   强词一票即可，弱词需 ≥2 个不同弱词；网页导航垃圾短语先剔再匹配。
+   规则改动必须与 biz_recheck.py 成对改，parity 才不会两边各说各话。 */
+const BIZ_JUNK=['安全生产','主营产品','经营范围','公司简介','联系我们','时政要闻','社会责任','新闻中心','未知','暂无'];
+const BIZ_FIELDS=[
+ ['物流供应链',['物流','供应链','仓储','运输管理'],['物流','供应链','仓储','运输','货代','配送'],
+  ['物流','供应链','仓储','运输','货代','快递','配送','冷链','报关','货运','电商','外贸','进出口','制造','生产','工厂','加工','实业','物流园'],
+  ['超市','商超','卖场','跨境','出口','商贸','分销','采购','贸易','批发']],
+ ['化学化工材料',['化学','化工','材料','高分子','制药','药学','应用化学'],['化学','化工','材料','制药','药学','试剂','涂料','配方'],
+  ['化学','化工','材料','制药','医药','药','试剂','涂料','配方','石化','精细化工','实验','电池材料','树脂','胶粘','助剂','冶金','冶炼'],['分析','检验','化验','检测','质检','测试']],
+ ['机械制造',['机械','机电','车辆','过程装备','焊接'],['机械','机电','模具','焊接','液压','装配'],
+  ['机械','机电','装备','制造','汽车','模具','重工','设备','零部件','加工','焊接','液压','装配','生产','工厂','实业'],[]],
+ ['电气自动化',['电气','自动化','控制'],['电气','自动化','控制','变频'],
+  ['电气','自动化','控制','电力','电机','变频','PLC','仪表','智能装备','制造','生产','设备'],[]],
+ ['电子信息',['电子','通信','微电子','集成电路','光电'],['电子','通信','集成电路','芯片','半导体','光电','嵌入式'],
+  ['电子','通信','芯片','半导体','集成电路','光电','电路','嵌入式','硬件','元器件','封装','研发'],['测试','科技']],
+ ['计算机软件',['计算机','软件','信息安全','网络工程','人工智能','数据科学'],['软件','算法','前端','后端','测试','运维','数据','人工智能'],
+  ['软件','信息技术','互联网','云计算','人工智能','算法','数据','系统集成','数字化','科技','网络'],[]],
+ ['金融财会',['金融','会计','财务管理','审计','经济学','保险','证券'],['金融','会计','审计','风控','投资','证券','保险'],
+  ['金融','银行','证券','保险','基金','投资','财务','会计','审计','风控','信托','理财','资本','期货','租赁'],[]],
+ ['土木建筑',['土木','建筑','工程管理','造价','城乡规划','道路桥梁'],['土木','建筑','造价','施工','监理','结构','规划'],
+  ['建筑','土木','施工','工程','地产','建设','监理','造价','市政','装饰','园林','基建'],[]],
+ ['医学生物',['临床','医学','生物','护理','药学'],['医学','临床','生物','护理','医疗器械'],
+  ['医院','医疗','医药','生物','诊断','器械','健康','临床','护理'],[]],
+ ['食品',['食品','营养'],['食品','品控','烘焙','饮料'],
+  ['食品','饮料','乳品','烘焙','餐饮','农产品','调味','品控'],[]],
+ ['能源环境',['能源','环境','环保','安全工程'],['能源','环保','环境','安全','节能'],
+  ['能源','环保','环境','节能','电力','新能源','光伏','风电','储能','脱硫','水处理'],[]],
+ ['教育',['师范','教育','学前教育'],['教师','教研','教务','辅导'],
+  ['教育','学校','培训','教学','课程','教研'],[]],
+ ['设计创意',['设计','美术','动画','视觉'],['设计','视觉','插画','UI'],
+  ['设计','视觉','创意','广告','品牌','传媒','文化'],[]],
+ ['商贸管理',['工商管理','市场营销','国际贸易','电子商务','管理科学'],['市场','营销','销售','运营','电商','外贸','商务'],
+  ['商贸','贸易','销售','市场','营销','电商','零售','品牌','运营','进出口','外贸','跨境'],[]]
+];
+function miCleanBiz(s){ let x=String(s||''); BIZ_JUNK.forEach(function(j){ x=x.split(j).join(' '); }); return x.replace(/\\s+/g,' ').trim(); }
+function miStripGeneric(s){ const G=['管理培训生','管培生','培训生','储备干部','储干','校招生','专员/助理','仓储管理员','管理员','工程师','技术员','代表','办事员','专员','助理','人员','职员','文员','操作工','实习生','学徒','岗','主管','经理','总监','员']; let x=String(s||'').trim(),p; do{ p=x; G.forEach(function(t){ if(x.indexOf(t)>=0) x=x.split(t).join(''); }); x=x.trim(); }while(x!==p); return x; }
+function miBizKw(major,intents){
+  const kw={},fields={}; const m=String(major||'');
+  BIZ_FIELDS.forEach(function(f){ f[1].forEach(function(mk){ if(mk&&m.indexOf(mk)>=0) fields[f[0]]=1; }); });
+  (intents||[]).forEach(function(it){ const core=miStripGeneric(it); if(!core||core.length<2) return; kw[core]=1;
+    BIZ_FIELDS.forEach(function(f){ f[2].forEach(function(mk){ if(mk&&core.indexOf(mk)>=0) fields[f[0]]=1; }); }); });
+  BIZ_FIELDS.forEach(function(f){ if(fields[f[0]]){ f[3].forEach(function(k){ kw[k]=1; }); f[4].forEach(function(k){ kw[k]=1; }); } });
+  return {kw:Object.keys(kw), fields:Object.keys(fields)};
+}
+function miBizHit(fields,biz){
+  /* 主营判定 = 强词一票制（与后端 biz_hit 同源）。弱词（分析/检测/商超…）
+     只参与岗位名/意向名的方向词匹配 —— 推断命中宁可少标不错标：
+     广告分析软件公司曾靠「分析」误过闸。 */
+  const x=miCleanBiz(biz); if(!x||!fields||!fields.length) return false;
+  for(let i=0;i<BIZ_FIELDS.length;i++){ const f=BIZ_FIELDS[i];
+    if(fields.indexOf(f[0])<0) continue;
+    for(let j=0;j<f[3].length;j++){ if(x.indexOf(f[3][j])>=0) return true; }
+  }
+  return false;
+}
+/* 明确命中复检（与后端 filter_real 同源）：意向或岗位名带方向词 → 放行；
+   否则主营强词一票。具体意向的核心词都在方向词表里天然通过 —— 闸门只咬
+   「全通用意向（管培生/储备干部）× 字面同名岗位」这类组合。 */
+function miBizOkReal(job,intent,MK,biz){
+  const kw=(MK&&MK.kw)||[];
+  if(kw.some(function(k){ return String(intent||'').indexOf(k)>=0; })) return true;
+  if(kw.some(function(k){ return String(job||'').indexOf(k)>=0; })) return true;
+  return miBizHit(MK&&MK.fields,biz);
 }
 
 function e(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
@@ -1138,14 +1272,50 @@ function calcOne(r,P){
   });
   qs.sort(function(a,b){return b.priority-a.priority;});
 
-  /* 学生勾选的意向岗位 ↔ 企业真实岗位名：大模型语义判定（未覆盖时退回字面匹配） */
-  const matches=matchIntent(r.matched_jobs,P.intended_jobs,P.sem,r.job_titles,
-                            (r.name||'')+' '+(r.industry||'')+' '+(r.biz_scope||''),
-                            r.dir_hit_jobs);
+  /* 学生勾选的意向岗位 ↔ 企业真实岗位名：大模型语义判定（未覆盖时退回字面匹配）。
+     2026-11-16：服务端 payload 带 intent_matches_backend（后端对齐 + 泛意向方向
+     对齐 + 复核过滤后的最终裁决）。当前画像没被本地改动时直接采信，不再前端
+     另算一套 —— 后端算 A、前端算 B 的打架就此消除；换画像 / 自定义画像仍走
+     本地规则重算（与后端同源的规则，parity 测试盯着）。 */
+  const _bc=!!(P&&P.fair_id&&String(P.fair_id)!==String((typeof D!=='undefined'&&D.active_fair_id)||''));
+  const matches=(!_bc && r.intent_matches_backend && r.intent_matches_backend.length)
+    ? r.intent_matches_backend
+    : matchIntent(r.matched_jobs,P.intended_jobs,P.sem,r.job_titles,
+                  (r.name||'')+' '+(r.industry||'')+' '+(r.biz_scope||''),
+                  r.dir_hit_jobs);
   return {score:score, effective_weight:+total.toFixed(1),
           parts:parts, questions:qs.slice(0,2),
           intent_hit:matches.map(function(m){return m.intent;}),
-          intent_matches:matches};
+          intent_matches:matches,
+          /* 推断命中对：与真实命中同一箭头格式、显式标「推断」。画像未改时
+             直接采信后端 infer_matches_backend；换画像走 recompute 现算。 */
+          infer_matches:(!_bc && r.state==='inferred' && r.infer_matches_backend)
+            ? r.infer_matches_backend : []};
+}
+
+/* 推断命中对现算（换画像 / 自定义画像场景）：业务链推断岗（biz_fit.jobs）+
+   画像推断岗（inferred_jobs）× 学生意向。口径与后端 _infer_pairs 同源且刻意
+   收紧为「同名或互含」：推断岗不是公告原文，宁可少标不错标（职能族兜底会把
+   配方×工艺、研发×配方也放进来，太松）。每意向最多一对，业务链岗优先。 */
+function miInferPairs(intended,pool,MK,biz){
+  /* 画像×主营复检（2026-11-17，与后端 filter_infer 同源）：推断岗名是猜的，
+     不能自证方向 —— 主营文本必须容纳学生方向，否则整个企业的推断对全撤。
+     主营为空/纯「未知」一律不标：没有业务依据就不该推断。 */
+  if(MK && !miBizHit(MK.fields,biz)) return [];
+  const out=[],seen={};
+  (pool||[]).forEach(function(t){
+    t=String(t||'').trim(); if(!t) return;
+    for(let i=0;i<(intended||[]).length;i++){
+      const a=intended[i];
+      if(!a||seen[a]) continue;
+      if(t===a||t.indexOf(a)>=0||a.indexOf(t)>=0){
+        out.push({intent:a, job:t, via:'infer',
+                  reason:'大模型按主营业务推断可能招（非招聘公告原文），现场核实'});
+        seen[a]=1; break;
+      }
+    }
+  });
+  return out;
 }
 
 function recompute(P){
@@ -1163,7 +1333,12 @@ function recompute(P){
       /* 公司业务（名字 / 行业 / 主营）：判断大类岗位名（管培生）能不能算对口 */
       const biz=(r.name||'')+' '+(r.industry||'')+' '+(r.biz_scope||'')
         +((r.v42&&r.v42.segment)?(' '+r.v42.segment):'');
-      const hits=matchIntent(jt, P.intended_jobs||[], P.sem||{}, jt, biz);
+      /* 画像×主营复检（2026-11-17，与后端 biz_recheck 同源）：主营上下文补上
+         岗位简介，方向词匹配用 biz2；matchIntent 的 biz 维持旧口径不动。 */
+      const biz2=biz+((r.job_brief)?(' '+r.job_brief):'');
+      const MK=miBizKw((P.profile&&P.profile.major)||P.major||'', P.intended_jobs||[]);
+      const hits=matchIntent(jt, P.intended_jobs||[], P.sem||{}, jt, biz)
+        .filter(function(h){ return miBizOkReal(h.job, h.intent, MK, biz2); });
       const jobs=[], its=[];
       hits.forEach(function(h){
         if(jobs.indexOf(h.job)<0) jobs.push(h.job);
@@ -1173,6 +1348,9 @@ function recompute(P){
       x.matched_jobs = jobs;
       x.intent_hit = its;
       x.intent_matches = hits;
+      x.infer_matches = (x.state==='inferred')
+        ? miInferPairs(P.intended_jobs||[], ((r.biz_fit&&r.biz_fit.jobs)||[]).concat(r.inferred_jobs||[]), MK, biz2)
+        : [];
       x.level_blocked = miLevelBlocked(P.intended_jobs||[], jt);
       x.ask_jobs = miAskJobs(P.intended_jobs||[], jt, biz);
       x.state_recalc = true;
@@ -1228,7 +1406,7 @@ function recompute(P){
     r.rank=i+1;
     r.next=rows[i+1]?rows[i+1].name:'';
     r.rank_reason='第 '+(i+1)+' 位：排序分 '+r.score
-      +' / '+({hit:'有真实 JD 命中',inferred:'按行业推断待核实',miss:'无对口岗位'})[r.state];
+      +' / '+({hit:'明确命中（有真实 JD）',inferred:'推断命中，待现场核实',miss:'无对口岗位'})[r.state];
     const fb=feedback[r.name];
     if(fb&&fb.result==='yes') r.rank_reason+='；现场已确认招，推断升级为明确命中';
     if(fb&&fb.result==='no') r.rank_reason+='；现场确认不招，已顺延（保留在队尾供核对）';
@@ -1291,6 +1469,16 @@ function rowHTML(r,idx,P){
       }).join('；'))+'</span>'
     : ((r.intent_hit&&r.intent_hit.length)
         ? '<span class="hits">你勾选的岗位命中：'+e(r.intent_hit.join('、'))+'</span>' : '');
+  /* 推断命中：与真实命中同一箭头格式，但显式标「推断」、用橙色调区分——
+     这些岗位名来自大模型按主营业务的推断（业务链 / 画像补全），不是招聘
+     公告原文。学生拿着这对去现场核实，核实了（feedback=yes）才升级成真命中。 */
+  const inferLine=(r.state==='inferred'&&r.infer_matches&&r.infer_matches.length)
+    ? '<span class="hits" style="color:#b7791f">推断命中：'
+      +e(r.infer_matches.slice(0,2).map(function(m){
+        return m.job+' ↔ 你选的「'+m.intent+'」';
+      }).join('；'))
+      +'（大模型按主营业务推断，非企业公告，现场核实）</span>'
+    : '';
   /* 层级提示：同一职能但写着主管 / 资深 / 经理的岗位，校招投不进这一档。
      不假装对口、也不说人家不招——企业照常留榜，给学生一句现场可问的话。 */
   const lvb=(r.level_blocked||[]);
@@ -1352,12 +1540,15 @@ function rowHTML(r,idx,P){
    +   (r.hit_pos?'<span class="line">命中优先第 '+r.hit_pos+' 位 · 推荐序第 '+r.rank
         +' 位（匹配分 '+r.score+' 照常显示，命中企业在先）</span>':'')
    +   '<span class="line">来源 '+e(short(ev.source,54))+' · '+e(ev.date)+' · 岗位来源 '+e(ev.jobSource)+'</span>'
+   +   (r.inferred_job_notice?'<span class="line" style="color:#8a6d3b">'+e(r.inferred_job_notice)
+        +(r.inferred_jobs&&r.inferred_jobs.length?'：'+e(r.inferred_jobs.slice(0,6).join('、')):'')+'</span>':'')
    +   (r.job_brief?'<span class="line" style="color:#8a6d3b">岗位情况：'+e(short(r.job_brief,160))+'</span>':'')
    +   (r.llm_basis?'<span class="line" style="color:#1a6b4f"><b>'+e(short(r.llm_basis,240))+'</b></span>':'')
    +   (r.hits.length?'<span class="hits">命中岗位：'+e(r.hits.join('、'))
         +((r.hit_total||r.hits.length)>r.hits.length?' 等 '+r.hit_total+' 个（判定到此，仅列前 '+r.hits.length+' 个）':'')
         +'</span>':'')
    +   intentLine
+   +   inferLine
    +   levelLine
    +   (r.misses.length?'<span class="misses">未对口'
         +((r.miss_total||r.misses.length)>r.misses.length?'（示例 '+r.misses.length+'/'+r.miss_total+' 个）':'')

@@ -2,6 +2,21 @@
 """
 采集端 · 岗位推荐：专业 + 实习 / 竞赛 / 论文 -> 校招岗位名，支持逐层放宽。
 
+v16（2026-11-17，用户拍板）：
+  **改成联网推荐**。之前模型靠「通用认知」想岗位名，两个毛病：①造词——
+  招聘网站上搜不到的职能描述混着出来；②跑题——与专业关系不大的岗位混进池子。
+  现在走 DeepSeek 独立 Search API（2026-11-13 开放）：先搜真实校招网页
+  （标题+摘要+来源，5 元/千次，证据落盘缓存 6 小时），喂给模型只准从证据里
+  提岗位名，代码再落地校验（_grounded）+ 类别标签拦截（_bad_title）。
+  搜索失败 → 降级纯模型口径，模型也失败 → 规则兜底，演示可离线不变。
+
+v15（2026-11-16，用户拍板）：
+  **推荐池与岗位库彻底解耦**——不再读 careersafari.db，不再把库内岗位名
+  喂给模型、不再打 from_db / 校招 / db_level 任何标记。
+  为什么：库里的岗位名（含大模型推断岗）会带偏学生的自主选择，勾了
+  「库里有/推断的岗」再拿去匹配，等于用采集端给匹配端喂答案，循环污染。
+  推荐只依据 专业 + 大类 + 实习 + 竞赛 + 论文 + 技能，给通用校招岗位名。
+
 v14（2026-11-14）：
   1. 三类经历**分开**传给模型（实习 / 竞赛 / 论文），不再混成一个 experiences，
      避免模型只看实习、把竞赛和论文当噪声。
@@ -13,7 +28,6 @@ v14（2026-11-14）：
                **仅当学生在问卷里选了「愿意考虑教培」**才启用
      每次请求带 shown（历次已展示过的岗位名）；服务端从当前层的池子里
      取没展示过的 6 个，池子空了自动升层并在响应里标明。
-  3. 库里真实在招的岗位仍优先，标 from_db。
 
 边界（不变）：输出只是给学生勾选的建议，不写进企业事实字段，
 不生成「某企业招什么」的断言；模型失败一律规则兜底，演示可离线。
@@ -37,7 +51,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 POOL_FILE = os.path.join(DATA, "job_recommend_pool.json")
 # 改 LLM_PROMPT 的内容或口径时手动 +1：池子缓存随之失效，避免继续吃旧提示词的结果。
-PROMPT_VER = "rec-v6"
+PROMPT_VER = "rec-v10"
 _LOCK = threading.Lock()
 
 # 规则兜底用的「泛化校招岗位族」：刻意不写年份专属的公告岗位名。
@@ -424,12 +438,6 @@ LLM_PROMPT = """你是双选会会前规划助手，帮学生想清楚「校园�
 
 历次已经展示过、本轮尽量不要重复的岗位：{shown}
 
-【本次双选会·校招公告里明确在招的岗位（优先从这里挑，命中就标 from_db=true；这类会额外打「校招」标）】
-{campus_jobs}
-
-【本次双选会·库里有记录的其他来源岗位（企业官网 / 招聘平台等；一样是企业真实在招的岗，命中同样标 from_db=true）】
-{other_jobs}
-
 请给出 12 个岗位名称，要求：
 1. 基于通用认知回答「这类学生在普遍的校园招聘里一般能投哪些岗位」，
    不要复述某家公司今年的招聘公告，也不要写年份专属说法。
@@ -441,15 +449,13 @@ LLM_PROMPT = """你是双选会会前规划助手，帮学生想清楚「校园�
    **岗位名里不要带地区、行业、产品线、客户名等企业定制限定**：
    「运营产品经理(AI医疗)」「区域销售经理（IVD业务 广东）」「嵌入式软件工程师（心电贴片）」都不合格，
    要写成通用的「运营产品经理」「区域销售经理」「嵌入式软件工程师」。
-3. 两栏里与本轮口径对口的岗位名都可作为优先选项（**两栏都算企业真实在招**，来源只影响
-   我们打不打「校招」标，不影响算不算命中），去掉企业定制的括号限定后写成通用岗位名，
-   命中就把 from_db 标 true；两栏里都没有对口的就自己生成，不要为了凑数硬挑库里的岗位。
-4. 依据只能来自上面的专业、大类、实习、竞赛、论文、技能，不要编造经历，不要提企业名称。
-5. **竞赛 / 论文信号必须真正落到岗位选择上**：数学建模、预测建模类竞赛要落到
+3. 依据只能来自上面的专业、大类、实习、竞赛、论文、技能，不要编造经历，
+   不要提企业名称，也不要参考任何具体企业的在招岗位。
+4. **竞赛 / 论文信号必须真正落到岗位选择上**：数学建模、预测建模类竞赛要落到
    数据分析 / 算法 / 策略分析 / 商业分析岗；治理策略、机制研究类论文要落到
    行业研究 / 咨询分析 / 供应链分析岗。不要只在 why 里提一句却给无关岗位。
-6. 12 个岗位要尽量互不重复，也尽量避开已展示过的岗位。
-7. 严格输出 JSON：{{"candidates":[{{"title":"岗位名","why":"一句话依据","from_db":true/false}}]}}
+5. 12 个岗位要尽量互不重复，也尽量避开已展示过的岗位。
+6. 严格输出 JSON：{{"candidates":[{{"title":"岗位名","why":"一句话依据"}}]}}
 """
 
 
@@ -490,80 +496,10 @@ def _as_list(xs):
     return out
 
 
-# 岗位来源等级：只有 LV_CAMPUS 才配叫「这场双选会确实在校招这个岗」。
-LV_CAMPUS = 2   # 企业 jobSource=校招公告，或该岗 requirements 里写明「招聘阶段：校招」
-LV_OTHER = 1    # 库里有记录，但来源是社招 / 企业官网 / 新闻检索，不等于校招在招
-
-
-def db_job_index(limit=None):
-    """读库内岗位名及其来源等级，返回有序 dict {岗位名: 等级}。
-
-    为什么要分等级：`from_db=true` 是给学生「这家有，去现场投」的承诺。旧版把
-    849 个岗位名不分来源一起塞进 prompt，模型只要在清单里看见就标 true ——
-    于是「明确社招」和「官网扒来、无 JD」的岗位也被承诺成校招在招。实测 150 条
-    from_db=true 里只有 96 条（64%）真有校招依据。
-
-    同名岗位取**最高**等级：只要有一家校招公告在招这个岗位名，这个岗位名就算
-    校招有据；全都不是校招才降级为 LV_OTHER。
-
-    limit 默认不截断：原来写死 160，而去重后有 849 个岗位名，等于把 81% 的库内
-    岗位挡在 prompt 之外。截断按 SQL 行序而不是相关性，被丢掉的「数据分析师」
-    「前端开发工程师」恰恰是软件工程最该看到的岗；模型看不到清单，只能标
-    from_db=false，页面上就成了「推荐了一个这家双选会没有的岗位」。
-    849 个名字顿号拼起来约 6.7KB，换一次准确得多的判断，值得。
-    """
-    try:
-        import sqlite3
-        db = os.path.join(DATA, "careersafari.db")
-        if not os.path.isfile(db):
-            return {}
-        con = sqlite3.connect(db, timeout=8)
-        try:
-            rows = con.execute(
-                "SELECT item_json FROM company_jobs WHERE item_json IS NOT NULL").fetchall()
-        finally:
-            con.close()
-        idx = {}
-        for (raw,) in rows:
-            if not raw:
-                continue
-            try:
-                item = json.loads(raw)
-            except Exception:
-                continue
-            if not isinstance(item, dict):
-                continue
-            src = str(item.get("jobSource") or "").strip()
-            jobs = item.get("jobs")
-            if not isinstance(jobs, list):
-                continue
-            for j in jobs:
-                t = (j.get("title") if isinstance(j, dict) else str(j)) or ""
-                t = t.strip()
-                if not t or len(t) > 30:
-                    continue
-                req = str((j.get("requirements") if isinstance(j, dict) else "") or "")
-                # 岗位级校招证据优先：有的企业整级来源写 websearch，但个别岗位的
-                # requirements 里明确写了「招聘阶段：校招」，这一条就是校招有据。
-                if src == "校招公告" or re.search(r"招聘阶段[:：]\s*[^；;]*校招", req):
-                    lv = LV_CAMPUS
-                else:
-                    lv = LV_OTHER
-                if lv > idx.get(t, 0):
-                    idx[t] = lv
-                else:
-                    idx.setdefault(t, lv)
-        if limit:
-            return dict(list(idx.items())[:limit])
-        return idx
-    except Exception:
-        return {}
-
-
-def db_job_titles(limit=None, level=None):
-    """库内岗位名列表。level=None 全给；level=LV_CAMPUS 只给校招有据的。"""
-    idx = db_job_index(limit=limit)
-    return [t for t, lv in idx.items() if level is None or lv >= level]
+# （2026-11-16 v15）v14 的 岗位来源等级 LV_CAMPUS/LV_OTHER 与读库函数
+# db_job_index / db_job_titles 已整体删除：推荐池不再读 careersafari.db，
+# 理由见模块头——库内岗位名（含大模型推断岗）会带偏学生的自主选择，
+# 采集端不得给匹配端喂答案。
 
 
 def _load_env() -> dict:
@@ -591,12 +527,23 @@ def _parse_json(text):
 _TITLE_JUNK = re.compile(r"[（(][^)）]*[)）]")
 
 
+# 岗位名里按 - / 分段后可整段丢掉的招聘流程词（真实公告常见尾巴），
+# 「Java-校招/实习-北京」→「Java-北京」；「仓储运营」这类实词段不受影响。
+_SEG_JUNK = {"校招", "校园招聘", "秋招", "春招", "实习", "实习转正", "转正",
+             "全职", "兼职", "暑期", "寒暑假"}
+
+
 def _clean_title(t):
     """去掉企业定制的括号限定与年份/编号尾巴，保证输出是通用校招岗位名。"""
     t = str(t or "").strip()
     t = _TITLE_JUNK.sub("", t)
     t = re.sub(r"20\d{2}\s*届?(?:校园招聘|秋招|春招)?", "", t)
     t = re.sub(r"MJ\d+", "", t, flags=re.I)
+    segs = [s.strip() for s in re.split(r"[-/—]", t) if s.strip()]
+    if len(segs) > 1:
+        kept = [s for s in segs if s not in _SEG_JUNK]
+        if kept and len(kept) < len(segs):  # 全是流程词的不动（不该出现）
+            t = "-".join(kept)
     t = re.sub(r"\s+", "", t)
     return re.sub(r"[·、,，/\-—]+$", "", t).strip()
 
@@ -677,41 +624,24 @@ def _save_pools(pools):
 # 两者内容本身不重叠，也就不需要靠条数配额来错开。
 MIN_FILL = 10
 
-def rule_pool(major, cats, tier, accept, db_jobs, campus_jobs=None):
-    """模型不可用时的分层规则池。三类经历都参与 tier 0 的信号匹配。"""
+def rule_pool(major, cats, tier, accept):
+    """模型不可用时的分层规则池。三类经历都参与 tier 0 的信号匹配。
+    （v15：不再吃库内岗位——推荐与岗位库彻底解耦。）"""
     text = " ".join(cats["internships"] + cats["competitions"] +
                     cats["papers"] + cats["skills"])
-    _cset = {str(x).strip() for x in (campus_jobs or []) if str(x).strip()}
-    _dbn = {str(x).strip() for x in (db_jobs or []) if str(x).strip()}
     base = base_jobs(major)
     _wide = major_category(major) in _BIZ_OR_CS
 
     items, seen = [], set()
 
-    def add(title, why, from_db=False, level=""):
+    def add(title, why):
         t = _clean_title(title)
         if not t or t in seen:
             return
         seen.add(t)
-        items.append({"title": t, "why": why, "from_db": from_db,
-                      "db_level": level})
+        items.append({"title": t, "why": why})
 
     if tier == 0:
-        # 库里真实岗位 + 三类经历命中的方向 + 专业基线
-        for dj in (db_jobs or []):
-            for kw in base:
-                core = re.sub(r"[（(].*?[)）]", "", kw)
-                core = re.sub(r"(岗|专员|工程师|管培生|经理|助理|分析师)$", "", core)
-                # 核心词至少 3 字：「研发」这种 2 字泛词会把 数据库研发工程师/
-                # C++研发工程师 等计算机岗全误吸进来；3 字起才做库内匹配。
-                if core and len(core) >= 3 and core in dj:
-                    # 库里有就算命中；来源只决定打不打「校招」标，不决定命中与否
-                    if dj in _cset:
-                        add(dj, "校招公告里在招，与专业方向对口", True, "campus")
-                    elif dj in _dbn:
-                        add(dj, "企业库在招（非校招公告来源），与专业方向对口",
-                            True, "other")
-                    break
         for kws, jobs, why in SIGNAL_RULES:
             if any(k.lower() in text.lower() for k in kws):
                 for j in jobs:
@@ -766,12 +696,250 @@ def rule_pool(major, cats, tier, accept, db_jobs, campus_jobs=None):
     return items
 
 
-def llm_pool(major, cats, tier, accept, key, base_url, model, db_jobs, shown,
-             campus_jobs=None):
-    _campus = [str(x).strip() for x in (campus_jobs or []) if str(x).strip()]
-    _cset = set(_campus)
-    _other = [str(x).strip() for x in (db_jobs or [])
-              if str(x).strip() and str(x).strip() not in _cset]
+# ── v16 联网推荐（2026-11-17，用户拍板）──────────────────────────────────────
+#
+# 模型靠「通用认知」想岗位名有两个毛病：①造词——招聘网站上搜不到的职能描述
+# 混着出来；②跑题——与专业关系不大的岗位混进池子。
+# 现在走 DeepSeek 独立 Search API（2026-11-13 开放全家桶时一并放出）：
+# POST /v1/tools/search，同一把 key，确定性返回真实校招网页（标题+摘要+来源）。
+# 架构是「先搜后喂」：证据先搜出来注入提示词，模型只能从证据里提岗位名，
+# 代码再落地校验——三道闸保证「岗位名是真的」：
+#   1. 提示词立规矩：岗位叫法只能取自证据里的写法，why 必须引用来源；
+#   2. 代码落地校验（_grounded）：输出岗位名在证据原文里找不到就丢；
+#   3. 类别标签拦截（_bad_title）：「计算机类岗位」「信息技术」这类公告标签
+#      不当岗位名提给学生。
+# 踩过的两条弯路（都实测过）：
+#   · 智谱 /web_search 两步走：可用，但 key 是视觉那把的试用额度，十几次打空；
+#   · chat 内嵌 deepseek_web_search 工具：**只有 deepseek-flash 支持**且
+#     **调用与否模型自主决定**（tool_choice 强制不支持，实测 400），连发两次
+#     都可能懒得搜——不可依赖。
+# 独立 Search 接口每次请求都必然返回结果（5 元/千次），证据落盘缓存 6 小时
+# （同一专业几小时内没必要重复计费搜索）。证据为空/接口失败 → 降级纯模型
+# 口径 → 规则兜底，演示可离线的边界不变。
+
+_SEARCH_URL = "https://api.deepseek.com/v1/tools/search"
+
+
+def _ds_search(query, key, count=8, timeout=30):
+    """调 DeepSeek 独立 Search API，返回 [{title, summary, site, date}]；失败 []。
+
+    summary（600~800 字的长摘要）比 snippet（100~200 字展示用）更适合喂模型，
+    这里截 300 字——证据块要整个进提示词，太大模型会抄偏。
+    """
+    body = json.dumps({"query": query[:128], "count": count,
+                       "need_content": False}).encode("utf-8")
+    req = urllib.request.Request(
+        _SEARCH_URL, data=body,
+        headers={"Content-Type": "application/json",
+                 "Authorization": "Bearer " + key})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            out = json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        print("[job_recommend] 联网搜索失败：%s" % e, file=sys.stderr)
+        return []
+    res = []
+    for x in (out.get("results") or []):
+        res.append({"title": str(x.get("title") or ""),
+                    "summary": str(x.get("summary") or "")[:300],
+                    "site": str(x.get("site_name") or ""),
+                    "date": str(x.get("date") or "")[:10]})
+    return res
+
+
+def web_evidence(major, key):
+    """两路搜索拼证据：「本专业校招岗位」+「所属大类校招岗位」，去重截 16 条。
+
+    证据落盘缓存 6 小时：一次池构建会逐层调 llm_pool（每层 2 次搜索），
+    同一专业的证据几小时内没必要重复计费。
+    """
+    cat = major_category(major)
+    cache_key = hashlib.md5(("%s|%s" % (major, cat)).encode("utf-8")).hexdigest()[:16]
+    with _LOCK:
+        cache = _load_search_cache()
+        hit = cache.get(cache_key)
+        if hit and time.time() - hit.get("ts", 0) < SEARCH_TTL:
+            return hit.get("ev") or []
+    ev = _ds_search("%s 应届生 校园招聘 岗位" % (major or ""), key)
+    if cat and cat != UNKNOWN_CAT:
+        ev += _ds_search("%s 校招 热门岗位 应届生" % cat, key)
+    out, seen = [], set()
+    for x in ev:
+        t = x["title"]
+        if t and t not in seen:
+            seen.add(t)
+            out.append(x)
+    out = out[:16]
+    if out:
+        with _LOCK:
+            cache = _load_search_cache()
+            cache[cache_key] = {"ts": time.time(), "ev": out}
+            _save_search_cache(cache)
+    return out
+
+
+SEARCH_CACHE_FILE = os.path.join(DATA, "web_evidence_cache.json")
+SEARCH_TTL = 6 * 3600
+
+
+def _load_search_cache():
+    try:
+        with open(SEARCH_CACHE_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _save_search_cache(cache):
+    try:
+        os.makedirs(DATA, exist_ok=True)
+        fresh = {k: v for k, v in cache.items()
+                 if time.time() - v.get("ts", 0) < SEARCH_TTL}
+        with open(SEARCH_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(fresh, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def _evidence_text(evidence):
+    return " ".join((x["title"] or "") + " " + (x["summary"] or "")
+                    for x in evidence)
+
+
+def _grounded(title, evidence_text):
+    """落地校验：岗位叫法必须真的出现在搜索证据里。
+
+    先查清理后的全名，查不到再剥掉职级后缀取核心词查——「食品研发工程师」
+    证据里常写成「食品研发」，全名查不中但核心查得中。核心词剥空的
+    （管培生/专员）全名必须出现，避免「专员」这种字到处都在等于没校验。
+
+    落地≠合格：公告里的类别标签（「计算机类岗位」「信息技术」「校园招聘」）
+    能落地但不是能投的岗位名，_bad_title 一并拦掉。
+    """
+    t = _clean_title(title)
+    if not t or _bad_title(t):
+        return False
+    if t in evidence_text:
+        return True
+    core = re.sub(r"(岗|专员|工程师|管培生|经理|助理|分析师|技术员|管理员|员|师)$",
+                  "", t)
+    return len(core) >= 2 and core in evidence_text
+
+
+# 公告里的类别标签 / 招聘活动名：能从证据里落地，但不是学生能投的具体岗位。
+_BAD_TITLE = re.compile(
+    r"(类岗位|相关岗位|类人才|校园招聘|宣讲会|双选会|招聘会|职位|投递|速来|"
+    r"招聘公告|岗位汇总|就业信息|人才招聘)$|^(信息技术|其他|其它|综合类)$")
+
+
+def _bad_title(t):
+    return bool(_BAD_TITLE.search(t))
+
+
+LLM_PROMPT_WEB = """你是双选会会前规划助手，帮学生想清楚「校园招聘里一般可以投哪些岗位」。
+
+学生专业：{major}
+所属学科大类：{category}
+【实习】{internships}
+【竞赛】{competitions}
+【论文 / 科研】{papers}
+【技能】{skills}
+
+本轮推荐口径（重要）：{tier_rule}
+
+历次已经展示过、本轮尽量不要重复的岗位：{shown}
+
+下面是刚刚联网搜索到的真实校招信息（标题 + 摘要 + 来源网站），共 {n_ev} 条：
+
+{evidence}
+
+请从上面的搜索结果里提取适合该学生的岗位名称，硬性要求：
+1. **岗位叫法只能取自搜索结果里出现过的写法**——可以去掉企业定制括号
+   （「嵌入式软件工程师（心电贴片）」→「嵌入式软件工程师」）、去掉年份
+   （「2023届校园招聘」），但**不得自创**搜索结果里没有的岗位名。
+   「运营优化」「系统方案」这类职能描述不算岗位名，不要输出；
+   「计算机类岗位」「信息技术」这种公告里的**类别标签**也不是岗位名，
+   不要输出——宁可不要这个来源的岗，也不要把标签当岗位提给学生。
+2. **why 必须引用证据**：说明是从哪条搜索信息里看到的（引来源网站或公告
+   标题的关键词），再加一句为什么适合这个学生。
+3. 与学生专业、经历**对不上**的岗位不要提——搜索结果里有不代表适合，
+   比如食品专业的结果里出现「行政专员」就不要提。
+4. 档位必须是应届投得进的：不要「主管 / 资深 / 高级 / 组长 / 总监 / 专家」；
+   「经理」只保留校招真正常见的三种（客户经理、产品经理、业务经理）。
+5. 尽量给满 12 个、互不重复、避开已展示过的岗位；搜索结果不够就不硬凑。
+6. 严格输出 JSON：{{"candidates":[{{"title":"岗位名","why":"一句话依据（含来源）"}}]}}
+
+"""
+
+
+def _llm_chat_json(base_url, key, model, prompt):
+    """一次对话调用，解析出 candidates 清单（清理去重后）；失败返回 None。"""
+    payload = {"model": model,
+               "messages": [{"role": "user", "content": prompt}],
+               "temperature": 0.3, "stream": False}
+    req = urllib.request.Request(
+        base_url.rstrip("/") + "/chat/completions",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
+    with urllib.request.urlopen(req, timeout=120) as r:
+        raw = json.loads(r.read().decode("utf-8"))
+    msg = raw["choices"][0]["message"]
+    data = _parse_json(msg.get("content"))
+    out, seen = [], set()
+    for c in (data.get("candidates") or []):
+        if not (isinstance(c, dict) and c.get("title")):
+            continue
+        t = _clean_title(c["title"])
+        if not t or t in seen:
+            continue
+        seen.add(t)
+        out.append({"title": t, "why": str(c.get("why", ""))})
+    return out or None
+
+
+def llm_pool(major, cats, tier, accept, key, base_url, model, shown):
+    """返回 (池子, 来源) —— 来源 'web'=联网落地 / 'plain'=纯模型口径；失败 None。
+
+    主路径：独立 Search API 先搜真实校招证据 → 注入提示词 → 模型只从证据
+    里提岗位名 → 代码落地校验（_grounded）——造词在这一步被拦死。
+    搜索失败 / 输出无一落地 → 降级纯模型口径（v15）→ 规则兜底。
+    """
+    evidence = web_evidence(major, key)
+    if evidence:
+        prompt = LLM_PROMPT_WEB.format(
+            major=major or "未填写",
+            category=major_category(major),
+            internships="；".join(cats["internships"]) or "无",
+            competitions="；".join(cats["competitions"]) or "无",
+            papers="；".join(cats["papers"]) or "无",
+            skills="、".join(cats["skills"]) or "无",
+            tier_rule=TIER_RULES[tier],
+            shown="、".join(shown) or "无",
+            n_ev=len(evidence),
+            evidence="\n".join(
+                "- [%s] %s：%s" % (x["site"] or "来源", x["title"], x["summary"])
+                for x in evidence))
+        try:
+            items = _llm_chat_json(base_url, key, model, prompt)
+            if items:
+                ev_text = _evidence_text(evidence)
+                n0 = len(items)
+                items = [c for c in items if _grounded(c["title"], ev_text)]
+                if items:
+                    if n0 - len(items):
+                        print("[job_recommend] 联网模式拦掉 %d 个不在搜索结果里的岗位名"
+                              % (n0 - len(items)), file=sys.stderr)
+                    return items, "web"
+                print("[job_recommend] 联网输出无一落地，降级纯模型口径",
+                      file=sys.stderr)
+        except Exception as e:
+            print("[job_recommend] 联网调用失败，降级纯模型口径：%s" % e,
+                  file=sys.stderr)
+    else:
+        print("[job_recommend] 无搜索结果（断网 / 计费配额用尽），降级纯模型口径",
+              file=sys.stderr)
+
+    # 降级路径：v15 纯模型口径（模型自己想，不带证据）。
     prompt = LLM_PROMPT.format(
         major=major or "未填写",
         category=major_category(major),
@@ -780,66 +948,16 @@ def llm_pool(major, cats, tier, accept, key, base_url, model, db_jobs, shown,
         papers="；".join(cats["papers"]) or "无",
         skills="、".join(cats["skills"]) or "无",
         tier_rule=TIER_RULES[tier],
-        shown="、".join(shown) or "无",
-        campus_jobs="、".join(_campus) or "（本轮没读到校招公告岗位）",
-        other_jobs="、".join(_other) or "（无）")
-    payload = {"model": model,
-               "messages": [{"role": "user", "content": prompt}],
-               "temperature": 0.3}
-    req = urllib.request.Request(
-        base_url.rstrip("/") + "/chat/completions",
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
+        shown="、".join(shown) or "无")
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            raw = json.loads(r.read().decode("utf-8"))
-        data = _parse_json(raw["choices"][0]["message"]["content"])
-        out, seen = [], set()
-        for c in data.get("candidates", []):
-            if not (isinstance(c, dict) and c.get("title")):
-                continue
-            t = _clean_title(c["title"])
-            if not t or t in seen:
-                continue
-            seen.add(t)
-            out.append({"title": t, "why": str(c.get("why", "")),
-                        "from_db": bool(c.get("from_db"))})
-        # from_db 是模型的自我声明，实测不可尽信：234 条里 15 条标了「库里在招」，
-        # 但清单里根本没有那个名字（数据库管理 / 软件开发工程师 / 行业研究员……）。
-        # 这个字段是给学生「这家有，去现场投」的承诺，标错比漏标伤得多——拿着一个
-        # 不存在的岗位名去展位转一圈，比不知道更糟。所以用真实清单复核一遍。
-        #
-        # 口径（重要）：**库里有这个岗位就算命中，不按来源降级**。
-        #   校招公告里有 → from_db=true, db_level="campus"（唯一区别：多打一个「校招」标）
-        #   其他来源有   → from_db=true, db_level="other" （命中就是命中，只是不打校招标）
-        #   库里没有     → from_db=false, db_level="inferred"（模型自己推的，待核实）
-        # 来源只用于显示，不参与「算不算命中」——非校招来源的岗位一样是企业真实在招的岗，
-        # 把它降级成 false 等于让人错过一个真实机会。折叠是另一套门槛（没命中 且 推断没有）。
-        # 认「同名」或「库名里带这个说法」（库里写「数据分析师(北京)」→ 推荐名
-        # 「数据分析师」成立）。
-        _dbn = {str(x).strip() for x in (db_jobs or []) if str(x).strip()}
-
-        def _in(name, pool):
-            return name in pool or any(name in x for x in pool)
-
-        for c in out:
-            t = c["title"]
-            if _cset and _in(t, _cset):
-                c["from_db"], c["db_level"] = True, "campus"
-            elif _dbn and _in(t, _dbn):
-                c["from_db"], c["db_level"] = True, "other"
-            else:
-                c["from_db"] = False
-                # 读库失败（_dbn 为空）时不要误标成「模型瞎编」
-                c["db_level"] = "inferred" if _dbn else ""
-        return out or None
+        items = _llm_chat_json(base_url, key, model, prompt)
+        return (items, "plain") if items else None
     except Exception as e:
         print("[job_recommend] 模型调用失败，回退规则：%s" % e, file=sys.stderr)
         return None
 
 
-def get_pool(major, cats, tier, accept, cfg, db_jobs, use_llm=True,
-             campus_jobs=None):
+def get_pool(major, cats, tier, accept, cfg, use_llm=True):
     """每个 (专业, 三类经历, 层级, 模型) 一个固定池子，缓存到磁盘，避免换一批时反复调模型。
 
     层的先后顺序是「由紧到松」，同一批岗本来会在好几层都成立，所以高层必须知道
@@ -854,8 +972,7 @@ def get_pool(major, cats, tier, accept, cfg, db_jobs, use_llm=True,
 
     prev = []
     for i in range(max(0, int(tier))):
-        p, _ = get_pool(major, cats, i, accept, cfg, db_jobs, use_llm,
-                        campus_jobs=campus_jobs)
+        p, _ = get_pool(major, cats, i, accept, cfg, use_llm)
         prev.extend(c["title"] for c in p)
 
     key = _pool_key(major, cats, tier, accept, model, bool(use_llm and api_key),
@@ -866,26 +983,24 @@ def get_pool(major, cats, tier, accept, cfg, db_jobs, use_llm=True,
         if isinstance(hit, dict) and hit.get("items"):
             return hit["items"], hit.get("mode", "rules")
 
-    items = None
+    items, mode = None, None
     if api_key and use_llm:
-        items = llm_pool(major, cats, tier, accept, api_key, base_url, model,
-                         db_jobs, prev, campus_jobs=campus_jobs)
-        if items:
+        res = llm_pool(major, cats, tier, accept, api_key, base_url, model, prev)
+        if res:
+            items, mode = res[0], ("llm-web" if res[1] == "web" else "llm")
             # 模型可能仍然给出低层已经展示过的岗（prompt 里写了「尽量不重复」，
             # 不是硬保证）。这里按层序剔一遍，保证每一层的池子内部就是干净的。
             _p = set(prev)
             items = [c for c in items if c["title"] not in _p] or None
-    mode = "llm" if items else "rules"
+    mode = mode if items else "rules"
     if not items:
-        items = rule_pool(major, cats, tier, accept, db_jobs,
-                          campus_jobs=campus_jobs)
+        items = rule_pool(major, cats, tier, accept)
     elif len(items) < MIN_FILL:
         # 模型常只给 6~8 个：用同层规则池补到 10 个，保证「换一批」本层还有货。
         # 只设下限、不设上限——这一层有多少就给多少，凑够 10 就停，不多塞。
         # 补的时候同样跳过低层已给过的岗，否则补出来的还是上一层的货。
         seen = {c["title"] for c in items} | set(prev)
-        for c in rule_pool(major, cats, tier, accept, db_jobs,
-                           campus_jobs=campus_jobs):
+        for c in rule_pool(major, cats, tier, accept):
             if c["title"] not in seen:
                 items.append(c)
                 seen.add(c["title"])
@@ -899,7 +1014,7 @@ def get_pool(major, cats, tier, accept, cfg, db_jobs, use_llm=True,
         # 食品质量工程师」，排在校区运营管培生之后 —— 万金油层里混进最专的岗，
         # 顺序就成了「专业 → 大类 → 万金油 → 又回到专业」，与「最后万金油」相反。
         seed = [{"title": t, "why": "不限专业岗位；你已选择愿意考虑教培类企业",
-                 "from_db": False} for t in NO_MAJOR_JOBS[:6]]
+                 } for t in NO_MAJOR_JOBS[:6]]
         seed_titles = {s["title"] for s in seed}
         items = seed + [c for c in items
                         if c["title"] not in seed_titles
@@ -936,14 +1051,9 @@ def recommend(major, internships=None, competitions=None, papers=None,
     max_tier = 4 if bool(accept_no_major) else 3
 
     cfg = _load_env()
-    _idx = db_job_index()
-    db_jobs = list(_idx)
-    # 只有校招公告里在招的岗位名才允许 from_db=true（见 llm_pool 的复核说明）
-    campus_jobs = [t for t, lv in _idx.items() if lv >= LV_CAMPUS]
 
     for t in range(start, max_tier + 1):
-        pool, mode = get_pool(major, cats, t, accept_no_major, cfg, db_jobs,
-                              use_llm, campus_jobs=campus_jobs)
+        pool, mode = get_pool(major, cats, t, accept_no_major, cfg, use_llm)
         fresh = [c for c in pool if c["title"] not in shown]
         if fresh:
             batch = fresh[:6]
@@ -1037,8 +1147,7 @@ def main():
     print("模式：%s ｜ %s" % (r["mode"], r["notice"]))
     print("\n推荐岗位（学生勾选，不写进企业事实字段）：")
     for i, c in enumerate(r["candidates"], 1):
-        flag = "【企业库在招】" if c.get("from_db") else ""
-        print("  %d. %-20s %s%s" % (i, c["title"], flag, c.get("why", "")))
+        print("  %d. %-20s %s" % (i, c["title"], c.get("why", "")))
 
 
 if __name__ == "__main__":

@@ -81,6 +81,17 @@ def step_cache():
     cache_guard.status()
 
 
+def step_infer_fill():
+    """对 0 岗 + 非校招企业建不带意向的画像，把推断岗补进库并逐岗标注。
+
+    必须在 dirfill / build 之前：方向表和 payload 都要看到补进去的推断岗标注。
+    校招核实库认作校招的企业不碰（它们用真实 URL 岗）。FAIR_INFER_FILL=0 可关闭。
+    """
+    print("\n== 1/8 画像推断岗补库（0岗+非校招）==")
+    _run("fill_inferred_jobs.py",
+         [sys.executable, "-X", "utf8", "fill_inferred_jobs.py"])
+
+
 def step_dirfill():
     """按主营业务重算「岗位方向」，写进 job_dir_hint 表。
 
@@ -225,6 +236,7 @@ def main(argv):
     if "--collect" in argv:
         step_collect(argv)
     step_cache()
+    step_infer_fill()
     step_dirfill()
     if not skip_build:
         step_build()

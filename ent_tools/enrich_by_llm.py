@@ -234,6 +234,11 @@ def compose_requirements(job):
 
 
 def build_entry(name, raw, page_text, source):
+    # 逐岗 URL：岗位是从这一页正文里抽出来的，就把这一页的地址贴到每个岗位上。
+    # 只认真实抓到的 http 地址；企业级 source 是「未知」时留空，绝不编一个 URL 出来。
+    source_url = str(source or "").strip()
+    if not source_url.startswith("http"):
+        source_url = ""
     jobs = []
     for job in (raw.get("jobs") or []):
         title = str(job.get("title") or "").strip()
@@ -249,6 +254,7 @@ def build_entry(name, raw, page_text, source):
             "urgency": pick(job.get("urgency"), URGENCY),
             "group": str(job.get("group") or "未知").strip() or "未知",
             "salary": str(job.get("salary") or "未知").strip() or "未知",
+            "source_url": source_url,
         })
 
     source_kind = pick(raw.get("jobSource"), JOB_SOURCE)

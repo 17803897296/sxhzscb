@@ -380,6 +380,30 @@ def _dir_core(s):
     return t, frozenset(w for w in DIR_WORDS if w in t)
 
 
+# 动作核后缀：两个岗位名都以同一「动作词」结尾时，前面的领域限定词才是
+# 分辨它们的关键（人工智能算法 × 运动控制算法）。首期只收「算法」——测试 /
+# 开发这类词前面常被中性词剥干净，收进来误伤面大，实测后再放。
+ACTIVITY_SUFFIXES = ("算法",)
+# 领域限定词的同义写法：比较前先归一，否则 ai算法 × 人工智能算法 被误判成并列。
+_AI_SYN = {"ai": "人工智能", "ml": "机器学习", "机器学习": "机器学习"}
+# 明确「不搞研发」的职能族：泛研发意向（研发工程师 / 开发工程师）撞上这些族的
+# 岗位（财务专员 / UI设计师 / 销售岗）不是「方向待确认」，是根本不是一类岗。
+# 研发条线（dev / algo / hw / mech / elec / pharma / chem…）与没认出族的不在表内
+# ——那类保持 ask 现场问。与 job_family.FAMILIES 的 key 对应。
+NON_RD_FAMILIES = ("product", "design", "finance", "hr", "admin", "legal",
+                   "sales", "media", "serv", "edu", "supply", "quality",
+                   "ehs", "device", "process")
+
+
+# 软件条线提示词：岗位名剥不出方向核（「软件」在 DIR_NEUTRAL 里，防的是
+# 「软件工程师 × 系统工程师」这类误拆），但名字里的「软件 / 程序 / 编程」
+# 明确说明这是编程条线的岗。泛研发意向撞上它们必须问一句，不能硬命中
+# ——「软件工程师 ↔ 研发工程师」是用户二次点名的漏网对（2026-11-16）。
+# 意向自己就写了这些词（软件工程师）时不触发：软件条线互配（软件工程师 ×
+# 软件开发工程师）是同条线的正常命中，不是泛选。
+DEV_SOFTLINE = ("软件", "程序", "编程", "编码", "代码", "信息技术")
+
+
 def pair_verdict(title, intent):
     """(岗位, 意向) 这一对能不能算命中的对口证据。
 
@@ -398,7 +422,30 @@ def pair_verdict(title, intent):
     # 任一侧认不出职能就不表态（管培生、储备干部这类），交回原有规则。
     _cross = job_family.cross_function(title, intent)
     if not a:                       # 意向没方向 → 收所有细分（管培生 → 供应链管培生）
-        return "no" if _cross else "ok"
+        if _cross:
+            return "no"
+        # ⓪ 泛研发意向 × 带方向岗位 → ask（2026-11-16 用户拍板：宽泛选择要附和方向）。
+        # 「研发工程师 / 开发工程师 / 软件工程师」剥掉中性词后方向核为空，原逻辑
+        # 无条件 ok——C++研发 / 自动化 / 电控硬件 / 药品研发全被硬命中，泛意向洪水。
+        # 判 ask：现场问一句这个岗做哪个方向的研发。学生自己的方向域（其它意向）
+        # 与岗位方向相容时，align_jobs_detail 会升回命中（泛意向附和学生的方向，
+        # 不附和企业岗位名上随便写的方向）。
+        # 例外：岗位职能明确是非研发条线（财务 / 人事 / 销售 / 设计……族表认得出
+        # 且岗位名里没有研发/研究字样）→ 直接 no，不为它生成「问一句」的噪音。
+        # 族表认不出泛研发意向（刻意不收「研发」），cross_function 判不了，
+        # 只能在这里用岗位侧的族补一枪。
+        # 软件条线补闸（2026-11-16 二次点名）：「软件工程师」的「软件」在中性词表里，
+        # 方向核为空，上行的 `and b` 拦不住——泛研发意向 × 编程条线岗又硬命中了。
+        # 岗位名带软件条线词（软件/程序/编程/编码/代码/信息技术）时同样转 ask；
+        # 意向自己就写了这些词（学生勾的是「软件工程师」）则不触发——软件条线
+        # 互配（软件工程师 × 软件开发工程师）是同条线正常命中，不是泛选。
+        _sl_t = _any_word(title, DEV_SOFTLINE)
+        if _soft_broad(intent) and (b or (_sl_t and not _any_word(intent, DEV_SOFTLINE))):
+            _tf = job_family.family_of(title)
+            if _tf in NON_RD_FAMILIES and not _any_word(title, ("研发", "研究", "开发")):
+                return "no"
+            return "ask"
+        return "ok"
     if not b:                       # 岗位没方向 → 更泛的同类岗，可投
         # ……但「没方向」不等于「同类」：UI 设计师、财务专员、产品经理都没有方向词，
         # 却和开发不是同一个职能。先过族表，明确跨职能的不能按「更泛」放行。
@@ -425,6 +472,18 @@ def pair_verdict(title, intent):
     dgt, dgi = _design_group(title), _design_group(intent)
     if dgt and dgi and not (dgt & dgi):
         return "no"
+    # ⑤ 共享动作核 + 不同领域限定词：人工智能算法 × 运动控制算法——都以「算法」
+    #    结尾，但前面的领域限定（人工智能 × 运动控制）互不包含：并列领域，不是
+    #    同一个岗。原逻辑靠 DIR_WORDS 交集 {算法} 非空跳过并列判据、族表又同属
+    #    algo，兜底放行 ok，是「AI 岗命中运动控制岗」的成因。一侧无限定词
+    #    （算法工程师 × AI算法研究）不触发，仍走原有 ask→same_dir 命中。
+    #    ai 与人工智能是同一领域的两种写法，比较前先归一。
+    for _act in ACTIVITY_SUFFIXES:
+        if a.endswith(_act) and b.endswith(_act):
+            pa, pb = a[:-len(_act)], b[:-len(_act)]
+            pa, pb = _AI_SYN.get(pa, pa), _AI_SYN.get(pb, pb)
+            if pa and pb and pa not in pb and pb not in pa:
+                return "no"
     if b in a:                      # 岗位更泛：小类能进大类
         return "ok"
     # 职责词不算方向：设备维护工程师 × 设备工程师 → 同一岗位，不是「更细的方向」。
@@ -1065,8 +1124,17 @@ def align_jobs(intended, jobs, sem=None, biz="", dir_hint=None, dir_notes=None):
     return kept, dropped
 
 
-def _ask_why(t, intent):
-    """大类岗位名的现场问法：不假装对口，也不说人家不招，只让学生去问一句。"""
+def _ask_why(t, intent, hot=False):
+    """大类岗位名的现场问法：不假装对口，也不说人家不招，只让学生去问一句。
+
+    hot=True：公司业务本身就是意向所在细分（供应链公司的管培生）。不升成命中，
+    但问句要说出「主业对口，大概率往这个方向培养」——比干巴巴的通用问法有用，
+    也不冒充证据。
+    """
+    if hot:
+        return ("这家主业就是「%s」所在的方向，「%s」大概率会往这个条线培养，"
+                "但岗位名没写死方向。现场问一句：轮岗后能否定岗到「%s」。"
+                % (intent, t, intent))
     return ("岗位名只写「%s」，没写业务方向；不同企业的「%s」按不同条线培养。"
             "现场问一句：是招「%s」这个方向，还是统一轮岗后再定岗。" % (t, t, intent))
 
@@ -1147,6 +1215,27 @@ def _intent_dirs(intent, intended):
     return {x for x in (job_direction.title_dir(i) for i in intended) if x}
 
 
+def _broad_rd_follows_user(title, intent, user_dirs):
+    """泛研发意向 × 带方向岗位：学生**自己的方向域**与岗位方向相容 → 算命中。
+
+    2026-11-16 用户拍板「宽泛选择的岗位也要附和方向」：机械学生勾「研发工程师」，
+    应对上这家「机械研发工程师」，而不是被企业岗位名上随便一个方向（C++研发 /
+    运动控制算法）硬命中。判据：
+      · 意向是「只说了研发/开发、没限定方向」的笼统名（_soft_broad）；
+      · 学生方向域非空——由他勾的其它意向推（_intent_dirs），一个带方向的都没勾
+        就不替学生做主，保持现场问；
+      · 岗位方向 job_direction.title_dir 认得出（C++研发工程师认不出 → 不升，
+        现场问）；方向相容（job_direction.compatible）才算。
+    只在 pair_verdict 判 ask 后调用，单独不构成判定依据。
+    """
+    if not user_dirs or not _soft_broad(intent):
+        return False
+    td = job_direction.title_dir(title)
+    if not td:
+        return False
+    return any(job_direction.compatible(td, u, title) for u in user_dirs)
+
+
 def _hint_of(dir_hint, t):
     """从调用方准备的方向表里取这个岗位的方向簇与中文名。
 
@@ -1194,13 +1283,17 @@ def align_jobs_detail(intended, jobs, sem=None, biz="", dir_hint=None,
             for it in intended:
                 if is_bare_generic(it):
                     continue
-                if biz_ok(it, biz):
+                _hot = biz_ok(it, biz)
+                # 轮岗类（管培生 / 培训生 / 储备干部）即使公司业务对口也**不硬命中**：
+                # 先轮岗后定岗，岗位名本身没有「招进来就是干这个」的证据。
+                # 科力普「管理培训生」× 物流专员 曾因 biz_ok 直接收进语义命中，
+                # 理由还写成「同类工作内容」（2026-11-16 用户拍板：轮岗泛岗一律问）。
+                # 业务对口 → 照旧问，但问句升级为「主业对口，大概率往这个方向培养」。
+                if _hot and not rotation:
                     best, best_s = it, -1.0
                     break
-                # 只对真·轮岗类问「会不会往你的方向培养」；研究员 / 助理工程师 /
-                # 分析师 / 专员 / 经理 是定向招聘，问了白问，不当证据也不问。
                 if rotation and len(ask) < 3 and not any(a["job"] == t for a in ask):
-                    ask.append({"job": t, "intent": it, "why": _ask_why(t, it)})
+                    ask.append({"job": t, "intent": it, "why": _ask_why(t, it, _hot)})
                     break
             if best:
                 kept.append((t, best))
@@ -1264,7 +1357,11 @@ def align_jobs_detail(intended, jobs, sem=None, biz="", dir_hint=None,
             # ask = 岗位比意向更细。同族同方向的细分说法（AI算法工程师 × 算法工程师、
             # 数据分析岗 × 数据分析师）就是同一岗，按命中收进来；换了对象的
             # （器件测试 × 测试、电商运营 × 运营）仍走待问。见 same_dir 的判据。
-            if v == "ok" or (v == "ask" and same_dir(t, it)):
+            # 泛研发意向（研发工程师）的 ask 另有一条出口：学生自己的方向域
+            # （其它意向推的）与岗位方向相容 → 命中，泛意向附和学生的方向
+            # （机械学生 × 机械研发工程师），不相容保持现场问（见 _broad_rd_follows_user）。
+            if v == "ok" or (v == "ask" and (same_dir(t, it)
+                    or _broad_rd_follows_user(t, it, sds))):
                 s = _strength(it, t, True)
                 if s > best_s:
                     best, best_s = it, s
@@ -1324,8 +1421,9 @@ def ask_jobs(intended, titles, biz="", dir_hint=None):
     """只写大类名、且属于「轮岗后再定岗」的岗位 → 现场问一句。
 
     这类岗位不是对口证据（大类不能反推小类），但值得去问一句：制造业企业招的
-    管培生，可能就是供应链方向，也可能统一轮岗后再定岗。除非公司业务本身就是
-    那个细分（biz），那种情况已经算成对口证据，不再重复问。
+    管培生，可能就是供应链方向，也可能统一轮岗后再定岗。公司业务本身就是那个
+    细分（biz）时**不再升成命中**（2026-11-16 用户拍板：轮岗泛岗一律不硬命中），
+    但照旧问，问句升级为「主业对口，大概率往这个方向培养」。
 
     **只问真·轮岗类**（管培生 / 培训生 / 储备干部 / 校招生）。研究员、助理工程师、
     分析师、专员、经理、主任这些虽然也是「没写方向的大类」，但它们是定向招聘：
@@ -1347,7 +1445,13 @@ def ask_jobs(intended, titles, biz="", dir_hint=None):
             continue
         for it in (intended or []):
             it = str(it).strip()
-            if not it or is_bare_generic(it) or biz_ok(it, biz):
+            if not it or is_bare_generic(it):
+                continue
+            # 业务对口时：定向大类岗（研究员 / 专员……）按对口处理，不重复问；
+            # 轮岗类（管培生 / 培训生 / 储备干部）照问——只是问句升级为
+            # 「主业对口，大概率往这个方向培养」（2026-11-16 用户拍板）。
+            _hot = biz_ok(it, biz)
+            if _hot and not is_rotation_job(t):
                 continue
             # 企业主营和这个意向方向毫不相关 → 连问一句都不该有
             # （保险公司 / 教育公司的管培生不会定向培养成化学工程师）。
@@ -1361,7 +1465,7 @@ def ask_jobs(intended, titles, biz="", dir_hint=None):
                 continue
             seen.add(t)
             out.append({"job": t, "intent": it,
-                        "why": _ask_why(t, it) if bare else _ask_why_wider(t, it)})
+                        "why": _ask_why(t, it, _hot) if bare else _ask_why_wider(t, it)})
             break
     return out[:3]
 

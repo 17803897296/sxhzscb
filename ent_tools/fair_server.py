@@ -13,6 +13,7 @@ v6 · 双选会助手同源服务（标准库，无第三方依赖）。
     GET  /api/fair/payload             最新三端 payload（报告实时取它）
     POST /api/fair/profile             写画像进 fair_profiles + 重建 payload
     POST /api/fair/recommend-jobs      在线模型推荐岗位（失败自动规则兜底）
+    POST /api/jobs-upload              企业端岗位上传（multipart，进隐藏台账）
     GET  /api/fair/health
 
 离线双击 file:// 时页面仍走内置垫片，完全不需要本服务；只有同源 http(s)
@@ -25,12 +26,15 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import sys
 import threading
 import time
 import traceback
 import urllib.parse
 from collections import OrderedDict
+from email import policy
+from email.parser import BytesParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -49,6 +53,72 @@ import hit_verify           # noqa: E402  按需批量复核命中（现场新�
 
 PAGE = os.path.join(ROOT, "demo", "fair.html")
 PAYLOAD = os.path.join(HERE, "data", "fair_payload.json")
+
+# 企业端岗位上传的隐藏台账：只收不展 —— 页面上永远不列库内企业/岗位清单。
+JOBS_UPLOAD_LOG = os.path.join(HERE, "data", "job_uploads.json")
+JOBS_UPLOAD_FILES = os.path.join(HERE, "data", "job_uploads_files")
+
+
+def _parse_multipart(content_type: str, raw: bytes):
+    """从 multipart/form-data 里取文本字段与文件（Python 3.13 无 cgi 模块）。
+
+    返回 (fields: dict[str, str], files: list[(filename, bytes)])。
+    """
+    fields, files = {}, []
+    header = ("Content-Type: " + (content_type or "") + "\r\n"
+              "MIME-Version: 1.0\r\n\r\n").encode("utf-8")
+    msg = BytesParser(policy=policy.default).parsebytes(header + raw)
+    parts = (list(msg.iter_parts()) if hasattr(msg, "iter_parts")
+             else [p for p in msg.walk() if not p.is_multipart()])
+    for part in parts:
+        cd = part.get("Content-Disposition", "")
+        name_m = re.search(r'name="([^"]+)"', cd)
+        if not name_m:
+            continue
+        name = name_m.group(1)
+        filename = part.get_filename()
+        if filename:
+            files.append((filename, part.get_payload(decode=True) or b""))
+        else:
+            fields[name] = (part.get_payload(decode=True) or b"").decode("utf-8", "replace")
+    return fields, files
+
+
+def _save_job_upload(text: str, url: str, files) -> int:
+    """岗位上传只进隐藏台账：正文截断存档、附件落盘，返回记录条数。
+
+    页面只收到条数确认；库内清单、台账内容都不通过任何接口回显给企业端。
+    """
+    os.makedirs(JOBS_UPLOAD_FILES, exist_ok=True)
+    try:
+        with open(JOBS_UPLOAD_LOG, encoding="utf-8") as f:
+            entries = json.load(f)
+    except Exception:
+        entries = []
+
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    saved = []
+    for i, (fname, data) in enumerate(files or [], 1):
+        safe = re.sub(r"[^\w.\-\u4e00-\u9fff]", "_", os.path.basename(fname)) or "file"
+        path = os.path.join(JOBS_UPLOAD_FILES, "%s_%d_%s" % (ts, i, safe))
+        try:
+            with open(path, "wb") as f:
+                f.write(data)
+            saved.append({"name": fname, "size": len(data), "saved": True})
+        except Exception:
+            saved.append({"name": fname, "size": len(data), "saved": False})
+
+    lines = [x.strip() for x in (text or "").splitlines() if x.strip()]
+    entries.append({
+        "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "url": url or "",
+        "line_count": len(lines),
+        "text_head": (text or "")[:400],
+        "files": saved,
+    })
+    with open(JOBS_UPLOAD_LOG, "w", encoding="utf-8") as f:
+        json.dump(entries, f, ensure_ascii=False, indent=1)
+    return len(lines) + len(saved)
 
 
 def _payload_titles():
@@ -361,6 +431,25 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 traceback.print_exc()
                 self._json({"ok": False, "error": "%s: %s" % (type(exc).__name__, exc)}, 500)
+            return
+        # 企业端岗位上传：multipart，进隐藏台账（页面不回显库内清单）。
+        if p == "/api/jobs-upload":
+            raw = self._raw()
+            try:
+                fields, files = _parse_multipart(
+                    self.headers.get("Content-Type", ""), raw)
+                text = (fields.get("text", "") or "").strip()
+                url = (fields.get("url", "") or "").strip()
+                if not text and not url and not files:
+                    # 空提交不进台账：前端本有拦截，这里是防垃圾记录的最后闸
+                    self._json({"ok": False,
+                                "detail": "空提交：请粘贴岗位信息、招聘页链接或添加附件"}, 400)
+                    return
+                count = _save_job_upload(text, url, files)
+                self._json({"ok": True, "count": count})
+            except Exception as exc:
+                traceback.print_exc()
+                self._json({"ok": False, "detail": "%s: %s" % (type(exc).__name__, exc)}, 500)
             return
         raw = self._raw()
         body = self._json_body(raw)

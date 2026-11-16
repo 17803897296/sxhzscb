@@ -28,19 +28,35 @@ from collections import Counter
 from decimal import Decimal, ROUND_HALF_UP
 
 
+INFER_JOB_KIND = "大模型推断"
+
+
 def _clean_jobs(jobs):
     """只留真实岗位名：招聘批次名 / 专业类目名 / 招考名目不是岗位。
 
     真实数据里混进来的噪声：「2027 届校园招聘」（批次名）、「机械类」「材化类」
     （专业类目）、「公务员」「科学研究人员」（事业单位招考名目）。它们既不该
     出现在「本家岗位」里，也不该算进 N 岗，更不该被当成对口证据。
+
+    画像补进来的岗位带 job_source_kind="大模型推断"，是"这类单位通常的编制"，
+    不是这家企业今年的招聘计划。它们同样不进真实岗序列——否则 audit 的
+    has_jd 会为真、模型给的岗位落进库里就从 inferred 升成明确命中，等于拿
+    模型猜的岗位冒充真实 JD（详见 docs/采集流水线与并行调度.md 第 8 节）。
     """
     out = []
     for j in (jobs or []):
+        if not isinstance(j, dict) or str(j.get("job_source_kind") or "") == INFER_JOB_KIND:
+            continue
         t = str(j.get("title") or "").strip()
         if t and job_level.is_job_title(t):
             out.append(j)
     return out
+
+
+def _inferred_jobs(jobs):
+    """画像补进来的推断岗，单独给页面标注来源用，不参与任何命中判定。"""
+    return [j for j in (jobs or []) if isinstance(j, dict)
+            and str(j.get("job_source_kind") or "") == INFER_JOB_KIND]
 
 
 def _round(x, n=1):
@@ -95,6 +111,7 @@ import core as V2            # noqa: E402  复用五项权重 / 维度取值口�
 import rules as R            # noqa: E402
 import intent_semantics      # noqa: E402  岗位语义符合度（大模型推断）
 import hit_verify            # noqa: E402  本地规则候选命中的大模型批量复核
+import biz_recheck           # noqa: E402  画像×主营复检（2026-11-17 用户定口径）
 import unknown_infer         # noqa: E402  无具体岗企业按意向岗位判定（未知1 / 未知2）
 import biz_fit               # noqa: E402  按主营业务判企业与学生方向是否交叉（yes/ask/no）
 import job_profile           # noqa: E402  方案一：先建企业岗位画像，再和意向比对
@@ -775,7 +792,9 @@ def hallucination_guard(c, m, trust, by_title):
          让「有真实岗位证据」这组名副其实。企业仍在队列里，只是换组。
     原文全部保留在 original_matched_jobs / original_state 供追溯。
     """
-    titles = {j.get("title", "") for j in (c.get("jobs") or [])}
+    # 只认真实岗位：大模型推断岗（job_source_kind=大模型推断）不是 JD 证据，
+    # 否则补过推断岗的 0 真实岗企业会被误判「有 JD」，hit 不降级（2026-11-16）。
+    titles = {j.get("title", "") for j in _clean_jobs(c.get("jobs"))}
     # 工商信息页不是招聘公告：即便上面挂着几条「岗位」，也不算真实 JD，
     # 否则 hit 组会混进「标成明确命中、点开却是工商页」的企业（中建一局那类）。
     has_jd = bool(titles) and not _is_non_jd_source(c)
@@ -944,7 +963,10 @@ def _merge_sources(companies, enrich, v42):
                   # 多城市招聘：页面按 work_cities 取最优，后端必须同口径
                   "work_cities"):
             new = v.get(k)
-            if not new:
+            # 「未知」不是值：档案里 city/scale 的「未知」只是没查到，不能覆盖
+            # 活库已查到的旧值（电科55所「贵阳」曾被档案「未知」冲掉 → 城市维
+            # 全 0）。与 save_item 的「未知不覆盖有值」同一原则。
+            if not new or str(new).strip() in ("", "未知"):
                 continue
             old = c.get(k)
             if old and str(old) != str(new):
@@ -1026,7 +1048,9 @@ def _drop_campus_unfit(companies, llm):
     campus_names = []
     keep_src = {}
     for name, c in companies.items():
-        jobs = c.get("jobs") or []
+        # 只认真实岗位：推断岗不能当「校招公告岗位齐全」的证据，否则补过推断岗的
+        # 企业会被误判「公告里没有对口岗」而整家排除（2026-11-16）。
+        jobs = _clean_jobs(c.get("jobs"))
         if ((llm.get(name) or {}).get("state") == "inferred" and jobs
                 and source_class(c, jobs)[0] == "campus"):
             campus_names.append(name)
@@ -1036,10 +1060,14 @@ def _drop_campus_unfit(companies, llm):
 
 
 def _index_titles(companies):
-    """岗位名 → 有这个名字的企业集合。证据归属、幻觉校验都靠它。"""
+    """岗位名 → 有这个名字的企业集合。证据归属、幻觉校验都靠它。
+
+    只索引真实岗位：推断岗进了索引，幻觉校验就会把模型编的岗位名
+    「核对」成推断岗的名字，等于自己给自己作保（2026-11-16）。
+    """
     by_title = {}
     for c in companies.values():
-        for j in c.get("jobs") or []:
+        for j in _clean_jobs(c.get("jobs")):
             by_title.setdefault(j.get("title", ""), set()).add(c.get("name", ""))
     return by_title
 
@@ -1295,7 +1323,9 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     biz_text = " ".join(str(x or "") for x in (
         name, c.get("industry"), c.get("segment"), c.get("biz_scope"),
         c.get("job_brief")))
-    title_all = [j.get("title", "") for j in (c.get("jobs") or [])]
+    # 只用真实岗位名做证据：推断岗（job_source_kind=大模型推断）混进 title_all
+    # 会被 align 收进 matched_jobs，页面「对口岗位」念出模型猜的岗（电科55所坐实）。
+    title_all = [j.get("title", "") for j in _clean_jobs(c.get("jobs"))]
     # 岗位方向表：让真实公告里不带方向的「工艺工程师」「质量工程师」也能判方向
     # （化工厂的工艺岗是化工，汽车零部件厂的是注塑），而不是只判「同一个职能」。
     # 方向由主营推定，与学生意向无关 —— 这里只负责把企业侧的方向准备好。
@@ -1353,8 +1383,32 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     # 企业端有 JD 时，「证据」必须是本家 JD 里真实存在的岗位名；把意向岗位名
     # 直接写进 matched_jobs（「供应链管培生」本身就是学生勾的意向）不是证据。
     jd_titles = {j.get("title", "") for j in _clean_jobs(c.get("jobs"))}
+    # 「jd_titles 空就放宽」是给老 0 岗企业留的口子：它们没查到公告，模型给的
+    # 岗位权且当推断线索（后面按 state 降成 inferred）。但补过画像推断岗的企业
+    # 不同——它们的 job_titles 空是"真实岗确实没有、只有大模型猜的编制"，
+    # 若还放宽，matched 里的推断岗就会被当成真实证据把企业升成明确命中。
+    # 这类企业一律不认 real，命中的岗位只能进 inferred 的现场问句。
+    _has_infer = bool(_inferred_jobs(c.get("jobs")))
     real = [t for t, _ in aligned_all
-            if (not jd_titles) or any(_same_title(t, x) for x in jd_titles)]
+            if ((not jd_titles) and not _has_infer)
+            or any(_same_title(t, x) for x in jd_titles)]
+    # 画像×主营复检（2026-11-17 用户定口径）：明确命中不能只看「岗位名 ↔ 意向」
+    # 字面，还要看「企业主营业务 + 岗位名」是否对得上「意向岗位 + 专业」。
+    # 反面案例：金融公司的「管培生」 × 物流专业学生选的「管培生」—— 字面全同，
+    # 但金融公司培养不出物流方向。岗位名自带方向词（仓储物流、供应链管理储备
+    # 干部）的直接放行（本家公告比主营更硬）；岗位名不带方向的，主营文本里
+    # 必须出现学生方向词，否则降为现场待问并写明「主营与方向对不上」。
+    _dom_kw, _dom_fields = biz_recheck.student_domain(
+        intended, (profile or {}).get("major") or "")
+    real, _biz_blocked = biz_recheck.filter_real(
+        real, _dom_kw, _dom_fields, biz_text)
+    for _bt, _bi in _biz_blocked:
+        if any(a.get("job") == _bt for a in asks):
+            continue
+        asks.append({"job": _bt, "intent": _bi, "kind": "biz",
+                     "why": biz_recheck.blocked_why(
+                         _bt, _bi, biz_text, (profile or {}).get("major") or "",
+                         (profile or {}).get("intended_jobs") or [])})
     trust0, _ = audit(c, m_al, by_title, by_title)
     guard = hallucination_guard(c, m_al, trust0, by_title)
     # 对外一律用脱敏后的岗位名（问句、命中列表、显著提示都不再念幻觉岗位）
@@ -1466,6 +1520,10 @@ def build():
 
     _fit_map = _prefetch_fit(companies, llm, enrich, v42, profile)
 
+    # 学生方向（画像×主营复检用）：方向词 + 领域集合，循环里只读不重算
+    _dom_kw, _dom_fields = biz_recheck.student_domain(
+        profile.get("intended_jobs") or [], profile.get("major") or "")
+
     rows = []
     # 校招公告来源、但公告里没有与意向对口岗位的企业：不进榜单，也不推断。
     # 依据「公告视为齐全 → 有就是有，没有就是没有」，与 websearch / 社招（清单不齐全，
@@ -1569,6 +1627,35 @@ def build():
         infer_text = _inferred_text(m_eff["state"], _fit, fit_info, _basis, _fj,
                                     _evsuf, jobs, _js, _src_label, intended_ask)
 
+        # 推断命中对（仅 inferred）：业务链推断岗（fit jobs）+ 画像推断岗
+        # × 学生勾选的意向。口径刻意收紧为「同名或互含」：推断命中本来就是
+        # 提示学生去现场核实的参考，宁可少标不错标——pair_verdict 的职能族
+        # 兜底会把「配方工程师 × 工艺工程师」「高分子研发 × 配方」也放进来，
+        # 对推断岗这种非公告原文的证据太松。互含（工艺工程师 ⊂ 化工工艺工程师）
+        # 是最硬的字面证据，两端 JS 镜像也只做这一条，parity 天然一致。
+        # 每个意向最多一对，业务链岗优先于画像推断岗。
+        _infer_pairs = []
+        if m_eff["state"] == "inferred":
+            _ipool = list(dict.fromkeys(
+                [str(t or "").strip() for t in (fit_info.get("jobs") or []) if str(t or "").strip()]
+                + [str(j.get("title") or "").strip()
+                   for j in _inferred_jobs(c.get("jobs")) if j.get("title")]))
+            _seen_it = set()
+            for t in _ipool:
+                for it in _intended_now:
+                    if it in _seen_it or not t:
+                        continue
+                    if t == it or t in it or it in t:
+                        _infer_pairs.append((t, it))
+                        _seen_it.add(it)
+                        break
+            # 画像×主营复检（2026-11-17）：推断命中对同样要主营对得上方向。
+            # 推断岗名是模型按画像猜的，不能自证方向 —— 主营文本（行业/细分/
+            # 主营范围）里必须出现学生方向词；主营为空/纯「未知」一律不标，
+            # 没有业务依据就不该推断（教育出版推断「物流专员」这类就这么拦下）。
+            _infer_pairs = biz_recheck.filter_infer(
+                _infer_pairs, _dom_fields, biz_recheck.biz_text_of(name, c))
+
         # 现场问句也念学生自己的意向岗位。llm_match 里的 verify_question 是
         # 早期按别的画像生成的（如「是不是招供应链管理专员」），与当前意向
         # 岗位不符，再念一次就变成「模型编的岗位 ≠ 你的岗位、却又说可能招
@@ -1662,6 +1749,19 @@ def build():
             # 后端按主营业务方向判定的命中岗位（岗位名不带方向）。前端「岗位语义
             # 命中」标签采信它，否则两栏打架：命中岗位里有、语义命中里没有。
             "dir_hit_jobs": _dedup([d["job"] for d in _dir_hit]),
+            # 后端裁决的语义命中（统一候选集对齐 + 泛意向方向对齐 + 复核过滤之后、
+            # 只留真实岗位名证据）。前端当前画像未改动时直接采信这份，本地重算只
+            # 兜底「学生现场改勾选」场景——消除前后端各算一套的打架（2026-11-16）。
+            "intent_matches_backend": ([{"intent": it, "job": t, "via": "backend",
+                                         "reason": "后端语义对齐：与「%s」同类（真实岗位名证据）" % it}
+                                        for t, it in _aligned_all if t in set(_real)]
+                                       if state_final == "hit" else []),
+            # 推断命中对（2026-11-17 用户要求）：与真实命中同一箭头格式，但显式
+            # 标「推断」。前端未改画像时直接采信，换画像走本地同源规则。
+            "infer_matches_backend": ([{"intent": it, "job": t, "via": "infer",
+                                        "reason": "大模型按主营业务推断可能招（非招聘公告原文），现场核实"}
+                                       for t, it in _infer_pairs]
+                                      if state_final == "inferred" else []),
             "hit_total": len(hits_all), "miss_total": len(misses_all),
             "job_title_total": _title_total,
             # v18：无具体岗企业的粗略描述、标签、大模型按意向岗位挑出的可能岗位
@@ -1691,6 +1791,13 @@ def build():
                         if m_eff["state"] == "inferred" else {}),
             # 企业真实岗位名（前端做语义命中用；不只是模型预生成的 matched_jobs）
             "job_titles": [j.get("title", "") for j in jobs if j.get("title")],
+            # 画像补进来的岗位：大模型按主营推断的常规编制，不是招聘公告原文。
+            # 单独给页面标注来源，绝不进 job_titles / 命中判定（见 _clean_jobs）。
+            "inferred_jobs": [str(j.get("title") or "") for j in _inferred_jobs(c.get("jobs"))
+                              if j.get("title")][:20],
+            "inferred_job_notice": (("另有 %d 个岗位为大模型按主营业务推断（非招聘公告原文），"
+                                     "仅作现场提问参考" % len(_inferred_jobs(c.get("jobs"))))
+                                    if _inferred_jobs(c.get("jobs")) else ""),
             # 岗位层级分布 + 只差层级被挡下的岗位（主管 / 资深 / 经理）。
             # 只展示、只影响「算不算对口」，不进 calcOne 打分。
             "level_counts": dict(Counter(

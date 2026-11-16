@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -29,7 +30,7 @@ os.environ.setdefault("FAIR_JS_RENDER", "1")   # JS 招聘页用无头浏览器�
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
-DB = os.path.join(DATA, "careersafari.db")
+DB = os.environ.get("FAIR_DB") or os.path.join(DATA, "careersafari.db")
 TODO = os.path.join(DATA, "_roster_todo.json")
 MISS = os.path.join(DATA, "_roster_miss.json")
 PROGRESS = os.path.join(os.path.dirname(HERE), "PROGRESS_采集.md")
@@ -50,6 +51,38 @@ ENRICH_KEYS = ("city", "province", "nature", "industry", "scale_tier", "is_liste
                "confidence", "enriched", "city_raw", "nature_raw", "industry_raw")
 
 
+def _title_key(job):
+    """岗位名做合并键：去空白、全角括号归一；空名和非 dict 直接丢弃。"""
+    if not isinstance(job, dict):
+        return ""
+    return re.sub(r"\s+", "", str(job.get("title") or "")).replace("（", "(").replace("）", ")")
+
+
+def merge_jobs(old_jobs, new_jobs):
+    """采集只做增量补全：同名岗用本次新岗顶替（带 URL），旧库独有岗位保留。
+
+    整体替换会让「本次只抓到 3 岗」把旧库核对过的 41 岗抹成 3 岗，和 MISS 冲空
+    是同一类破坏。按名字合并后，新库岗位数只会增加、URL 只会变多。
+    """
+    merged, pos = [], {}
+    for job in old_jobs or []:
+        key = _title_key(job)
+        if not key or key in pos:
+            continue
+        pos[key] = len(merged)
+        merged.append(job)
+    for job in new_jobs or []:
+        key = _title_key(job)
+        if not key:
+            continue
+        if key in pos:
+            merged[pos[key]] = job          # 新岗带 source_url，顶替同名旧岗
+        else:
+            pos[key] = len(merged)
+            merged.append(job)              # 本次新抓到的岗，追加
+    return merged
+
+
 def save_item(name, item):
     con = sqlite3.connect(DB, timeout=20)
     try:
@@ -65,6 +98,29 @@ def save_item(name, item):
         # 不代表上次找到的那句失效了。空覆盖有值 = 平白丢一次人工/历史成果。
         if str(patch.get("biz_scope") or "").strip() in ("", "未知") and old.get("biz_scope"):
             patch.pop("biz_scope", None)
+        # 企业属性同口径（2026-11-16）：本次没查到（空 / 「未知」）就保留旧值。
+        # 旧值是上次真实查到的证据，本次失败不代表它失效——v3 重采曾把
+        # city/nature/industry 的旧库已知值冲成未知（city 丢 24 家、nature 19 家、
+        # industry 14 家，振华新云 / 电科55所 / 科伦药业都在名单里）。
+        # 本次真查到了新值（非未知）仍照常覆盖，保留增量更新的能力。
+        for k in ("industry", "nature", "city", "province", "segment", "job_brief"):
+            if str(patch.get(k) or "").strip() in ("", "未知") \
+                    and str(old.get(k) or "").strip() not in ("", "未知"):
+                patch.pop(k, None)
+        # 采集只做增量补全，不做删减：本次 MISS 时保住旧库岗位与来源/证据，
+        # 本次抓到岗位时按名字合并（同名用带 URL 的新岗顶替，旧库独有保留）。
+        if "jobs" in patch:
+            old_jobs = old.get("jobs")
+            new_jobs = patch.get("jobs")
+            if not isinstance(old_jobs, list):
+                old_jobs = []
+            if not isinstance(new_jobs, list):
+                new_jobs = []
+            if not new_jobs and old_jobs:
+                for k in ("jobs", "jobSource", "jobEvidence", "source"):
+                    patch.pop(k, None)
+            elif new_jobs and old_jobs:
+                patch["jobs"] = merge_jobs(old_jobs, new_jobs)
         merged.update(patch)
         merged.pop("roster_only", None)
         con.execute("INSERT OR REPLACE INTO company_jobs(name,item_json,updated_at) VALUES (?,?,?)",
