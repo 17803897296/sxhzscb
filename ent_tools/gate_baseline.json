@@ -1,0 +1,63 @@
+{
+  "_note": "gate.py 的基线。指标变好会**自动**写入（不用 --accept，护栏不该为做了正确的事收手续费）；变差一律拦下，除非 --force。手改这个文件等于拆掉护栏。",
+  "updated_at": "2026-11-16 18:44:17",
+  "history": [
+    {
+      "at": "2026-11-16 18:43",
+      "items": {
+        "syntax_error": 0,
+        "max_file_lines": 2032,
+        "max_func_lines": 736,
+        "redundant_copies": 11,
+        "silent_except": 51,
+        "bare_except": 0,
+        "hardcoded_path": 0,
+        "bad_module_name": 0,
+        "missing_deps": 0,
+        "generated_drift": 0,
+        "stale_page": 0,
+        "zombie_pipeline": 1,
+        "test_cases": 76,
+        "files": 61,
+        "lines": 20689
+      }
+    },
+    {
+      "at": "2026-11-16 18:44",
+      "items": {
+        "syntax_error": 0,
+        "max_file_lines": 2032,
+        "max_func_lines": 736,
+        "redundant_copies": 11,
+        "silent_except": 51,
+        "bare_except": 0,
+        "hardcoded_path": 0,
+        "bad_module_name": 0,
+        "missing_deps": 0,
+        "generated_drift": 0,
+        "stale_page": 0,
+        "zombie_pipeline": 1,
+        "test_cases": 77,
+        "files": 61,
+        "lines": 20689
+      }
+    }
+  ],
+  "items": {
+    "syntax_error": 0,
+    "max_file_lines": 2032,
+    "max_func_lines": 736,
+    "redundant_copies": 11,
+    "silent_except": 51,
+    "bare_except": 0,
+    "hardcoded_path": 0,
+    "bad_module_name": 0,
+    "missing_deps": 0,
+    "generated_drift": 0,
+    "stale_page": 0,
+    "zombie_pipeline": 1,
+    "test_cases": 77,
+    "files": 61,
+    "lines": 20689
+  }
+}

@@ -81,3 +81,7 @@ ent_tools/data/_rec_pool_audit.json
 ent_tools/data/_pages/
 ent_tools/data/_roster_miss.json
 ent_tools/data/_roster_todo.json
+
+# 页面构建戳：build_fair_page.py 每次构建都刷新，入库等于永远 dirty。
+# clone 出来第一件事就是构建一次页面，戳会自己长出来。
+ent_tools/data/.page_stamp.json

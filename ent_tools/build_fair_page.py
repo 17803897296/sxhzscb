@@ -8,9 +8,11 @@
   画像对话 → 生成画像 → 导入企业名单 → 点「开始匹配」 → 结果列表
 """
 
+import hashlib
 import json
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from fair_report_js import REPORT_JS
@@ -483,6 +485,26 @@ html = html.replace("</body>", bundle, 1)
 
 out = DEMO / "fair.html"
 out.write_text(html, encoding="utf-8")
+
+# 构建戳：gate.py 靠它判断「demo/fair.html 有没有被人直接手改」。
+# fair.html 是生成物，手改它下次构建就全丢，改的人却以为自己改好了。
+# 只在正常构建时刷新；直接编辑 html 不会动这个文件，于是下次体检立刻露馅。
+_stamp_p = HERE / "data" / ".page_stamp.json"
+try:
+    _stamp = {}
+    if _stamp_p.exists():
+        _stamp = json.loads(_stamp_p.read_text(encoding="utf-8"))
+    _stamp.setdefault("_note", "build_fair_page.py 自动维护。手改 demo/fair.html 会让 md5 对不上。")
+    _stamp[str(out.resolve())] = {
+        "md5": hashlib.md5(out.read_bytes()).hexdigest(),
+        "bytes": out.stat().st_size,
+        "built_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    _stamp_p.write_text(json.dumps(_stamp, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8")
+except Exception as _e:      # 构建戳写不进去不该阻断页面生成
+    print("  [warn] 构建戳写入失败：%s" % _e)
+
 print("生成", out)
 print("  改动：" + "、".join(PATCH_LOG))
 print("  大小 %.1f KB；内置企业 %d 家；内置名单 %d 家" %

@@ -5,6 +5,7 @@
 每条岗位带原始 source_url；证据另存 job_evidence 表，便于回溯。
 
 用法：
+    set FAIR_HANDOFF_DB=<交付库路径>\fair2026.db   （不设则找 ../_handoff/fair2026.db）
     python -X utf8 merge_handoff_jobs.py --check   # 只预览差异
     python -X utf8 merge_handoff_jobs.py --apply   # 落库
 """
@@ -22,7 +23,13 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 DB = os.path.join(DATA, "careersafari.db")
-HANDOFF = r"C:\Users\Lenovo\Desktop\给主模型的交付_20261114\01_数据库\fair2026.db"
+
+# 交付库位置。原来这里是写死的 C:\Users\Lenovo\Desktop\...，
+# 在写它的那台机器上跑得通，换一台就报「找不到交付库」，而且看代码看不出
+# 该改哪一行。改成：环境变量优先，其次按相对位置找。
+#   set FAIR_HANDOFF_DB=D:\某处\fair2026.db
+HANDOFF = (os.environ.get("FAIR_HANDOFF_DB")
+           or os.path.join(os.path.dirname(HERE), "_handoff", "fair2026.db"))
 
 
 def norm(t):
