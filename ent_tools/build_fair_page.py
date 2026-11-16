@@ -486,7 +486,7 @@ html = html.replace("</body>", bundle, 1)
 out = DEMO / "fair.html"
 out.write_text(html, encoding="utf-8")
 
-# 构建戳：gate.py 靠它判断「demo/fair.html 有没有被人直接手改」。
+# 构建戳：health.py 靠它判断「demo/fair.html 有没有被人直接手改」。
 # fair.html 是生成物，手改它下次构建就全丢，改的人却以为自己改好了。
 # 只在正常构建时刷新；直接编辑 html 不会动这个文件，于是下次体检立刻露馅。
 _stamp_p = HERE / "data" / ".page_stamp.json"

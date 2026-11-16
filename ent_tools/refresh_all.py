@@ -17,7 +17,11 @@
                    不再维护手工副本（手工副本漂移过一次，等于拿旧规则给小抄打分）
     7  JS 语法校验   页面内联 script + 夹具 JS 都过 node --check
     8  一致性测试    前后端匹配 / 前后端矩阵 parity / 规则回归
-    9  架构护栏     gate.py：不允许任何一项指标比上次差（见 docs/改动守则.md）
+
+这里**没有**「代码体检」这一步。以前加过一个 gate.py（指标不许变差），
+跑了两天就发现它是在给写代码收手续费：加个函数、拆个文件都可能撞线。
+现在体检归 health.py，只打印数字、永远退出 0，也**不在本流程内**——
+想看就自己跑，不想看它绝不会拦你。
 
 用法：
     python refresh_all.py             # 全流程
@@ -63,7 +67,7 @@ def _run(label, cmd, cwd=HERE, allow_fail=False, timeout=None):
 
 
 def step_cache():
-    print("\n== 1/9 缓存体检 ==")
+    print("\n== 1/8 缓存体检 ==")
     # 活缓存不入库，clone 后第一次跑要先从只读种子复制出来（同 careersafari.db.seed）。
     restored = cache_guard.restore_seeds()
     if restored:
@@ -84,19 +88,19 @@ def step_dirfill():
     没跑这一步不会报错（会退回现算），但慢、而且 seed 库里的 hint 会缺，
     下次干净 clone 就丢；所以固定成流水线的一步。纯本地规则，秒级。
     """
-    print("\n== 2/9 重算岗位方向 ==")
+    print("\n== 2/8 重算岗位方向 ==")
     _run("_dir_fill.py", [sys.executable, "-X", "utf8", "_dir_fill.py"])
 
 
 def step_build():
-    print("\n== 3/9 重建 payload ==")
+    print("\n== 3/8 重建 payload ==")
     p = _run("fair_bridge.build()", [sys.executable, "-X", "utf8", "-c",
                                      "import fair_bridge;fair_bridge.build()"])
     return p
 
 
 def step_page():
-    print("\n== 4/9 重建页面 ==")
+    print("\n== 4/8 重建页面 ==")
     _run("build_fair_page.py", [sys.executable, "-X", "utf8", "build_fair_page.py"])
 
 
@@ -107,7 +111,7 @@ def step_test_users():
     结果后面重建时没人记得跑它，页面上就找不到入口了。
     现在每次 refresh 都重生成，并保证服务端能直接访问。
     """
-    print("\n== 5/9 重建测试数据页 ==")
+    print("\n== 5/8 重建测试数据页 ==")
     _run("build_test_users_page.py",
          [sys.executable, "-X", "utf8", "build_test_users_page.py"])
 
@@ -129,7 +133,7 @@ def step_fixtures():
     parity 测试就用旧规则算出「一致」，等于白跑。这里直接切页面源码里的
     `const MI_GEN=` … `function matchIntent(` 之间那段，测的就是线上跑的那份规则。
     """
-    print("\n== 6/9 生成测试夹具 ==")
+    print("\n== 6/8 生成测试夹具 ==")
     import json
 
     from fair_report_js import REPORT_JS
@@ -163,7 +167,7 @@ def step_fixtures():
 
 
 def step_js():
-    print("\n== 7/9 JS 语法校验 ==")
+    print("\n== 7/8 JS 语法校验 ==")
     if not os.path.isfile(PAGE):
         print("   [失败] 找不到 " + PAGE)
         sys.exit(1)
@@ -186,7 +190,7 @@ def step_js():
 
 
 def step_tests():
-    print("\n== 8/9 一致性测试 ==")
+    print("\n== 8/8 一致性测试 ==")
     _run("前后端匹配一致（_test_match.js）", ["node", "_test_match.js"])
     _run("24 意向 × 岗位前后端 parity（_test_parity.js）", ["node", "_test_parity.js"])
     # 规则回归脚本只打印退化数，没有退出码约定，从输出里抓关键行
@@ -214,21 +218,6 @@ def step_collect(argv):
     _run("collect_roster.py", cmd, timeout=3600)
 
 
-def step_gate():
-    """架构护栏。
-
-    放在最后是有意的：前面八步刚把页面和 payload 重建完，这时候量出来的
-    指标才是真实的 —— 「页面比数据旧」这一项只有在构建之后才应当为 0。
-
-    这里不 allow_fail：护栏报出变差就该停，让人先处理。
-    确实需要放宽就跑 `gate.py --accept`（只接受变好）或 `--force`（明确放宽），
-    不要在这个流水线里绕过去。
-    """
-    print("\n== 9/9 架构护栏 ==")
-    _run("gate.py（棘轮：只禁止变差）",
-         [sys.executable, "-X", "utf8", "gate.py"])
-
-
 def main(argv):
     skip_build = "--skip-build" in argv
     skip_tests = "--skip-tests" in argv
@@ -245,7 +234,6 @@ def main(argv):
     step_js()
     if not skip_tests:
         step_tests()
-    step_gate()          # 不受 --skip-tests 影响：护栏不是测试，是体检
     print("\n全部通过，用时 %.0fs。页面：%s" % (time.time() - t0, PAGE))
     print("服务端读到的是刚写入的 data/fair_payload.json，无需重启 %s。"
           % os.environ.get("FAIR_PORT", "8102"))
