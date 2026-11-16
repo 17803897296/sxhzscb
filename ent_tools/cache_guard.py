@@ -58,15 +58,28 @@ REGISTRY = {
     },
     "unknown_infer": {
         "path": "unknown_infer_cache.json", "kind": "derived",
-        "deps": ["unknown_infer.py"],
+        # 2026-11-16：传输层（_call_raw）已合并到 llm.py，所以加这一项。
+        # 否则「改了 prompt 的拼装方式但忘了改某个模块」时缓存不会失效。
+        "deps": ["unknown_infer.py", "llm.py"],
         "desc": "无具体岗企业（未知1/未知2）按意向推断",
     },
     "biz_fit": {
         "path": "biz_fit_cache.json", "kind": "derived",
         # 依赖 job_family / intent_semantics 是因为 _settle() 用岗位族判「证据与意向同方向」，
         # 族表一改，缓存里的 yes/ask 结论就可能翻，必须跟着失效。
-        "deps": ["biz_fit.py", "job_family.py", "intent_semantics.py"],
+        # 2026-11-16：传输层（_call_raw）已合并到 llm.py，所以加这一项。
+        # 否则「改了 prompt 的拼装方式但忘了改某个模块」时缓存不会失效。
+        "deps": ["biz_fit.py", "job_family.py", "intent_semantics.py", "llm.py"],
         "desc": "按主营业务判企业是否与学生方向交叉（yes/ask/no，逐家）",
+    },
+    "job_profile": {
+        "path": "job_profile_cache.json", "kind": "derived",
+        # 2026-11-16 补登记。之前它根本不在 REGISTRY 里，于是 code_fp 退化成
+        # md5("1|") 这个常量 —— 169 条画像缓存**永远不会因为改代码而失效**。
+        # 这是最坏的一种失效：改了 prompt 结论全变，缓存却照样命中，没人发现。
+        # 现在依赖 job_profile.py 与 llm.py（传输层），改哪个都会正确作废。
+        "deps": ["job_profile.py", "llm.py"],
+        "desc": "企业岗位画像（逐家，模型 + 校验链）",
     },
     "hard_filter": {
         "path": "hard_filter_cache.json", "kind": "derived",
@@ -277,6 +290,7 @@ SEEDS = [
     "job_recommend_pool.json",         # 按专业生成的校招岗位池
     "unknown_infer_cache.json",        # 无具体岗企业的意向推断
     "biz_fit_cache.json",              # 企业主营业务与方向的交叉判断
+    "job_profile_cache.json",          # 企业岗位画像（169 条，重建最贵的一份）
     "hit_verdicts.json",               # 命中复核的模型原判
     "lookup_cache.json",               # 企业检索联网快照（重抓成本高）
 ]

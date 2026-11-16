@@ -42,12 +42,12 @@ import json
 import os
 import re
 import time
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from intent_semantics import _load_env
 import intent_semantics
 import cache_guard
+import llm
+from llm import load_env as _load_env
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "data", "biz_fit_cache.json")
@@ -166,22 +166,6 @@ def _save_cache(maps):
                       f, ensure_ascii=False, indent=1)
     except Exception:
         pass
-
-
-def _call_raw(cfg, prompt, timeout):
-    key = os.environ.get("DEEPSEEK_API_KEY") or cfg.get("DEEPSEEK_API_KEY", "")
-    base = (os.environ.get("DEEPSEEK_BASE_URL") or cfg.get("DEEPSEEK_BASE_URL")
-            or "https://open.bigmodel.cn/api/paas/v4")
-    model = os.environ.get("DEEPSEEK_MODEL") or cfg.get("DEEPSEEK_MODEL") or "glm-4-flash"
-    payload = {"model": model, "messages": [{"role": "user", "content": prompt}],
-               "temperature": 0}
-    req = urllib.request.Request(
-        base.rstrip("/") + "/chat/completions",
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        raw = json.loads(r.read().decode("utf-8"))
-    return raw["choices"][0]["message"]["content"]
 
 
 _NONE_WORDS = ("无", "—", "-", "－", "暂无", "空", "null", "none", "n/a")
@@ -312,7 +296,8 @@ def _norm(one):
 
 def _compute(row, intended, cfg, timeout):
     """纯计算，**不碰磁盘** —— 只有这样才能并发。"""
-    text = _call_raw(cfg, PROMPT.format(intended="、".join(intended), row=row), timeout)
+    text = llm.chat(PROMPT.format(intended="、".join(intended), row=row),
+                    cfg, timeout=timeout)
     res = _parse(text, intended)
     if not res:
         return None

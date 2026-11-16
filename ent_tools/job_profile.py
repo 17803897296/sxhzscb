@@ -37,13 +37,13 @@ import json
 import os
 import re
 import time
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import intent_semantics
 import job_direction
 import cache_guard
-from intent_semantics import _load_env
+import llm
+from llm import load_env as _load_env
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "data", "job_profile_cache.json")
@@ -247,24 +247,6 @@ def _model_tag():
         PROMPT_VER)
 
 
-def _call_raw(cfg, prompt, timeout):
-    """与 biz_fit._call_raw 同源。分开写是为了不动 biz_fit —— 那个模块的
-    cache_guard 指纹按文件内容算，改一个字符就会让 36 家判定缓存全部作废。"""
-    key = os.environ.get("DEEPSEEK_API_KEY") or cfg.get("DEEPSEEK_API_KEY", "")
-    base = (os.environ.get("DEEPSEEK_BASE_URL") or cfg.get("DEEPSEEK_BASE_URL")
-            or "https://open.bigmodel.cn/api/paas/v4")
-    model = os.environ.get("DEEPSEEK_MODEL") or cfg.get("DEEPSEEK_MODEL") or "glm-4-flash"
-    payload = {"model": model, "messages": [{"role": "user", "content": prompt}],
-               "temperature": 0}
-    req = urllib.request.Request(
-        base.rstrip("/") + "/chat/completions",
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        raw = json.loads(r.read().decode("utf-8"))
-    return raw["choices"][0]["message"]["content"]
-
-
 # ---------------------------------------------------------------- 岗位名校验
 
 def is_generic_title(title, extra_dirs=()):
@@ -427,7 +409,7 @@ def _save_cache(maps):
 
 
 def _compute(row, cfg, timeout):
-    text = _call_raw(cfg, PROMPT.format(row=row), timeout)
+    text = llm.chat(PROMPT.format(row=row), cfg, timeout=timeout)
     obj = _parse(text)
     if not obj["jobs"]:
         print("[job_profile] 解析不出岗位：%s" % (text or "")[:60].replace("\n", " "))

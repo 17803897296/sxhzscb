@@ -25,11 +25,12 @@ import json
 import os
 import re
 import time
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from intent_semantics import _load_env, _parse_json
+from intent_semantics import _parse_json
 import cache_guard
+import llm
+from llm import load_env as _load_env
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "data", "unknown_infer_cache.json")
@@ -150,22 +151,6 @@ def _prompt_rows(batch):
     return "\n".join(lines)
 
 
-def _call_raw(cfg, prompt, timeout):
-    key = os.environ.get("DEEPSEEK_API_KEY") or cfg.get("DEEPSEEK_API_KEY", "")
-    base = (os.environ.get("DEEPSEEK_BASE_URL") or cfg.get("DEEPSEEK_BASE_URL")
-            or "https://open.bigmodel.cn/api/paas/v4")
-    model = os.environ.get("DEEPSEEK_MODEL") or cfg.get("DEEPSEEK_MODEL") or "glm-4-flash"
-    payload = {"model": model, "messages": [{"role": "user", "content": prompt}],
-               "temperature": 0}
-    req = urllib.request.Request(
-        base.rstrip("/") + "/chat/completions",
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        raw = json.loads(r.read().decode("utf-8"))
-    return raw["choices"][0]["message"]["content"]
-
-
 def _parse_lines(text, intended):
     out = {}
     for line in (text or "").replace("｜", "|").splitlines():
@@ -245,8 +230,9 @@ def build_map(companies, intended, timeout=TIMEOUT):
     out = {}
     if has_key:
         def _one_batch(batch, to):
-            text = _call_raw(cfg, PROMPT.format(intended="、".join(intended),
-                                                rows=_prompt_rows(batch)), to)
+            text = llm.chat(PROMPT.format(intended="、".join(intended),
+                                          rows=_prompt_rows(batch)),
+                            cfg, timeout=to)
             return _parse_any(text, intended)
 
         batches = [items[s:s + BATCH] for s in range(0, len(items), BATCH)]
