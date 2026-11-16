@@ -55,10 +55,19 @@
 
 | 你以为要改的 | 实际要改的 |
 | --- | --- |
-| `demo/fair.html`（30k+ 行，内联 JS） | `ent_tools/fair_report_js.py`（报告 JS）、`ent_tools/build_fair_page.py`（采集 JS / 页面骨架 / 垫片）、`ent_tools/job_recommend.py`（岗位推荐词表）、`ent_tools/intent_semantics.py`（语义规则） |
+| `demo/fair.html`（30k+ 行，内联 JS） | `ent_tools/js/*.js`（采集端垫片 / 岗位推荐 / 匹配三大段源码）、`ent_tools/fair_report_js.py`（报告 JS）、`ent_tools/build_fair_page.py`（页面骨架、装配与字符串替换）、`ent_tools/job_recommend.py`（岗位推荐词表）、`ent_tools/intent_semantics.py`（语义规则） |
 | `demo/questionnaire.json` | `ent_tools/extract_questionnaire.py`（问卷常量） |
 | `demo/test_users.html` | `ent_tools/build_test_users_page.py` |
 | `demo/portal.html` | `ent_tools/build_portal.py` |
+
+采集端那三段前端源码本来以 `r"""..."""` 的形式躺在 `build_fair_page.py` 里，
+1,911 行里有 1,437 行是 JS，翻代码时根本看不出哪儿是 Python。
+2026-11-16 抽到 `ent_tools/js/`（`shim.js` / `recommend.js` / `match.js`），
+文件本身仍是**逐字内联**进页面的，`__QUESTIONNAIRE__` / `__COMPANIES__` /
+`__NAMES__` 三个占位符照旧由 build 脚本替换。抽取的验收标准是
+**重建出的 `demo/fair.html` 逐字节不变**（976,239 字节，md5 一致）。
+
+改完 JS 仍然只需重建页面，不必碰 `demo/fair.html`。
 
 `demo/fair.html` 是**生成物，禁止直接编辑**。重建链路：
 

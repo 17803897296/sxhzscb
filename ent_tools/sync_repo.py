@@ -35,6 +35,9 @@ GLOBS = [
     ("ent_tools", "*.py"),
     ("ent_tools", "*.md"),
     ("ent_tools", ".env.example"),
+    # 页面里内联的三段前端源码（2026-11-16 从 build_fair_page.py 抽出来的）。
+    # 漏了这里，clone 出来的实例跑 build_fair_page.py 会直接报文件不存在。
+    ("ent_tools/js", "*.js"),
     ("ent_tools/data/test_users", "*.json"),
     # 只读种子：活缓存（*_cache.json / *_live.json / hit_verdicts.json 等）不入库，
     # clone 后由 cache_guard.restore_seeds() 从这些 .seed 复制出活文件。
