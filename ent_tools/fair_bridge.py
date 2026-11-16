@@ -1401,7 +1401,8 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     _dom_kw, _dom_fields = biz_recheck.student_domain(
         intended, (profile or {}).get("major") or "")
     real, _biz_blocked = biz_recheck.filter_real(
-        real, _dom_kw, _dom_fields, biz_text)
+        real, _dom_kw, _dom_fields, biz_text,
+        (profile or {}).get("major") or "")
     for _bt, _bi in _biz_blocked:
         if any(a.get("job") == _bt for a in asks):
             continue
@@ -1627,34 +1628,38 @@ def build():
         infer_text = _inferred_text(m_eff["state"], _fit, fit_info, _basis, _fj,
                                     _evsuf, jobs, _js, _src_label, intended_ask)
 
-        # 推断命中对（仅 inferred）：业务链推断岗（fit jobs）+ 画像推断岗
+        # 推断命中对（所有企业都建，2026-11-17 用户要求：明确命中企业也要在同
+        # 一箭头位置标推断命中）：业务链推断岗（fit jobs）+ 画像推断岗
         # × 学生勾选的意向。口径刻意收紧为「同名或互含」：推断命中本来就是
         # 提示学生去现场核实的参考，宁可少标不错标——pair_verdict 的职能族
         # 兜底会把「配方工程师 × 工艺工程师」「高分子研发 × 配方」也放进来，
         # 对推断岗这种非公告原文的证据太松。互含（工艺工程师 ⊂ 化工工艺工程师）
         # 是最硬的字面证据，两端 JS 镜像也只做这一条，parity 天然一致。
-        # 每个意向最多一对，业务链岗优先于画像推断岗。
+        # 每个意向最多一对，业务链岗优先于画像推断岗；与真实命中同岗位名的不
+        # 重复标（真实命中那栏已经亮过了）。
         _infer_pairs = []
-        if m_eff["state"] == "inferred":
-            _ipool = list(dict.fromkeys(
-                [str(t or "").strip() for t in (fit_info.get("jobs") or []) if str(t or "").strip()]
-                + [str(j.get("title") or "").strip()
-                   for j in _inferred_jobs(c.get("jobs")) if j.get("title")]))
-            _seen_it = set()
-            for t in _ipool:
-                for it in _intended_now:
-                    if it in _seen_it or not t:
-                        continue
-                    if t == it or t in it or it in t:
-                        _infer_pairs.append((t, it))
-                        _seen_it.add(it)
-                        break
+        _real_set = set(_real)
+        _ipool = list(dict.fromkeys(
+            [str(t or "").strip() for t in (fit_info.get("jobs") or []) if str(t or "").strip()]
+            + [str(j.get("title") or "").strip()
+               for j in _inferred_jobs(c.get("jobs")) if j.get("title")]))
+        _seen_it = set()
+        for t in _ipool:
+            for it in _intended_now:
+                if it in _seen_it or not t:
+                    continue
+                if (t == it or t in it or it in t) and not any(
+                        t in r or r in t for r in _real_set):
+                    _infer_pairs.append((t, it))
+                    _seen_it.add(it)
+                    break
             # 画像×主营复检（2026-11-17）：推断命中对同样要主营对得上方向。
             # 推断岗名是模型按画像猜的，不能自证方向 —— 主营文本（行业/细分/
             # 主营范围）里必须出现学生方向词；主营为空/纯「未知」一律不标，
             # 没有业务依据就不该推断（教育出版推断「物流专员」这类就这么拦下）。
             _infer_pairs = biz_recheck.filter_infer(
-                _infer_pairs, _dom_fields, biz_recheck.biz_text_of(name, c))
+                _infer_pairs, _dom_fields, biz_recheck.biz_text_of(name, c),
+                profile.get("major") or "")
 
         # 现场问句也念学生自己的意向岗位。llm_match 里的 verify_question 是
         # 早期按别的画像生成的（如「是不是招供应链管理专员」），与当前意向
@@ -1758,10 +1763,9 @@ def build():
                                        if state_final == "hit" else []),
             # 推断命中对（2026-11-17 用户要求）：与真实命中同一箭头格式，但显式
             # 标「推断」。前端未改画像时直接采信，换画像走本地同源规则。
-            "infer_matches_backend": ([{"intent": it, "job": t, "via": "infer",
-                                        "reason": "大模型按主营业务推断可能招（非招聘公告原文），现场核实"}
-                                       for t, it in _infer_pairs]
-                                      if state_final == "inferred" else []),
+            "infer_matches_backend": [{"intent": it, "job": t, "via": "infer",
+                                       "reason": "大模型按主营业务推断可能招（非招聘公告原文），现场核实"}
+                                      for t, it in _infer_pairs],
             "hit_total": len(hits_all), "miss_total": len(misses_all),
             "job_title_total": _title_total,
             # v18：无具体岗企业的粗略描述、标签、大模型按意向岗位挑出的可能岗位

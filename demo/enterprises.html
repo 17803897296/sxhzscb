@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>企业端 · 岗位上传</title>
+  <title>企业端 · 名单导入与岗位上传</title>
   <style>
     :root {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
@@ -220,7 +220,7 @@
     <main class="app">
     <header class="topbar">
         <div class="brand-mark" aria-hidden="true">企</div>
-        <strong>企业端 · 岗位上传</strong>
+        <strong>企业端 · 名单导入与岗位上传</strong>
     </header>
 
     <section id="conversation" class="conversation" role="log" aria-live="polite"></section>
@@ -280,6 +280,8 @@
         accept=".pdf,.doc,.docx,.xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg,.webp"
         >
     </div>
+
+    <section id="chat"></section>
 
     <p class="footnote">提交后的岗位由组委会统一核录入库，库内清单不在本页展示。</p>
     </main>
@@ -469,6 +471,24 @@
       "这里是岗位上传入口：把贵单位本次双选会要招的岗位粘贴进来（岗位名称、职责要求），或发招聘页链接，也可以点 + 上传岗位说明文件（PDF / Word / Excel / CSV / 图片）。\n库内已有清单不在本页展示，提交后由组委会统一核录。");
     updateInput();
     document.body.classList.add("highlight-ready");
+
+    /* 名单导入块（v12 三端分工）：源码来自 /js/match.js（服务端替换占位符），
+       rosterOnly 模式只挂「导入参会企业名单」，不渲染开始匹配与结果区——
+       匹配排行归匹配端。file:// 离线双击没有本地服务，不挂这一块。 */
+    (async () => {
+      if (location.protocol === "file:") return;
+      try {
+        const src2 = await (await fetch("/js/match.js")).text();
+        const host = document.createElement("div");
+        host.innerHTML = src2;
+        host.querySelectorAll("script").forEach(old => {
+          const s = document.createElement("script");
+          s.textContent = old.textContent;
+          document.body.appendChild(s);
+        });
+        if (window.__mountMatch) window.__mountMatch(null, { rosterOnly: true });
+      } catch (e) { /* 服务不可达就不挂名单导入块 */ }
+    })();
   </script>
 </body>
 </html>

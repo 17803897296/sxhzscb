@@ -185,7 +185,23 @@ window.fetch = function (url, opts) {
       try { localStorage.setItem("fair_profile", JSON.stringify(doc)); } catch (e) {}
     };
     keepLocal();
-    setTimeout(() => { if (window.__mountMatch) window.__mountMatch(doc); }, 420);
+    setTimeout(() => {
+      /* v12 分端（2026-11-17 用户拍板）：在线模式下名单导入在企业端、
+         匹配排行在匹配端（/match.html），学生端只管画像——聊完给跳转卡片。
+         离线双击模式没有匹配端页，保留原完整块（名单+匹配内联完成）。 */
+      if (!FAIR_ONLINE) {
+        if (window.__mountMatch) window.__mountMatch(doc);
+        return;
+      }
+      const mb = document.createElement("div");
+      mb.id = "matchbox";
+      mb.innerHTML = '<div class="mb-card"><h3>画像已生成</h3>'
+        + '<p class="mb-sub">企业名单与岗位在企业端导入；匹配结果排行在匹配端看。</p>'
+        + '<div class="mb-row"><a class="mb-go" style="text-decoration:none;'
+        + 'text-align:center;display:block" href="/match.html">去匹配端看排行 →</a></div></div>';
+      const chat = document.getElementById("chat");
+      (chat || document.body).appendChild(mb);
+    }, 420);
     const offline = () => _resp({ ok: true, saved: false,
       storage: "浏览器 localStorage + 导出 JSON", document: doc });
     if (!FAIR_ONLINE) return offline();

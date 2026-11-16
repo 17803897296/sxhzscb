@@ -1080,8 +1080,16 @@ function miStripGeneric(s){ const G=['管理培训生','管培生','培训生','
 function miBizKw(major,intents){
   const kw={},fields={}; const m=String(major||'');
   BIZ_FIELDS.forEach(function(f){ f[1].forEach(function(mk){ if(mk&&m.indexOf(mk)>=0) fields[f[0]]=1; }); });
-  (intents||[]).forEach(function(it){ const core=miStripGeneric(it); if(!core||core.length<2) return; kw[core]=1;
-    BIZ_FIELDS.forEach(function(f){ f[2].forEach(function(mk){ if(mk&&core.indexOf(mk)>=0) fields[f[0]]=1; }); }); });
+  (intents||[]).forEach(function(it){
+    const core=miStripGeneric(it); if(!core||core.length<2) return; kw[core]=1;
+    /* 意向词命中领域：首个命中的领域生效（与后端 student_domain 的 break 同源
+       ——原先无 break 全加，「化工销售」会同时拉进商贸管理领域，前端比后端
+       松：一个意向开门全体受益。2026-11-17 对齐。） */
+    for(let bi=0;bi<BIZ_FIELDS.length;bi++){
+      const f=BIZ_FIELDS[bi];
+      if(f[2].some(function(mk){ return mk&&core.indexOf(mk)>=0; })){ fields[f[0]]=1; break; }
+    }
+  });
   BIZ_FIELDS.forEach(function(f){ if(fields[f[0]]){ f[3].forEach(function(k){ kw[k]=1; }); f[4].forEach(function(k){ kw[k]=1; }); } });
   return {kw:Object.keys(kw), fields:Object.keys(fields)};
 }
@@ -1098,18 +1106,30 @@ function miBizHit(fields,biz){
 }
 /* 明确命中复检（与后端 filter_real 同源）：意向或岗位名带方向词 → 放行；
    否则主营强词一票。具体意向的核心词都在方向词表里天然通过 —— 闸门只咬
-   「全通用意向（管培生/储备干部）× 字面同名岗位」这类组合。 */
-function miBizOkReal(job,intent,MK,biz){
+   「全通用意向（管培生/储备干部）× 字面同名岗位」这类组合。
+   主营判定按意向对各算各的方向集（2026-11-17，与后端 pair_fields 同源）：
+   销售意向放行商贸类主营，不再连带给其他意向放行贸易/零售公司。 */
+function miBizOkReal(job,intent,MK,biz,major){
   const kw=(MK&&MK.kw)||[];
   if(kw.some(function(k){ return String(intent||'').indexOf(k)>=0; })) return true;
   if(kw.some(function(k){ return String(job||'').indexOf(k)>=0; })) return true;
-  return miBizHit(MK&&MK.fields,biz);
+  const pf=miBizKw(major||'', [intent]).fields;
+  return miBizHit(pf.length?pf:(MK&&MK.fields),biz);
 }
 
 function e(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function short(s,n){ s=String(s||''); return s.length>n ? s.slice(0,n)+'…' : s; }
 function stateLabel(s){ return s==='hit'?'明确命中':s==='inferred'?'推断待核实':'不对口'; }
+/* 「只有大类岗 ask」的企业（2026-11-17 用户定口径）：没有真实命中、没有推断
+   命中，仅靠无方向的管培生/储备干部 ↔ 具体意向撑着——照常显示但全部后置
+   到队尾。管培生↔管培生（意向本身是大类）算真命中，不进这条；有其他命中的
+   企业也不进这条。 */
+function onlyAsk(r){
+  return r.state!=='hit'
+    && !(r.infer_matches&&r.infer_matches.length)
+    && !!(r.ask_jobs&&r.ask_jobs.length);
+}
 function groupTitle(s){
   if(s==='hit') return ['t1','优先去 · 有真实岗位证据'];
   if(s==='inferred') return ['t2','按行业推断 · 现场问一句确认'];
@@ -1288,19 +1308,20 @@ function calcOne(r,P){
           intent_hit:matches.map(function(m){return m.intent;}),
           intent_matches:matches,
           /* 推断命中对：与真实命中同一箭头格式、显式标「推断」。画像未改时
-             直接采信后端 infer_matches_backend；换画像走 recompute 现算。 */
-          infer_matches:(!_bc && r.state==='inferred' && r.infer_matches_backend)
-            ? r.infer_matches_backend : []};
+             直接采信后端 infer_matches_backend（明确命中企业也有推断对，
+             2026-11-17）；换画像走 recompute 现算。 */
+          infer_matches:(!_bc && r.infer_matches_backend) ? r.infer_matches_backend : []};
 }
 
 /* 推断命中对现算（换画像 / 自定义画像场景）：业务链推断岗（biz_fit.jobs）+
    画像推断岗（inferred_jobs）× 学生意向。口径与后端 _infer_pairs 同源且刻意
    收紧为「同名或互含」：推断岗不是公告原文，宁可少标不错标（职能族兜底会把
    配方×工艺、研发×配方也放进来，太松）。每意向最多一对，业务链岗优先。 */
-function miInferPairs(intended,pool,MK,biz){
+function miInferPairs(intended,pool,MK,biz,major){
   /* 画像×主营复检（2026-11-17，与后端 filter_infer 同源）：推断岗名是猜的，
      不能自证方向 —— 主营文本必须容纳学生方向，否则整个企业的推断对全撤。
-     主营为空/纯「未知」一律不标：没有业务依据就不该推断。 */
+     主营为空/纯「未知」一律不标：没有业务依据就不该推断。全局主营判定
+     不过闸时整撤（全局方向集 ⊇ 每对的方向子集，等价快捷路径）。 */
   if(MK && !miBizHit(MK.fields,biz)) return [];
   const out=[],seen={};
   (pool||[]).forEach(function(t){
@@ -1315,7 +1336,12 @@ function miInferPairs(intended,pool,MK,biz){
       }
     }
   });
-  return out;
+  /* 主营复核按意向对各算各的方向集（与后端 filter_infer per-pair 同源）：
+     化工学生的销售意向放行商贸类主营，化学分析意向不跟着吃「贸易」强词。 */
+  return out.filter(function(m){
+    const pf=miBizKw(major||'', [m.intent]).fields;
+    return miBizHit(pf.length?pf:(MK&&MK.fields), biz);
+  });
 }
 
 function recompute(P){
@@ -1336,9 +1362,10 @@ function recompute(P){
       /* 画像×主营复检（2026-11-17，与后端 biz_recheck 同源）：主营上下文补上
          岗位简介，方向词匹配用 biz2；matchIntent 的 biz 维持旧口径不动。 */
       const biz2=biz+((r.job_brief)?(' '+r.job_brief):'');
-      const MK=miBizKw((P.profile&&P.profile.major)||P.major||'', P.intended_jobs||[]);
+      const MJ=(P.profile&&P.profile.major)||P.major||'';
+      const MK=miBizKw(MJ, P.intended_jobs||[]);
       const hits=matchIntent(jt, P.intended_jobs||[], P.sem||{}, jt, biz)
-        .filter(function(h){ return miBizOkReal(h.job, h.intent, MK, biz2); });
+        .filter(function(h){ return miBizOkReal(h.job, h.intent, MK, biz2, MJ); });
       const jobs=[], its=[];
       hits.forEach(function(h){
         if(jobs.indexOf(h.job)<0) jobs.push(h.job);
@@ -1348,9 +1375,14 @@ function recompute(P){
       x.matched_jobs = jobs;
       x.intent_hit = its;
       x.intent_matches = hits;
-      x.infer_matches = (x.state==='inferred')
-        ? miInferPairs(P.intended_jobs||[], ((r.biz_fit&&r.biz_fit.jobs)||[]).concat(r.inferred_jobs||[]), MK, biz2)
-        : [];
+      /* 推断命中对所有企业都算（明确命中企业也要在同一箭头位置标推断）；
+         真实命中里已有的岗位名不重复标（互含也算同一岗位：真实命中
+         「脱硫脱硝工艺工程师」时，推断对不再标「工艺工程师」）。 */
+      x.infer_matches = miInferPairs(P.intended_jobs||[],
+        ((r.biz_fit&&r.biz_fit.jobs)||[]).concat(r.inferred_jobs||[]), MK, biz2, MJ)
+        .filter(function(m){
+          return !jobs.some(function(rj){ return m.job.indexOf(rj)>=0 || rj.indexOf(m.job)>=0; });
+        });
       x.level_blocked = miLevelBlocked(P.intended_jobs||[], jt);
       x.ask_jobs = miAskJobs(P.intended_jobs||[], jt, biz);
       x.state_recalc = true;
@@ -1397,8 +1429,9 @@ function recompute(P){
     const fn=function(x){return x.fit==='no'&&x.biz_fit&&x.biz_fit.via==='llm'
         &&x.state==='inferred'&&!x.state_recalc?1:0;};
     const afn=fn(a), bfn=fn(b);
+    const ao=onlyAsk(a)?1:0, bo=onlyAsk(b)?1:0;
     const ah=a.state==='hit'?0:1, bh=b.state==='hit'?0:1;
-    return (an-bn) || (afn-bfn) || (b.score-a.score) || (ah-bh)
+    return (an-bn) || (afn-bfn) || (ao-bo) || (b.score-a.score) || (ah-bh)
         || String(a.booth||'999').localeCompare(String(b.booth||'999'))
         || a.name.localeCompare(b.name);
   });
@@ -1412,6 +1445,7 @@ function recompute(P){
     if(fb&&fb.result==='no') r.rank_reason+='；现场确认不招，已顺延（保留在队尾供核对）';
     if(r.fit==='no'&&r.biz_fit&&r.biz_fit.via==='llm'&&r.state==='inferred'&&!r.state_recalc)
       r.rank_reason+='；主营方向与你的意向不交叉，已顺延到队尾';
+    if(onlyAsk(r)) r.rank_reason+='；仅「管培生/储备干部」大类岗待问方向，已后置';
   });
   return rows;
 }
@@ -1472,13 +1506,39 @@ function rowHTML(r,idx,P){
   /* 推断命中：与真实命中同一箭头格式，但显式标「推断」、用橙色调区分——
      这些岗位名来自大模型按主营业务的推断（业务链 / 画像补全），不是招聘
      公告原文。学生拿着这对去现场核实，核实了（feedback=yes）才升级成真命中。 */
-  const inferLine=(r.state==='inferred'&&r.infer_matches&&r.infer_matches.length)
+  const inferLine=(r.infer_matches&&r.infer_matches.length)
     ? '<span class="hits" style="color:#b7791f">推断命中：'
       +e(r.infer_matches.slice(0,2).map(function(m){
         return m.job+' ↔ 你选的「'+m.intent+'」';
-      }).join('；'))
+      }).join('；'))+(r.infer_matches.length>2?' 等 '+r.infer_matches.length+' 对':'')
       +'（大模型按主营业务推断，非企业公告，现场核实）</span>'
     : '';
+  /* 画像×主营复核展示（2026-11-17 用户要求）：完整报告里明示这层复核做过、
+     结论如何——不是黑箱。口径与后端 biz_recheck / 前端镜像同源：
+     强词一票制；主营为空/识别不出方向时不判。 */
+  const _rk=(function(){
+    const mj=(P&&((P.profile&&P.profile.major)||P.major))||'';
+    const MK=miBizKw(mj, P.intended_jobs||[]);
+    if(!MK.fields.length) return '';
+    const biz=(r.name||'')+' '+(r.industry||'')+' '+(r.biz_scope||'')
+      +((r.v42&&r.v42.segment)?(' '+r.v42.segment):'')
+      +(r.job_brief?(' '+r.job_brief):'');
+    const ok=miBizHit(MK.fields,biz);
+    let hitw=[];
+    if(ok){ const x=miCleanBiz(biz);
+      BIZ_FIELDS.forEach(function(f){ if(MK.fields.indexOf(f[0])<0) return;
+        f[3].forEach(function(k){ if(x.indexOf(k)>=0 && hitw.indexOf(k)<0) hitw.push(k); }); }); }
+    const w=e(hitw.slice(0,4).join('、')||MK.fields.slice(0,3).join('、'));
+    if(r.state==='hit')
+      return ok
+        ? '<span class="hits" style="color:#1a6b4f">主营复核：已执行 · 通过——主营里出现你的方向词（'+w+'），命中岗位与主营对得上</span>'
+        : '<span class="hits" style="color:#b7791f">主营复核：已执行 · 部分通过——主营未出现方向词，留下的命中都是岗位名/意向自带方向的；无方向的同名命中已降为现场待问</span>';
+    if(!ok)
+      return '<span class="hits" style="color:#c0392b">主营复核：已执行 · 不通过——主营与你的方向对不上，推断命中已全部撤下</span>';
+    if(r.infer_matches&&r.infer_matches.length)
+      return '<span class="hits" style="color:#1a6b4f">主营复核：已执行 · 通过——主营里出现你的方向词（'+w+'），推断命中据此保留</span>';
+    return '<span class="hits" style="color:#1a6b4f">主营复核：已执行 · 主营沾边——现场问一句（管培生/储备干部培养方向）的准入通过，无推断命中</span>';
+  })();
   /* 层级提示：同一职能但写着主管 / 资深 / 经理的岗位，校招投不进这一档。
      不假装对口、也不说人家不招——企业照常留榜，给学生一句现场可问的话。 */
   const lvb=(r.level_blocked||[]);
@@ -1549,6 +1609,7 @@ function rowHTML(r,idx,P){
         +'</span>':'')
    +   intentLine
    +   inferLine
+   +   _rk
    +   levelLine
    +   (r.misses.length?'<span class="misses">未对口'
         +((r.miss_total||r.misses.length)>r.misses.length?'（示例 '+r.misses.length+'/'+r.miss_total+' 个）':'')
@@ -1600,7 +1661,17 @@ function rowBrief(r, idx, P){
     +(bright.length?' · <b>'+e(bright.join(' / '))+'</b>':'')
     +' · '+e(stateLabel(r.state));
   const hit=sm.slice(0,2).map(function(m){return m.job+' ↔ '+m.intent;});
-  const focus=top.concat(hit.length?['岗位命中：'+hit.join('；')]:[]);
+  /* 推断命中也用同一箭头格式上列表（2026-11-17 用户要求）：优先用后端/
+     本地现算的推断对；推断对为空但有大类岗位名（管培生之类）时，用
+     「大类岗 ↔ 意向」垫上——这类企业本来就只剩「问一句」这一条线索，
+     列表上不给学生箭头对，学生就只会看到「推断待核实」三个字没东西可看。 */
+  const imb=(r.infer_matches||[]).slice(0,2).map(function(m){return m.job+' ↔ '+m.intent;});
+  /* 大类岗位（无方向的管培生/储备干部）不是命中：不上箭头行，只留在💬问句行；
+     只有这类 ask 证据的企业整体后置到队尾（见排序里的 onlyAsk）。
+     推断命中箭头只认真推断对（主营复核通过的那批）。 */
+  const focus=top.concat(
+    hit.length?['岗位命中：'+hit.join('；')]:[],
+    imb.length?['推断命中：'+imb.join('；')+'（大模型按主营业务推断，现场核实）']:[]);
   const line2=focus.length?e(focus.join(' · ')):'按当前画像计算，暂无特别突出的命中项';
   const basisLine=r.llm_basis
     ? '<div class="line" style="color:#1a6b4f"><b>'+e(short(r.llm_basis,120))+'</b></div>' : '';
@@ -1907,8 +1978,9 @@ function render(){
     rows.sort(function(a,b){
       const an=(feedback[a.name]||{}).result==='no'?1:0;
       const bn=(feedback[b.name]||{}).result==='no'?1:0;
+      const ao=onlyAsk(a)?1:0, bo=onlyAsk(b)?1:0;
       const ah=a.state==='hit'?0:1, bh=b.state==='hit'?0:1;
-      return (an-bn) || (ah-bh) || (b.score-a.score)
+      return (an-bn) || (ah-bh) || (ao-bo) || (b.score-a.score)
         || String(a.booth||'999').localeCompare(String(b.booth||'999'))
         || a.name.localeCompare(b.name);
     });

@@ -46,12 +46,13 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import cache_guard
+import biz_recheck
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 POOL_FILE = os.path.join(DATA, "job_recommend_pool.json")
 # 改 LLM_PROMPT 的内容或口径时手动 +1：池子缓存随之失效，避免继续吃旧提示词的结果。
-PROMPT_VER = "rec-v10"
+PROMPT_VER = "rec-v11"
 _LOCK = threading.Lock()
 
 # 规则兜底用的「泛化校招岗位族」：刻意不写年份专属的公告岗位名。
@@ -446,6 +447,8 @@ LLM_PROMPT = """你是双选会会前规划助手，帮学生想清楚「校园�
    **档位必须是应届投得进的**：不要写「主管 / 资深 / 高级 / 组长 / 主任 / 总监 / 负责人 / 专家」；
    「经理」只保留校招真正常见的三种（客户经理、产品经理、业务经理），其余经理级一律不写。
    同一类活里也要区分入口档：给学生的是「管培生 / 专员」，不是「供应链主管」。
+   企业专属项目名（「新锐之星」「青苗计划」这类管培 / 训练营项目名）
+   也要归一成职能岗名，不要原样输出。
    **岗位名里不要带地区、行业、产品线、客户名等企业定制限定**：
    「运营产品经理(AI医疗)」「区域销售经理（IVD业务 广东）」「嵌入式软件工程师（心电贴片）」都不合格，
    要写成通用的「运营产品经理」「区域销售经理」「嵌入式软件工程师」。
@@ -801,6 +804,42 @@ def _save_search_cache(cache):
         pass
 
 
+# ── 跨专业拦截（代码级，2026-11-17 用户反馈：仍有非本专业岗位混入）──────
+# 提示词禁令挡不全，代码再拦一道：岗位名必须命中该生学科大类的方向词
+# （biz_recheck 的专业词表），否则剔除。
+#   · tier 0-2（切合专业 / 相邻方向）：只认方向词命中；
+#   · tier 3（通用职能）：方向词命中或通用职能词都放行；
+#   · tier 4（不限专业 / 教培）：不拦——这一层本来就是跨专业出口。
+# 学生专业识别不出领域（fields 为空）时不拦，宁漏勿错杀。
+_GENERIC_MARK = re.compile(
+    r"质量|生产管理|生产计划|生产跟单|采购|供应商|仓储|物流|供应链|"
+    r"技术销售|售前|售后|技术支持|项目助理|客服|EHS|安全工程师|计划员|测试")
+
+
+_NOT_MAJOR_MARK = re.compile(
+    r"美工|平面设计|平面|插画|原画|UI设计|视频剪辑|剪辑师|主播|配音|"
+    r"翻译|导游|护士|护理|化妆|造型师|摄影师")
+
+
+def _major_ok(title, major, tier):
+    if tier is None or tier >= 4:
+        return True
+    t = title or ""
+    # 先挡「名字里带领域词、但干的明显是别的活」的岗位：
+    # 物流域有「电商」，但「电商美工」是设计岗不是物流岗。
+    if _NOT_MAJOR_MARK.search(t):
+        return False
+    try:
+        kw, fields = biz_recheck.student_domain("", major or "")
+    except Exception:
+        return True
+    if not fields or not kw:
+        return True
+    if any(w in t for w in kw):
+        return True
+    return tier >= 3 and bool(_GENERIC_MARK.search(t))
+
+
 def _evidence_text(evidence):
     return " ".join((x["title"] or "") + " " + (x["summary"] or "")
                     for x in evidence)
@@ -832,8 +871,15 @@ _BAD_TITLE = re.compile(
     r"招聘公告|岗位汇总|就业信息|人才招聘)$|^(信息技术|其他|其它|综合类)$")
 
 
+# 企业专属项目名（管培 / 训练营计划名）：能从证据里落地，但不是职能岗位名，
+# 学生也对不上——「新锐之星」是某家的管培项目，不是可以投的岗。
+_PROJECT_MARK = re.compile(
+    r"(之星|新星|新锐|青苗|菁英|英才|训练营|特训营|加速营|研习营|"
+    r"领航|启航|扬帆|远航|雏鹰|飞鹰|星火|灯塔|工匠|精英汇)")
+
+
 def _bad_title(t):
-    return bool(_BAD_TITLE.search(t))
+    return bool(_BAD_TITLE.search(t) or _PROJECT_MARK.search(t))
 
 
 LLM_PROMPT_WEB = """你是双选会会前规划助手，帮学生想清楚「校园招聘里一般可以投哪些岗位」。
@@ -854,19 +900,23 @@ LLM_PROMPT_WEB = """你是双选会会前规划助手，帮学生想清楚「校
 {evidence}
 
 请从上面的搜索结果里提取适合该学生的岗位名称，硬性要求：
-1. **岗位叫法只能取自搜索结果里出现过的写法**——可以去掉企业定制括号
-   （「嵌入式软件工程师（心电贴片）」→「嵌入式软件工程师」）、去掉年份
-   （「2023届校园招聘」），但**不得自创**搜索结果里没有的岗位名。
+1. **岗位名给「职能方向级」的通用叫法**，让学生一眼能对上自己的专业方向：
+   企业专属项目名（「新锐之星」「青苗计划」这类管培 / 训练营项目名）、企业名、
+   地域、年份、批次一律去掉，只保留职能主体——
+   「京东2026新锐之星（物流方向）」→「物流管培生」，不保留「新锐之星」这种项目名。
+   可以去掉企业定制括号（「嵌入式软件工程师（心电贴片）」→「嵌入式软件工程师」）；
+   归一后的职能词必须真的来自搜索结果（代码会做落地校验，证据里没有的职能词会被丢掉）。
    「运营优化」「系统方案」这类职能描述不算岗位名，不要输出；
    「计算机类岗位」「信息技术」这种公告里的**类别标签**也不是岗位名，
    不要输出——宁可不要这个来源的岗，也不要把标签当岗位提给学生。
 2. **why 必须引用证据**：说明是从哪条搜索信息里看到的（引来源网站或公告
    标题的关键词），再加一句为什么适合这个学生。
-3. 与学生专业、经历**对不上**的岗位不要提——搜索结果里有不代表适合，
-   比如食品专业的结果里出现「行政专员」就不要提。
+3. 与学生专业、学科大类**对不上**的岗位一律不要提——搜索结果里有不代表适合：
+   物流专业的结果里出现「平面设计」「行政专员」「电商美工」就不要提；
+   开发 / 算法 / 设计这类技术岗不是本大类方向时也不要提。宁少勿滥。
 4. 档位必须是应届投得进的：不要「主管 / 资深 / 高级 / 组长 / 总监 / 专家」；
    「经理」只保留校招真正常见的三种（客户经理、产品经理、业务经理）。
-5. 尽量给满 12 个、互不重复、避开已展示过的岗位；搜索结果不够就不硬凑。
+5. 目标 12 个左右、互不重复、避开已展示过的岗位；对口的不足就少给，不硬凑。
 6. 严格输出 JSON：{{"candidates":[{{"title":"岗位名","why":"一句话依据（含来源）"}}]}}
 
 """
@@ -925,10 +975,19 @@ def llm_pool(major, cats, tier, accept, key, base_url, model, shown):
                 ev_text = _evidence_text(evidence)
                 n0 = len(items)
                 items = [c for c in items if _grounded(c["title"], ev_text)]
+                n_g = n0 - len(items)
+                n_m = 0
                 if items:
-                    if n0 - len(items):
+                    kept = [c for c in items if _major_ok(c["title"], major, tier)]
+                    n_m = len(items) - len(kept)
+                    items = kept
+                if items:
+                    if n_g:
                         print("[job_recommend] 联网模式拦掉 %d 个不在搜索结果里的岗位名"
-                              % (n0 - len(items)), file=sys.stderr)
+                              % n_g, file=sys.stderr)
+                    if n_m:
+                        print("[job_recommend] 联网模式拦掉 %d 个与专业方向对不上的岗位"
+                              % n_m, file=sys.stderr)
                     return items, "web"
                 print("[job_recommend] 联网输出无一落地，降级纯模型口径",
                       file=sys.stderr)
@@ -951,6 +1010,12 @@ def llm_pool(major, cats, tier, accept, key, base_url, model, shown):
         shown="、".join(shown) or "无")
     try:
         items = _llm_chat_json(base_url, key, model, prompt)
+        if items:
+            n0 = len(items)
+            items = [c for c in items if _major_ok(c["title"], major, tier)]
+            if n0 - len(items):
+                print("[job_recommend] 纯模型口径拦掉 %d 个与专业方向对不上的岗位"
+                      % (n0 - len(items)), file=sys.stderr)
         return (items, "plain") if items else None
     except Exception as e:
         print("[job_recommend] 模型调用失败，回退规则：%s" % e, file=sys.stderr)

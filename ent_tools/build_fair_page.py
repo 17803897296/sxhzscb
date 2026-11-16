@@ -325,7 +325,7 @@ def patch_fair_js(js):
         "  /* v11.1 报告模式：新标签打开 ?detail= 时，本标签没有采集记录，\n"
         "     原逻辑会把用户当新访客从头问一遍 —— 这里直接渲染报告。 */\n"
         "  const _modeQ = new URLSearchParams(location.search);\n"
-        "  if (_modeQ.get('detail') || _modeQ.get('report')) {\n"
+        "  if (_modeQ.get('detail') || _modeQ.get('report') || window.__FORCE_REPORT) {\n"
         "    document.body.classList.add('report-only');\n"
         "    const _st = document.getElementById('status-t');\n"
         "    if (_st) _st.textContent = '双选会匹配报告';\n"
@@ -485,6 +485,18 @@ html = html.replace("</body>", bundle, 1)
 
 out = DEMO / "fair.html"
 out.write_text(html, encoding="utf-8")
+
+# v12 匹配端独立页（2026-11-17 三端分工）：同一份页面、同一套内联 JS，
+# 启动即进报告视图（window.__FORCE_REPORT 让 init() 走 ?report=1 分支），
+# 不再依赖查询参数——portal 的「匹配端」标签直接指向这份文件。
+match_html = html.replace("<head>",
+                          "<head>\n<script>window.__FORCE_REPORT=1;</script>", 1)
+if "<title>" in match_html:
+    match_html = re.sub(r"<title>.*?</title>",
+                        "<title>匹配端 · 双选会匹配排行</title>",
+                        match_html, count=1, flags=re.S)
+match_out = DEMO / "match.html"
+match_out.write_text(match_html, encoding="utf-8")
 
 # 构建戳：health.py 靠它判断「demo/fair.html 有没有被人直接手改」。
 # fair.html 是生成物，手改它下次构建就全丢，改的人却以为自己改好了。

@@ -55,7 +55,7 @@ GLOBS = [
 # demo 下的 HTML 用白名单：目录里混着「排行_李炳成」「采集数据_周航」这类
 # 含真实姓名/个人信息的页面，靠黑名单排不干净，绝不能自动同步进公开仓库。
 DEMO_HTML = [
-    "collect.html", "fair.html", "index.html", "portal.html",
+    "collect.html", "fair.html", "index.html", "match.html", "portal.html",
     "start.html", "test_users.html", "tests.html",
 ]
 

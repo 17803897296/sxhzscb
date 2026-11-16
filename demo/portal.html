@@ -225,7 +225,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
     <span class="sn">2</span>
     <span class="stxt">
       <span class="sname">企业端 <span class="badge" data-b="enterprises">待解锁</span></span>
-      <span class="sdesc">全量名录，未做匹配筛选</span>
+      <span class="sdesc">导入参会企业名单、上传岗位</span>
     </span>
   </button>
   <button class="step" data-tab="match">
@@ -272,12 +272,12 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
       name: '企业端',
       need: function(s){ return !!s.sig; },
       why: function(){
-        return '企业端是<b>岗位上传入口</b> —— 先完成画像采集，再来这边把单位岗位信息交上去。';
+        return '企业端是<b>导入参会企业名单 + 岗位上传入口</b> —— 先完成画像采集，再来这边导入名单、把单位岗位信息交上去。';
       },
       go: 'collect'
     },
     match: {
-      url: '/fair.html?report=1',
+      url: '/match.html',
       name: '匹配端',
       need: function(s){ return !!(s.sig && s.ent); },
       why: function(s){

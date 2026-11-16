@@ -206,6 +206,19 @@ def biz_text_of(name, c) -> str:
         c.get("job_brief"))))
 
 
+def pair_fields(intent, major=""):
+    """单意向方向集：major + 这一个意向的领域。
+
+    2026-11-17 用户问出的疑点：方向集原先按全意向并集算——化工学生选了
+    「化工销售工程师」（含意向词「销售」）会把商贸管理领域拉进方向集，
+    于是化学分析工程师的复检也跟着吃「贸易/零售/电商」强词。一个意向开门、
+    全体意向受益，就是「金融公司管培生 × 物流专业」反面案例的变体。
+    修法：主营复检按意向对各算各的（major + 该对里的意向），全局集只作
+    空集兜底（专业和意向都识别不出时闸门不咬人，口径不变）。
+    """
+    return student_domain([intent], major or "")[1]
+
+
 def biz_hit(kw_fields: set, biz_text: str) -> bool:
     """主营文本是否容纳这些领域：强词一票制。
 
@@ -219,7 +232,8 @@ def biz_hit(kw_fields: set, biz_text: str) -> bool:
                for field in kw_fields)
 
 
-def filter_real(real_pairs, kw: tuple, kw_fields: set, biz_text: str):
+def filter_real(real_pairs, kw: tuple, kw_fields: set, biz_text: str,
+                major: str = ""):
     """明确命中复检：意向或岗位名带方向词 → 放行；否则主营强词一票。
 
     具体意向（化学分析工程师…）剥掉通用词后的核心词都在方向词表里，天然通过
@@ -238,25 +252,32 @@ def filter_real(real_pairs, kw: tuple, kw_fields: set, biz_text: str):
         it = str((pair[1] if isinstance(pair, (list, tuple)) else "") or "")
         if any(k in it for k in kw) or any(k in t for k in kw):
             kept.append(pair)
-        elif biz_hit(kw_fields, biz_text):
+        elif biz_hit(pair_fields(it, major) or kw_fields, biz_text):
             kept.append(pair)
         else:
             blocked.append(pair)
     return kept, blocked
 
 
-def filter_infer(infer_pairs, kw_fields: set, biz_text: str):
+def filter_infer(infer_pairs, kw_fields: set, biz_text: str, major: str = ""):
     """推断命中复检：岗位名是猜的不能自证，主营文本必须容纳方向。
 
     主营为空 / 清洗后为空 → 没有业务依据，一律不保留。
     kw_fields 为空 → 全部放行。
+    复检按意向对各算各的方向集（2026-11-17）：销售意向放行商贸类主营，
+    不再连带给其他意向（化学分析…）放行贸易/零售公司。
     """
     if not kw_fields:
         return list(infer_pairs)
     biz = _clean_biz(biz_text)
     if not biz:
         return []
-    return [p for p in infer_pairs if biz_hit(kw_fields, biz)]
+    out = []
+    for p in infer_pairs:
+        it = str((p[1] if isinstance(p, (list, tuple)) else "") or "")
+        if biz_hit(pair_fields(it, major) or kw_fields, biz):
+            out.append(p)
+    return out
 
 
 def blocked_why(job: str, intent: str, biz_text: str, major: str, intended) -> str:

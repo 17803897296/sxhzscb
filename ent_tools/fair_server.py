@@ -334,6 +334,28 @@ class Handler(BaseHTTPRequestHandler):
                 if os.path.isfile(cand):
                     self._bytes_file(cand, "text/html; charset=utf-8")
                     return
+            if p == "/js/match.js":
+                # 前端 match 模块源码（企业端名单导入块 fetch 注入用）。
+                # 占位符在这边替换：COMPANIES 给空池（名单导入不依赖内置档案），
+                # BUILTIN_NAMES 用库里 company_jobs 的真实参会名单。
+                _msrc = open(os.path.join(ROOT, "ent_tools", "js", "match.js"),
+                             encoding="utf-8").read()
+                try:
+                    _con = fair_ingest.connect()
+                    _names = [r[0] for r in _con.execute(
+                        "SELECT name FROM company_jobs ORDER BY name")]
+                    _con.close()
+                except Exception:
+                    _names = []
+                _msrc = (_msrc.replace("__COMPANIES__", "[]")
+                              .replace("__NAMES__", json.dumps(_names, ensure_ascii=False)))
+                _raw = _msrc.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/javascript; charset=utf-8")
+                self.send_header("Content-Length", str(len(_raw)))
+                self.end_headers()
+                self.wfile.write(_raw)
+                return
             if p == "/fair.html":
                 self._bytes_file(PAGE, "text/html; charset=utf-8")
                 return

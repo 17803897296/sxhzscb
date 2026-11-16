@@ -451,15 +451,20 @@ function renderJobs(r){
     + body + "</details>";
 }
 
-window.__mountMatch = function(doc){
+window.__mountMatch = function(doc, opts){
   if (document.getElementById("matchbox")) return;      // 只挂一次
-
+  /* v12 分端：rosterOnly=true 只挂「导入参会企业名单」块（企业端用），
+     不渲染开始匹配按钮和结果区——匹配排行归匹配端（/match.html）。
+     缺省（学生端离线流程）保持原来的完整块。 */
+  const rosterOnly = !!(opts && opts.rosterOnly);
   const wrap = document.createElement("div");
   wrap.id = "matchbox";
   wrap.innerHTML =
     '<div class="mb-card">'
-    + '<h3>接下来：导入参会企业名单</h3>'
-    + '<p class="mb-sub">上传名单文件、贴一个网址，或直接粘贴。都可以。</p>'
+    + '<h3>' + (rosterOnly ? "导入参会企业名单" : "接下来：导入参会企业名单") + '</h3>'
+    + '<p class="mb-sub">' + (rosterOnly
+        ? "上传名单文件、贴一个网址，或直接粘贴。搜索会补全企业档案与岗位。"
+        : "上传名单文件、贴一个网址，或直接粘贴。都可以。") + '</p>'
     + '<div class="mb-inputs">'
     +   '<label class="mb-plus" for="mfiles" title="上传名单文件">+</label>'
     +   '<input id="mfiles" type="file" accept=".txt,.csv,.md,.text,.xlsx,.xls" multiple hidden>'
@@ -471,7 +476,7 @@ window.__mountMatch = function(doc){
     +   '<button type="button" class="mb-ghost" id="mfill">用内置名单（' + BUILTIN_NAMES.length + ' 家）</button>'
     +   '<button type="button" class="mb-ghost" id="mlookup">搜索</button>'
     +   '<button type="button" class="mb-view" id="mcontents" disabled>查看搜索内容</button>'
-    +   '<button type="button" class="mb-go" id="mgo">开始匹配</button>'
+    +   (rosterOnly ? '' : '<button type="button" class="mb-go" id="mgo">开始匹配</button>')
     + '</div>'
     + '<div class="note" id="mhint" style="margin-top:8px">'
     +   '搜索：对名单里每一家企业，先从本地数据库取已有档案，再联网查找校招公告补全岗位与画像。'
@@ -486,7 +491,7 @@ window.__mountMatch = function(doc){
     +     '<button type="button" class="mc-close" id="mcontents-close" aria-label="关闭">×</button></div>'
     +   '<div class="mc-body" id="mcontents-body"></div>'
     + '</dialog>'
-    + '<div id="mres"></div>';
+    + (rosterOnly ? '' : '<div id="mres"></div>');
 
   const chat = document.getElementById("chat");
   (chat || document.body).appendChild(wrap);
@@ -500,8 +505,8 @@ window.__mountMatch = function(doc){
   const contentsBody = wrap.querySelector("#mcontents-body");
   let lastSearchReport = null;
 
-  // 手动补岗位：资料不全的企业可以贴招聘页链接或岗位文本
-  res.addEventListener("click", async ev => {
+  // 手动补岗位：资料不全的企业可以贴招聘页链接或岗位文本（结果区仅在匹配端渲染）
+  if (res) res.addEventListener("click", async ev => {
     const btn = ev.target.closest(".jobfill");
     if (!btn) return;
     const name = btn.dataset.name || "";
@@ -776,12 +781,16 @@ window.__mountMatch = function(doc){
     try { localStorage.setItem("companies", JSON.stringify(POOL)); } catch (e) {}
     stat.innerHTML = "搜索完成：名单 <b>" + all.length + "</b> 家 · 补到岗位 <b>"
       + gotTotal + "</b> 家 · 没抓到 <b>" + missTotal + "</b> 家（仍保留，按企业资料参与匹配）· 耗时 "
-      + secs + " 秒<br>现在匹配池里共 <b>" + POOL.length + "</b> 家企业。";
+      + secs + " 秒<br>现在匹配池里共 <b>" + POOL.length + "</b> 家企业。"
+      + (rosterOnly
+          ? '<br>名单已就绪，<a href="/match.html"><b>去匹配端看排行 →</b></a>'
+          : "");
     btn.textContent = "重新搜索";
     btn.disabled = false;
   });
 
-  wrap.querySelector("#mgo").addEventListener("click", () => {
+  const mgoBtn = wrap.querySelector("#mgo");
+  if (mgoBtn) mgoBtn.addEventListener("click", () => {
     const urlInput = wrap.querySelector("#murl");
     const url = (urlInput.value || "").trim();
     const raw = box.value.trim();
