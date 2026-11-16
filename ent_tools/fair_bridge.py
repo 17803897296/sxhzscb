@@ -23,6 +23,7 @@ import re
 import sqlite3
 import sys
 import time
+import collections
 from collections import Counter
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -79,6 +80,15 @@ def _extra_intents():
 DATA = os.path.join(HERE, "data")
 DB = os.path.join(DATA, "careersafari.db")
 OUT = os.path.join(DATA, "fair_payload.json")
+# 校招核实新库（build_campus_recheck.py 生成）。read_db 用它覆盖 90 家真实校招
+# 企业的岗位与来源标签：岗位只留带 URL 的真实证据岗（推断补全岗不再进链路），
+# jobSource 改「校招公告」让 source_class / unknown_infer 自动走校招口径。
+CAMPUS_RECHECK = os.path.join(DATA, "campus_recheck.db")
+
+
+def campus_recheck_enabled():
+    """校招核实口径开关：默认开；设 FAIR_CAMPUS_RECHECK=0 可整段退回旧口径。"""
+    return (os.environ.get("FAIR_CAMPUS_RECHECK") or "1").strip() != "0"
 
 sys.path.insert(0, os.path.join(HERE, "demo_v2"))
 import core as V2            # noqa: E402  复用五项权重 / 维度取值口径
@@ -290,6 +300,55 @@ ASK = {
 }
 
 
+def apply_campus_recheck(companies):
+    """用校招核实新库覆盖真实校招企业的岗位与来源（只改内存对象，不写回产品库）。
+
+    - 90 家校招企业：jobs 换成带 URL 的真实证据岗（推断补全岗自动消失），
+      jobSource 改「校招公告」，让 source_class 判 campus、unknown_infer 不再
+      触发按行业推断补全。
+    - 原标「校招公告」但核实证据不足的：降级 websearch（岗位保留，只改来源判定）。
+    - 其余 web/未知/社招企业：原样保留，继续走既有兜底。
+    返回 (认校招家数, 删除推断岗数, 降级家数) 供验收核对。
+    """
+    if not campus_recheck_enabled() or not os.path.exists(CAMPUS_RECHECK):
+        return 0, 0, 0
+    # 库存在但读失败必须报错，不能静默吞掉退回旧口径 —— 之前治理过「静默异常」，
+    # 这里若 except: pass， misleading tag 会悄悄复活且没人发现。
+    rc = sqlite3.connect(CAMPUS_RECHECK)
+    try:
+        rc.row_factory = sqlite3.Row
+        campus = {r["name"]: int(r["is_campus"])
+                  for r in rc.execute("SELECT name,is_campus FROM campus_company")}
+        jobs = collections.defaultdict(list)
+        for r in rc.execute("SELECT company,title,source_url,channel FROM campus_jobs"):
+            jobs[r["company"]].append({
+                "title": r["title"], "requirements": "", "headcount": "未知",
+                "urgency": "未知", "group": "", "salary": "未知",
+                "source_url": r["source_url"], "channel": r["channel"],
+            })
+    finally:
+        rc.close()
+    changed = removed = demoted = 0
+    for name, c in companies.items():
+        is_campus = campus.get(name)
+        if is_campus:
+            # 认定为校招：岗位只留真实证据岗（推断补全岗消失），改校招标签
+            old_n = len(c.get("jobs") or [])
+            c["jobs"] = jobs.get(name, [])
+            c["jobSource"] = "校招公告"
+            c["jobEvidence"] = "校招核实：岗位均带真实来源URL"
+            c["verified_web"] = 1
+            changed += 1
+            removed += max(0, old_n - len(c["jobs"]))
+        elif c.get("jobSource") == "校招公告":
+            # 原标校招公告但核实后证据不齐（<3岗或无证据）：降级 websearch。
+            # 岗位保留（可能是真岗，只是证明不了齐全），只改来源判定 —— 降级≠删岗。
+            c["jobSource"] = "websearch"
+            c["note"] = str(c.get("note") or "") + "；校招核实证据不足，降级websearch(2026-11-16)"
+            demoted += 1
+    return changed, removed, demoted
+
+
 def read_db():
     con = sqlite3.connect(DB)
     con.row_factory = sqlite3.Row
@@ -297,6 +356,7 @@ def read_db():
         companies = {}
         for r in con.execute("SELECT name,item_json FROM company_jobs"):
             companies[r["name"]] = json.loads(r["item_json"])
+        apply_campus_recheck(companies)
         llm = {}
         for r in con.execute("SELECT * FROM llm_match"):
             llm[r["name"]] = {
