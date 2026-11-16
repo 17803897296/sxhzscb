@@ -31,12 +31,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import cdp                       # 常驻浏览器 + 多标签页渲染（失败自动退回一次性 --dump-dom）
 import enrich_by_llm as enrich   # 复用模型调用与模板拼装
 import job_store
+from webtext import UA           # noqa: F401  UA 保留在本模块命名空间
+from webtext import fetch as _fetch
+from webtext import strip_html   # noqa: F401  对外仍叫 portal.strip_html（_js_ab.py 在用）
 
 ROOT = Path(__file__).resolve().parent.parent
 DEMO = ROOT / "demo"
 
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"}
 
 CITIES = ["南京", "苏州", "无锡", "常州", "镇江", "扬州", "南通", "徐州", "盐城", "泰州",
           "淮安", "连云港", "宿迁", "上海", "北京", "杭州", "合肥", "深圳", "广州",
@@ -345,24 +346,12 @@ JS_CDP = os.environ.get("FAIR_JS_CDP", "1") == "1"
 
 
 def fetch(url, timeout=12):
-    req = urllib.request.Request(url, headers=UA)
-    with _HTTP_SEM:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw = resp.read()
-    for enc in ("utf-8", "gbk", "gb18030"):
-        try:
-            return raw.decode(enc)
-        except UnicodeDecodeError:
-            continue
-    return raw.decode("utf-8", "ignore")
+    """本模块的抓取一律受并发上限约束（12 个 socket），实现见 webtext.fetch。
 
-
-def strip_html(html):
-    html = re.sub(r"<script.*?</script>", " ", html, flags=re.S | re.I)
-    html = re.sub(r"<style.*?</style>", " ", html, flags=re.S | re.I)
-    html = re.sub(r"<[^>]+>", " ", html)
-    html = html.replace("&nbsp;", " ").replace("&amp;", "&").replace("&quot;", '"')
-    return re.sub(r"\s+", " ", html).strip()
+    留这三行而不是每个调用点传 sem：上限是这一层的政策，钉在边界上比散在
+    四个调用点更难漏。默认超时 12 与本模块历史值一致。
+    """
+    return _fetch(url, timeout=timeout, sem=_HTTP_SEM)
 
 
 BROWSER_PATHS = [

@@ -12,11 +12,9 @@ import re
 import sys
 import time
 import urllib.parse
-import urllib.request
 from pathlib import Path
 
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"}
+from webtext import UA, fetch, strip_html  # noqa: F401  UA 保留在本模块命名空间
 
 NATURE_RULES = [
     ("央企", ("中央企业", "中央直接管理", "国务院国资委", "央企")),
@@ -45,30 +43,12 @@ CITY_RE = re.compile(
 CITY_FALLBACK = re.compile(r"([\u4e00-\u9fa5]{2,5}市)")
 
 
-def fetch(url, timeout=10):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        raw = resp.read()
-    for enc in ("utf-8", "gbk", "gb18030"):
-        try:
-            return raw.decode(enc)
-        except UnicodeDecodeError:
-            continue
-    return raw.decode("utf-8", "ignore")
-
-
-def strip_html(html):
-    html = re.sub(r"<script.*?</script>", " ", html, flags=re.S | re.I)
-    html = re.sub(r"<style.*?</style>", " ", html, flags=re.S | re.I)
-    html = re.sub(r"<[^>]+>", " ", html)
-    html = html.replace("&nbsp;", " ").replace("&amp;", "&").replace("&quot;", '"')
-    return re.sub(r"\s+", " ", html).strip()
-
-
 def bing(q, n=5):
     url = "https://cn.bing.com/search?q=" + urllib.parse.quote(q)
     try:
-        html = fetch(url)
+        # 这个模块原来超时是 10 秒（webtext.fetch 默认 12），显式传住，
+        # 别在搬家的同时改网络超时。
+        html = fetch(url, timeout=10)
     except Exception:
         return []
     out = []
@@ -141,7 +121,7 @@ def main(argv=None):
             body, page = "", None
             for cand in pick_pages(results, name):
                 try:
-                    text_try = strip_html(fetch(cand))
+                    text_try = strip_html(fetch(cand, timeout=10))
                 except Exception:
                     continue
                 if len(text_try) > 200:

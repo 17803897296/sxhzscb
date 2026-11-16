@@ -22,11 +22,9 @@ import sys
 import time
 import urllib.error
 import urllib.parse
-import urllib.request
 from pathlib import Path
 
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"}
+from webtext import UA, fetch, strip_html  # noqa: F401  UA 保留在本模块命名空间
 
 NATURE = ["央企", "国企", "民企", "外企", "合资", "事业单位"]
 INDUSTRY = ["制造", "医药", "IT", "金融", "建筑", "能源", "消费", "物流", "教育", "政府事业", "其他"]
@@ -92,26 +90,6 @@ def load_env(path=".env"):
                 continue
             k, v = line.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip())
-
-
-def fetch(url, timeout=12):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        raw = resp.read()
-    for enc in ("utf-8", "gbk", "gb18030"):
-        try:
-            return raw.decode(enc)
-        except UnicodeDecodeError:
-            continue
-    return raw.decode("utf-8", "ignore")
-
-
-def strip_html(html):
-    html = re.sub(r"<script.*?</script>", " ", html, flags=re.S | re.I)
-    html = re.sub(r"<style.*?</style>", " ", html, flags=re.S | re.I)
-    html = re.sub(r"<[^>]+>", " ", html)
-    html = html.replace("&nbsp;", " ").replace("&amp;", "&").replace("&quot;", '"')
-    return re.sub(r"\s+", " ", html).strip()
 
 
 def bing(q, n=5):
