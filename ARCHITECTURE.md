@@ -48,6 +48,11 @@
 
 ## 3. 哪些是源文件，哪些是构建产物
 
+`ent_tools/` 根目录只放**产品链路上的东西**（`refresh_all.py` 会调到的、被 import 的）。
+一次性调试脚本统一放 `ent_tools/scratch/`，见那里的 README——搬进去之前它们和
+`portal.py` 挤在一起，新同事分不清哪个文件是项目的一部分。判断标准很简单：
+`refresh_all.py` 或某个产品模块会调到的，留根目录；只是为了回答过一个问题的，去 `scratch/`。
+
 | 你以为要改的 | 实际要改的 |
 | --- | --- |
 | `demo/fair.html`（30k+ 行，内联 JS） | `ent_tools/fair_report_js.py`（报告 JS）、`ent_tools/build_fair_page.py`（采集 JS / 页面骨架 / 垫片）、`ent_tools/job_recommend.py`（岗位推荐词表）、`ent_tools/intent_semantics.py`（语义规则） |

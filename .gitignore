@@ -46,6 +46,10 @@ demo/排行_*.html
 demo/ranking_*.html
 demo/采集数据_*.html
 
+# 一次性脚本留档（考古用，不入库）：它们只解释「当时为什么这么改」，
+# 真正的口径已经写进 tests/ 和 docs/。见 ent_tools/scratch/README.md
+ent_tools/scratch/
+
 # 备份与本地缓存（不入库）
 *.bak_*
 ent_tools/test_photos/
