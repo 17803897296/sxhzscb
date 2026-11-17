@@ -153,6 +153,11 @@ def step_ind_code(use_llm=False):
         # 缺码的企业在匹配端只能转「现场待问」，是能看见的降级；这里明确喊出来
         print("   [警告] 还有 %d 家没有行业码，匹配端会退成现场待问：%s"
               % (total - has, "、".join(n for n, _ in stat["unknown"][:5])))
+    # 码表是跨工程的交付物：外部「企业搜索」工程照这份枚举选码，靠 ind_code.normalize
+    # 校验。早先只在手工敲 --export 时才生成，结果这个文件在流水线里根本没出现过
+    # （副本同步差一个文件才露出来）。码表跟着码一起重发，别让外部拿到旧枚举。
+    p = ind_code.export_codes()
+    print("   码表已导出：%s" % os.path.relpath(p, HERE))
 
 
 def step_build():

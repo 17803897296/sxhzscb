@@ -1,0 +1,304 @@
+{
+  "_note": "行业码枚举（唯一真源 ent_tools/ind_code.py）。采集侧选码后用 ind_code.normalize 校验。",
+  "version": 1,
+  "unknown": "unknown",
+  "codes": [
+    {
+      "code": "semi",
+      "name": "半导体与集成电路",
+      "aliases": [
+        "芯片",
+        "半导体",
+        "集成电路",
+        "晶圆",
+        "封测",
+        "光刻",
+        "存储芯片"
+      ]
+    },
+    {
+      "code": "elec",
+      "name": "电子通信与光电",
+      "aliases": [
+        "电子",
+        "通信",
+        "光电",
+        "元器件",
+        "显示"
+      ]
+    },
+    {
+      "code": "it",
+      "name": "软件与信息服务",
+      "aliases": [
+        "软件",
+        "互联网",
+        "信息技术"
+      ]
+    },
+    {
+      "code": "mech",
+      "name": "机械装备与汽车零部件",
+      "aliases": [
+        "机械",
+        "装备",
+        "汽车",
+        "零部件"
+      ]
+    },
+    {
+      "code": "ele",
+      "name": "电气与自动化",
+      "aliases": [
+        "电气",
+        "自动化",
+        "电机"
+      ]
+    },
+    {
+      "code": "chem",
+      "name": "化工与新材料",
+      "aliases": [
+        "化工",
+        "化学",
+        "新材料"
+      ]
+    },
+    {
+      "code": "metal",
+      "name": "冶金与金属加工",
+      "aliases": [
+        "冶金",
+        "冶炼",
+        "有色金属"
+      ]
+    },
+    {
+      "code": "pharma",
+      "name": "医药与医疗器械",
+      "aliases": [
+        "医药",
+        "制药",
+        "医疗器械"
+      ]
+    },
+    {
+      "code": "food",
+      "name": "食品饮料与农产品",
+      "aliases": [
+        "食品",
+        "饮料",
+        "农产品"
+      ]
+    },
+    {
+      "code": "textile",
+      "name": "纺织服装与家纺",
+      "aliases": [
+        "纺织",
+        "服装",
+        "家纺"
+      ]
+    },
+    {
+      "code": "build",
+      "name": "建筑与土木工程",
+      "aliases": [
+        "建筑",
+        "土木",
+        "施工"
+      ]
+    },
+    {
+      "code": "energy",
+      "name": "能源电力与环保",
+      "aliases": [
+        "能源",
+        "电力",
+        "环保"
+      ]
+    },
+    {
+      "code": "finance",
+      "name": "金融与保险",
+      "aliases": [
+        "金融",
+        "银行",
+        "保险"
+      ]
+    },
+    {
+      "code": "trade",
+      "name": "商贸零售与电商",
+      "aliases": [
+        "商贸",
+        "零售",
+        "电商"
+      ]
+    },
+    {
+      "code": "logistics",
+      "name": "物流与供应链",
+      "aliases": [
+        "物流",
+        "供应链",
+        "仓储"
+      ]
+    },
+    {
+      "code": "edu",
+      "name": "教育与培训",
+      "aliases": [
+        "教育",
+        "培训",
+        "学校"
+      ]
+    },
+    {
+      "code": "design",
+      "name": "设计与文化传媒",
+      "aliases": [
+        "设计",
+        "传媒",
+        "文创"
+      ]
+    },
+    {
+      "code": "agri",
+      "name": "农林牧渔",
+      "aliases": [
+        "农业",
+        "林业",
+        "牧业"
+      ]
+    },
+    {
+      "code": "public",
+      "name": "政府事业与科研",
+      "aliases": [
+        "政府",
+        "事业",
+        "科研"
+      ]
+    },
+    {
+      "code": "aero",
+      "name": "航空航天与船舶",
+      "aliases": [
+        "航空",
+        "航天",
+        "船舶"
+      ]
+    }
+  ],
+  "pro_map": {
+    "化学化工材料": {
+      "chem": "core",
+      "metal": "core",
+      "pharma": "core",
+      "food": "core",
+      "energy": "core",
+      "textile": "edge",
+      "semi": "edge",
+      "elec": "edge",
+      "build": "edge",
+      "trade": "edge"
+    },
+    "机械制造": {
+      "mech": "core",
+      "metal": "core",
+      "aero": "core",
+      "semi": "edge",
+      "elec": "edge",
+      "energy": "edge",
+      "chem": "edge",
+      "build": "edge",
+      "logistics": "edge"
+    },
+    "电气自动化": {
+      "ele": "core",
+      "mech": "edge",
+      "energy": "core",
+      "semi": "edge",
+      "aero": "edge",
+      "build": "edge"
+    },
+    "电子信息": {
+      "elec": "core",
+      "semi": "core",
+      "it": "edge",
+      "aero": "edge",
+      "mech": "edge",
+      "ele": "edge"
+    },
+    "计算机软件": {
+      "it": "core",
+      "semi": "edge",
+      "finance": "edge",
+      "trade": "edge",
+      "edu": "edge",
+      "logistics": "edge",
+      "design": "edge"
+    },
+    "物流供应链": {
+      "logistics": "core",
+      "trade": "core",
+      "mech": "edge",
+      "food": "edge",
+      "chem": "edge",
+      "elec": "edge",
+      "pharma": "edge"
+    },
+    "金融财会": {
+      "finance": "core",
+      "trade": "edge",
+      "public": "edge"
+    },
+    "土木建筑": {
+      "build": "core",
+      "energy": "edge",
+      "public": "edge"
+    },
+    "医学生物": {
+      "pharma": "core",
+      "public": "edge",
+      "food": "edge",
+      "chem": "edge"
+    },
+    "食品": {
+      "food": "core",
+      "agri": "edge",
+      "pharma": "edge",
+      "trade": "edge"
+    },
+    "能源环境": {
+      "energy": "core",
+      "chem": "edge",
+      "build": "edge",
+      "metal": "edge"
+    },
+    "教育": {
+      "edu": "core",
+      "public": "edge",
+      "design": "edge"
+    },
+    "设计创意": {
+      "design": "core",
+      "trade": "edge",
+      "it": "edge"
+    },
+    "纺织服装": {
+      "textile": "core",
+      "chem": "edge",
+      "trade": "edge"
+    },
+    "商贸管理": {
+      "trade": "core",
+      "logistics": "core",
+      "finance": "edge",
+      "edu": "edge",
+      "design": "edge",
+      "public": "edge"
+    }
+  }
+}
