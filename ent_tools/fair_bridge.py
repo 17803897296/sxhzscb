@@ -107,6 +107,7 @@ def campus_recheck_enabled():
     return (os.environ.get("FAIR_CAMPUS_RECHECK") or "1").strip() != "0"
 
 sys.path.insert(0, os.path.join(HERE, "demo_v2"))
+import repository            # noqa: E402  sqlite 连接的唯一出口
 import core as V2            # noqa: E402  复用五项权重 / 维度取值口径
 import rules as R            # noqa: E402
 import intent_semantics      # noqa: E402  岗位语义符合度（大模型推断）
@@ -204,9 +205,7 @@ def load_enrich():
     """
     if not os.path.exists(ENRICH_DB) or os.path.getsize(ENRICH_DB) == 0:
         return {}
-    con = sqlite3.connect(ENRICH_DB)
-    con.row_factory = sqlite3.Row
-    try:
+    with repository.connect(ENRICH_DB) as con:
         out = {}
         try:
             rows = list(con.execute("SELECT * FROM companies"))
@@ -236,17 +235,13 @@ def load_enrich():
             d["_src"] = "v4-enrich-20261115"
             out[d["name"]] = d
         return out
-    finally:
-        con.close()
 
 
 def load_v42():
     """读 v4.2 companies 表；文件缺失时静默跳过，保证旧链路可回滚。"""
     if not os.path.exists(V42_DB):
         return {}
-    con = sqlite3.connect(V42_DB)
-    con.row_factory = sqlite3.Row
-    try:
+    with repository.connect(V42_DB) as con:
         out = {}
         for row in con.execute("SELECT * FROM companies"):
             d = dict(row)
@@ -270,8 +265,6 @@ def load_v42():
             d["_raw"] = raw
             out[d["name"]] = d
         return out
-    finally:
-        con.close()
 
 
 def v42_view(d):
@@ -331,9 +324,7 @@ def apply_campus_recheck(companies):
         return 0, 0, 0
     # 库存在但读失败必须报错，不能静默吞掉退回旧口径 —— 之前治理过「静默异常」，
     # 这里若 except: pass， misleading tag 会悄悄复活且没人发现。
-    rc = sqlite3.connect(CAMPUS_RECHECK)
-    try:
-        rc.row_factory = sqlite3.Row
+    with repository.connect(CAMPUS_RECHECK) as rc:
         campus = {r["name"]: int(r["is_campus"])
                   for r in rc.execute("SELECT name,is_campus FROM campus_company")}
         jobs = collections.defaultdict(list)
@@ -343,8 +334,6 @@ def apply_campus_recheck(companies):
                 "urgency": "未知", "group": "", "salary": "未知",
                 "source_url": r["source_url"], "channel": r["channel"],
             })
-    finally:
-        rc.close()
     changed = removed = demoted = 0
     for name, c in companies.items():
         is_campus = campus.get(name)
@@ -367,9 +356,7 @@ def apply_campus_recheck(companies):
 
 
 def read_db():
-    con = sqlite3.connect(DB)
-    con.row_factory = sqlite3.Row
-    try:
+    with repository.connect(DB) as con:
         companies = {}
         for r in con.execute("SELECT name,item_json FROM company_jobs"):
             companies[r["name"]] = json.loads(r["item_json"])
@@ -399,8 +386,6 @@ def read_db():
                 "SELECT document_json FROM fair_profiles ORDER BY created_at DESC LIMIT 1").fetchone()
         profile = json.loads(prof["document_json"]) if prof else {}
         return companies, llm, profile
-    finally:
-        con.close()
 
 
 def booths():
@@ -1515,7 +1500,13 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     }
 
 
-def build():
+def load_inputs():
+    """装载段：读库、并档案、硬约束过滤、建语义/推断缓存、算权重。
+
+    只做「把数据凑齐」，不判任何一家企业的命不命中 —— 这一段是可以单独
+    跑来看输入对不对的（交接时最常出问题的正是这里：库路径、档案缺失、
+    缓存代际）。返回字典，下一段按名字取用。
+    """
     # 缓存体检先跑：代码一改，相关缓存自动判失效（读取方会重建），
     # 这里把结果打进 payload，页面「更多设置」里能直接看到本版用的是哪一代结果。
     # 缓存体检：代码一改，相关缓存自动判失效。指纹对不上的旧文件先挪进
@@ -1577,6 +1568,71 @@ def build():
     # 学生方向（画像×主营复检用）：方向词 + 领域集合，循环里只读不重算
     _dom_kw, _dom_fields = biz_recheck.student_domain(
         profile.get("intended_jobs") or [], profile.get("major") or "")
+
+    return {
+        '_moved': _moved,
+        'companies': companies,
+        'llm': llm,
+        'raw_profile': raw_profile,
+        '_dir_book': _dir_book,
+        'v42': v42,
+        'enrich': enrich,
+        '_src_count': _src_count,
+        'profile': profile,
+        'companies': companies,
+        '_dropped': _dropped,
+        '_conds': _conds,
+        'companies': companies,
+        '_miss_names': _miss_names,
+        'companies': companies,
+        '_campus_names': _campus_names,
+        '_all_titles': _all_titles,
+        '_intended': _intended,
+        '_intended_sem': _intended_sem,
+        'intent_sem': intent_sem,
+        'hit_verdicts': hit_verdicts,
+        'hit_verify_meta': hit_verify_meta,
+        'unknown_map': unknown_map,
+        'W': W,
+        'bm': bm,
+        'fb': fb,
+        'c_list': c_list,
+        'by_title': by_title,
+        'fam': fam,
+        'payload': payload,
+        '_': _,
+        'by_name': by_name,
+        '_fit_map': _fit_map,
+        '_dom_kw': _dom_kw,
+        '_dom_fields': _dom_fields,
+    }
+
+
+def match_rows(st):
+    """匹配段：逐企业算命中 / 推断 / 复检 / 打分，产出一行行报告。
+
+    一行里既有结论（state、matched_jobs）也有依据（hits、biz_recheck、
+    parts）。这里不排序、不落盘 —— 顺序和汇总交给组装段。
+    """
+    W = st['W']
+    _dir_book = st['_dir_book']
+    _dom_fields = st['_dom_fields']
+    _dropped = st['_dropped']
+    _fit_map = st['_fit_map']
+    _intended = st['_intended']
+    bm = st['bm']
+    by_name = st['by_name']
+    by_title = st['by_title']
+    companies = st['companies']
+    enrich = st['enrich']
+    fb = st['fb']
+    hit_verdicts = st['hit_verdicts']
+    intent_sem = st['intent_sem']
+    llm = st['llm']
+    payload = st['payload']
+    profile = st['profile']
+    unknown_map = st['unknown_map']
+    v42 = st['v42']
 
     rows = []
     # 校招公告来源、但公告里没有与意向对口岗位的企业：不进榜单，也不推断。
@@ -1917,6 +1973,27 @@ def build():
     # 页面已收进「与你的方向无关」折叠组）。fit=no 此前只折叠展示、名次仍靠前，
     # 主榜第 6 位却出现在页面底部折叠组里，导逛顺序和卡片名次对不上。
     # 注意：fit=no 只顺延，不删数据、不动展位号、不进 excluded —— 0 岗≠不招仍是红线。
+    return rows, _campus_nofit, _biz_diag_all
+
+
+def assemble(st, rows, campus_nofit, biz_diag_all):
+    """组装段：排序、统计，把顶层的表（权重 / 语义 / 状态）与行拼成 payload。
+
+    下游页面只读这一份 JSON，「页面看到的东西」从这里开始定型。
+    """
+    W = st['W']
+    _campus_names = st['_campus_names']
+    _conds = st['_conds']
+    _dropped = st['_dropped']
+    _miss_names = st['_miss_names']
+    companies = st['companies']
+    hit_verdicts = st['hit_verdicts']
+    hit_verify_meta = st['hit_verify_meta']
+    intent_sem = st['intent_sem']
+    profile = st['profile']
+    _campus_nofit = campus_nofit
+    _biz_diag_all = biz_diag_all
+
     rows.sort(key=lambda r: (
         1 if (r.get("feedback") or {}).get("result") == "no" else 0,
         1 if (r.get("fit") == "no" and (r.get("biz_fit") or {}).get("via") == "llm"
@@ -2064,6 +2141,17 @@ def build():
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
     return out
+
+
+def build():
+    """一条命令重建 payload：装载 → 匹配 → 组装。
+
+    拆成三段只为能分段验证（输入对不对 / 行对不对 / 汇总对不对），
+    口径没有任何变化 —— 拆前拆后 payload 逐字段一致。
+    """
+    st = load_inputs()
+    rows, campus_nofit, biz_diag_all = match_rows(st)
+    return assemble(st, rows, campus_nofit, biz_diag_all)
 
 
 if __name__ == "__main__":

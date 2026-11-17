@@ -35,6 +35,8 @@ import sqlite3
 import sys
 import time
 
+import repository            # noqa: E402  sqlite 连接的唯一出口
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 STALE = os.path.join(DATA, "_stale_cache")
@@ -242,14 +244,11 @@ def db_check(name: str) -> tuple[bool, str]:
     if not table:
         return False, "未登记表名"
     try:
-        con = sqlite3.connect(DB)
-        try:
+        with repository.connect(DB) as con:
             _ensure_meta(con)
             row = con.execute("SELECT fp, model, ts, rows FROM cache_meta WHERE name=?",
                               (name,)).fetchone()
             cnt = con.execute('SELECT COUNT(*) FROM "%s"' % table).fetchone()[0]
-        finally:
-            con.close()
     except Exception as exc:
         return False, "读取失败：%s" % str(exc)[:60]
     if not row:
@@ -267,8 +266,7 @@ def db_stamp(name: str, rows: int = 0, model: str = "", extra=None):
     table = info.get("table")
     if not table:
         return
-    con = sqlite3.connect(DB)
-    try:
+    with repository.connect(DB) as con:
         _ensure_meta(con)
         con.execute("INSERT OR REPLACE INTO cache_meta(name,fp,model,extra,ts,rows)"
                     " VALUES(?,?,?,?,?,?)",
@@ -276,8 +274,6 @@ def db_stamp(name: str, rows: int = 0, model: str = "", extra=None):
                      json.dumps(extra or {}, ensure_ascii=False),
                      time.strftime("%Y-%m-%d %H:%M:%S"), rows))
         con.commit()
-    finally:
-        con.close()
 
 
 # ── 只读种子 ────────────────────────────────────────────────────

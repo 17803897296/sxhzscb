@@ -32,6 +32,8 @@ import os
 import sqlite3
 import sys
 
+import repository            # noqa: E402  sqlite 连接的唯一出口
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 LIVE_DB = os.path.join(DATA, "careersafari.db")
@@ -368,9 +370,7 @@ def load_live():
     out = {}
     if not os.path.exists(LIVE_DB):
         return out
-    con = sqlite3.connect(LIVE_DB)
-    con.row_factory = sqlite3.Row
-    try:
+    with repository.connect(LIVE_DB) as con:
         for row in con.execute("SELECT name, item_json FROM company_jobs"):
             try:
                 it = json.loads(row["item_json"] or "{}")
@@ -378,8 +378,6 @@ def load_live():
                 it = {}
             it.setdefault("name", row["name"])
             out[row["name"]] = it
-    finally:
-        con.close()
     return out
 
 
@@ -388,17 +386,13 @@ def load_enrich():
     out = {}
     if not os.path.exists(ENRICH_DB) or os.path.getsize(ENRICH_DB) == 0:
         return out
-    con = sqlite3.connect(ENRICH_DB)
-    con.row_factory = sqlite3.Row
-    try:
+    with repository.connect(ENRICH_DB) as con:
         try:
             rows = list(con.execute("SELECT * FROM companies"))
         except sqlite3.OperationalError:
             return out
         for row in rows:
             out[row["name"]] = dict(row)
-    finally:
-        con.close()
     return out
 
 
