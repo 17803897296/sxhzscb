@@ -467,8 +467,6 @@
     if (location.protocol === "file:") {
       addMessage("assistant", "当前是离线演示模式：提交只做本地记账，不连接后端。从 http://127.0.0.1:8102/ 打开才能真正提交。");
     }
-    addMessage("assistant",
-      "这里是岗位上传入口：把贵单位本次双选会要招的岗位粘贴进来（岗位名称、职责要求），或发招聘页链接，也可以点 + 上传岗位说明文件（PDF / Word / Excel / CSV / 图片）。\n库内已有清单不在本页展示，提交后由组委会统一核录。");
     updateInput();
     document.body.classList.add("highlight-ready");
 
