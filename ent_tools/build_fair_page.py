@@ -272,19 +272,19 @@ try:
     if OFFLINE_FULL:
         # 离线变体不记构建戳：health.py 只体检正本 demo/fair.html；
         # 每次同步重建都写戳只会让 sync_offline 永远多拷一个文件。
-        pass
+        _stamp = None
     else:
-        _stamp = {}
-    if _stamp_p.exists():
-        _stamp = json.loads(_stamp_p.read_text(encoding="utf-8"))
-    _stamp.setdefault("_note", "build_fair_page.py 自动维护。手改 demo/fair.html 会让 md5 对不上。")
-    _stamp[str(out.resolve())] = {
-        "md5": hashlib.md5(out.read_bytes()).hexdigest(),
-        "bytes": out.stat().st_size,
-        "built_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    }
-    _stamp_p.write_text(json.dumps(_stamp, ensure_ascii=False, indent=2) + "\n",
-                        encoding="utf-8")
+        _stamp = json.loads(_stamp_p.read_text(encoding="utf-8")) \
+            if _stamp_p.exists() else {}
+    if _stamp is not None:
+        _stamp.setdefault("_note", "build_fair_page.py 自动维护。手改 demo/fair.html 会让 md5 对不上。")
+        _stamp[str(out.resolve())] = {
+            "md5": hashlib.md5(out.read_bytes()).hexdigest(),
+            "bytes": out.stat().st_size,
+            "built_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        _stamp_p.write_text(json.dumps(_stamp, ensure_ascii=False, indent=2) + "\n",
+                            encoding="utf-8")
 except Exception as _e:      # 构建戳写不进去不该阻断页面生成
     print("  [warn] 构建戳写入失败：%s" % _e)
 
