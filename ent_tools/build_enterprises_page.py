@@ -12,6 +12,7 @@
 
 import json
 import sqlite3
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -61,6 +62,14 @@ def load():
 
 def main():
     rows = load()
+    # 这个脚本生成的是「全量名录」老页面；2026-11-17 之后 demo/enterprises.html
+    # 已经换成「名单导入工作台」（来源见 demo/enterprises.html 内联的注入脚本）。
+    # 直接覆盖会把工作台整页冲掉（已经踩过一次，靠 git checkout 才救回来）。
+    if OUT.exists() and "名单导入" in OUT.read_text(encoding="utf-8", errors="ignore") \
+            and "--force" not in sys.argv:
+        print("跳过：%s 现在是「名单导入工作台」，本脚本会覆盖它。\n"
+              "      确实要重建名录页，请加 --force（或换输出路径）。" % OUT.name)
+        return
     data = json.dumps(rows, ensure_ascii=False, separators=(",", ":"))
     html = TPL.replace("__DATA__", data).replace("__N__", str(len(rows)))
     OUT.write_text(html, encoding="utf-8")

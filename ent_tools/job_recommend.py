@@ -1094,14 +1094,35 @@ def get_pool(major, cats, tier, accept, cfg, use_llm=True):
     return items, mode
 
 
+NO_MAJOR_MSG = ("还没拿到你的专业，我不给推荐。岗位对不对口只能按专业判——"
+                "先回上一步把专业填上（学校、年级可以不填），我再给岗位。")
+
+
 def recommend(major, internships=None, competitions=None, papers=None,
               skills=None, use_llm=True, shown=None, tier=0,
-              accept_no_major=False, experiences=None):
-    """返回一批 6 个岗位；当前层池子展示完会自动升层。
+              accept_no_major=False, experiences=None, allow_relax=False):
+    """返回一批 6 个岗位。
+
+    **只在当前层内换**（2026-11-17 修）：以前本层空了会自动升到下一层，而第 4 层
+    （通用职能）和第 5 层（不限专业）是跨专业池，学生点两三次「换一批」就被灌进
+    质量/生产/测试/客服/管培一堆岗，还和 tier0 的对口岗长得一模一样。现在升层
+    必须由学生显式点「放宽一档」（allow_relax=True），且跨专业层在前端带角标。
+
+    major 为空直接拒绝：`_major_ok` 对「识别不出领域」原来是放行的（宁漏勿错杀），
+    专业空着等于闸门不存在——实测同一个 tier1，空专业给「销售/行政/人事/生产技术员」，
+    材料给「研发/工艺/化验/分析测试」。所以在这一层就断掉，不再退化成泛岗。
 
     shown：采集端历次展示过的岗位名（全局累积），跨层也不重复。
     experiences：兼容旧调用，内容并入实习。
     """
+    major = str(major or "").strip()
+    if not major:
+        return {"ok": False, "need_major": True, "error": NO_MAJOR_MSG,
+                "mode": "blocked", "candidates": [], "tier": 0,
+                "tier_label": "", "notice": NO_MAJOR_MSG,
+                "has_next": False, "cross_major": False, "relaxed": False,
+                "accept_no_major": bool(accept_no_major)}
+
     cats = {
         "internships": _as_list(list(internships or []) + list(experiences or [])),
         "competitions": _as_list(competitions),
@@ -1109,34 +1130,45 @@ def recommend(major, internships=None, competitions=None, papers=None,
         "skills": _as_list(skills),
     }
     shown = _as_list(shown)
+    # 第 4 层（通用职能）也要学生点头才放开：它以前由 accept_no_major 之外的
+    # 逻辑无条件参与，等于「愿意考虑教培」这个答案只管第 5 层、不管第 4 层。
+    max_tier = 4 if bool(accept_no_major) else 2
     try:
-        start = max(0, min(4, int(tier)))
+        start = max(0, min(max_tier, int(tier)))
     except Exception:
         start = 0
-    max_tier = 4 if bool(accept_no_major) else 3
+    end = max_tier if allow_relax else start
 
     cfg = _load_env()
-
-    for t in range(start, max_tier + 1):
+    mode = "rules"
+    for t in range(start, end + 1):
         pool, mode = get_pool(major, cats, t, accept_no_major, cfg, use_llm)
         fresh = [c for c in pool if c["title"] not in shown]
         if fresh:
             batch = fresh[:6]
             left = len(fresh) - len(batch)
-            note = ("第 %d 层「%s」：本层还剩 %d 个岗位，换完会自动放宽到下一层。"
-                    % (t + 1, TIER_LABELS[t], left)) if t < max_tier else \
-                   ("已是最宽口径「%s」。本层还剩 %d 个。" % (TIER_LABELS[t], left))
+            has_next = t < max_tier
+            if has_next:
+                note = ("第 %d 层「%s」：本层还剩 %d 个；换一批只在本层换，"
+                        "想看更宽的岗位需要你点「放宽一档」。"
+                        % (t + 1, TIER_LABELS[t], left))
+            else:
+                note = "已是最宽口径「%s」。本层还剩 %d 个。" % (TIER_LABELS[t], left)
             return {"ok": True, "mode": mode, "candidates": batch,
                     "tier": t, "tier_label": TIER_LABELS[t],
-                    "relaxed": t > start, "pool_left": left,
-                    "accept_no_major": bool(accept_no_major),
-                    "notice": note}
-    # 所有层都展示完：如实说明，不再编新岗位
-    return {"ok": True, "mode": "rules", "candidates": [],
-            "tier": max_tier, "tier_label": TIER_LABELS[max_tier],
-            "relaxed": True, "pool_left": 0,
+                    "relaxed": t > start, "pool_left": left, "has_next": has_next,
+                    "cross_major": t >= 3,
+                    "accept_no_major": bool(accept_no_major), "notice": note}
+    # 这一层看完了：不偷偷升层，如实说，并告诉学生还有没有更宽的
+    has_next = start < max_tier
+    return {"ok": True, "mode": mode, "candidates": [],
+            "tier": start, "tier_label": TIER_LABELS[start],
+            "relaxed": False, "pool_left": 0, "has_next": has_next,
+            "cross_major": start >= 3,
             "accept_no_major": bool(accept_no_major),
-            "notice": "各层岗位都展示过了，可以手写想投的岗位，或回到上面的问题改条件。"}
+            "notice": ("这一层能给的岗位都看过了。"
+                       + ("想看更宽的岗位，点下面「放宽一档」。" if has_next
+                          else "已经是最宽口径，可以手写想投的岗位。"))}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -1156,6 +1188,7 @@ class Handler(BaseHTTPRequestHandler):
             shown=body.get("shown") or body.get("exclude") or [],
             tier=body.get("tier", 0),
             accept_no_major=bool(body.get("accept_no_major")),
+            allow_relax=bool(body.get("allow_relax")),
             experiences=body.get("experiences") or [])
         raw = json.dumps(out, ensure_ascii=False).encode("utf-8")
         self.send_response(200)

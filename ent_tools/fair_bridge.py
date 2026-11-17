@@ -289,8 +289,9 @@ def v42_view(d):
 
 
 DEFAULT_PROFILE = {
-    "major": "管理科学与工程",
-    "experiences": ["某电商平台供应链实习：用 SQL 做库存周转分析，把补货周期从 14 天压到 9 天"],
+    # 2026-11-17：major / experiences 不再有默认值。原来空专业补成「管理科学与工程」、
+    # 空经历补成「某电商平台供应链实习」，等于替学生答题：报告按一个他没填过的专业
+    # 判对口，采集端 tier0 还会因为这段假经历推「供应链/计划岗」。缺就是缺。
     "intended_jobs": ["供应链计划", "数据分析师", "商业分析"],
     "home_city": "南京", "region": "南京",
 }
@@ -407,10 +408,15 @@ def profile_from(profile):
     ans = profile.get("answers") or {}
     ident = profile.get("identity") or {}
     fair = profile.get("fair") or {}
+    _exps = [e.get("text", "") for e in (profile.get("resume", {})
+             .get("extraction", {}).get("experiences") or []) if str(e.get("text", "")).strip()]
     return {
-        "major": ident.get("major") or DEFAULT_PROFILE["major"],
-        "experiences": [e.get("text", "") for e in (profile.get("resume", {})
-                        .get("extraction", {}).get("experiences") or [])] or DEFAULT_PROFILE["experiences"],
+        # 专业/经历缺就是缺，不再用默认值顶上（2026-11-17）。下游按空值降级：
+        # 专业空 → 行业码判不了对口、报告写「专业未填」；经历空 → 只按专业算。
+        "major": str(ident.get("major") or "").strip(),
+        "experiences": _exps,
+        "experiences_missing": not _exps,
+        "major_missing": not str(ident.get("major") or "").strip(),
         "intended_jobs": ans.get("intended_jobs") or DEFAULT_PROFILE["intended_jobs"],
         # 学生一个意向都没勾时会回退到 DEFAULT_PROFILE 的意向（让 demo 能跑）。
         # 但那不是学生选的：命中判定必须知道这件事，否则「数据分析师 / 供应链计划」

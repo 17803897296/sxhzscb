@@ -1,5 +1,12 @@
 <script>
 function _jobRecommendRules(major, exps, skills, exclude) {
+  /* 专业为空不给推荐（与服务端同口径）。规则表按专业名查，空专业只能兜底成
+     「管培生 / 数据分析 / 业务运营」这类管理通用岗——看着像给了建议，其实是
+     替学生答题。 */
+  if (!String(major || "").trim()) {
+    return { ok: false, need_major: true, mode: "blocked", candidates: [],
+             notice: "还没拿到你的专业，先回上一步把专业填上，我再给岗位。" };
+  }
   /* 所有专业统一校招口径：只写校招公告里应届可投的具体岗位名，不写岗位族 */
   const MAJOR = {
     "管理科学与工程": ["管培生（运营/综合方向）","供应链管理类管培生","项目管理类管培生",
@@ -165,6 +172,9 @@ function jobRecommendStep() {
       // 教培题排在推荐之前，这里能直接读到学生是否接受「不限专业」岗位
       const acceptNoMajor = (a.accept_no_major === true);
       let cands = [], tag = '', notice = '', tierLabel = '', curTier = 0;
+      /* 2026-11-17：升层必须由学生点「放宽一档」触发。
+         以前本层换完会自动升到跨专业层，点几次「换一批」就被灌进质量/生产/测试岗。 */
+      let crossMajor = false, hasNext = false, blocked = false, wantRelax = false;
       const shown = [];               // 历次展示过的岗位名，跨层也不重复
       async function load() {
         let r;
@@ -174,17 +184,34 @@ function jobRecommendStep() {
             body: JSON.stringify({
               major: major, internships: internships, competitions: competitions,
               papers: papers, skills: skills, shown: shown, tier: curTier,
-              accept_no_major: acceptNoMajor
+              accept_no_major: acceptNoMajor, allow_relax: wantRelax
             })
           })).json();
         } catch (e) { r = null; }
-        if (!r || !r.ok || !(r.candidates || []).length) {
+        wantRelax = false;
+        /* 专业为空：服务端直接拒绝。这里不能再退回规则池——规则池对空专业给的正是
+           销售/行政/人事/生产技术员那批泛岗，等于把闸门又拆了。 */
+        if (r && r.need_major) {
+          blocked = true; crossMajor = false; hasNext = false;
+          cands = []; tierLabel = ''; tag = '';
+          notice = r.error || '还没拿到你的专业，先回上一步把专业填上。';
+          return;
+        }
+        blocked = false;
+        if (!r || !r.ok) {
           const rr = _jobRecommendRules(major, allExps, skills, shown);
+          if (rr && rr.need_major) {          // 离线兜底也认「没专业就不给」这条
+            blocked = true; crossMajor = false; hasNext = false;
+            cands = []; tierLabel = ''; tag = ''; notice = rr.notice;
+            return;
+          }
           r = { ok: true, mode: 'rules', candidates: rr.candidates || [],
                 tier: curTier, tier_label: '离线规则（双击模式）', notice: rr.notice };
         }
         if (typeof r.tier === 'number') curTier = r.tier;
         tierLabel = r.tier_label || tierLabel;
+        crossMajor = !!r.cross_major;
+        hasNext = !!r.has_next;
         cands = r.candidates || [];
         tag = (r.mode === 'llm-web') ? '（联网搜索 · 真实校招口径）'
             : (r.mode === 'llm') ? '（模型生成 · 校招口径）'
@@ -203,6 +230,7 @@ function jobRecommendStep() {
         '<input id="job-custom" type="text" maxlength="120" placeholder="还想加别的岗位？直接写，用逗号分开">' +
         '<div class="cc-actions">' +
           '<button type="button" class="btn btn-g" data-act="refresh">不满意，换一批</button>' +
+          '<button type="button" class="btn btn-g" data-act="relax" style="display:none;color:#b45309;border-color:#f0c68a">放宽一档：看跨专业岗位</button>' +
           '<button type="button" class="btn btn-p" data-act="ok">选好了</button>' +
           '<button type="button" class="btn btn-g" data-act="skip">跳过，我自己写</button>' +
         '</div></div>';
@@ -211,17 +239,33 @@ function jobRecommendStep() {
         const selTitles = new Set();
         const chipsBox = root.querySelector('#job-cands');
         const whyBox = root.querySelector('#job-why');
+        const relaxBtn = root.querySelector('[data-act="relax"]');
+        const refreshBtn = root.querySelector('[data-act="refresh"]');
         function paint() {
           chipsBox.innerHTML = cands.map(function(c, i) {
             /* v15：推荐池与岗位库解耦，不再有 db_level / 校招标——候选就是
-               通用校招岗位名，不带任何「库里有/没有」的来源信息。 */
+               通用校招岗位名，不带任何「库里有/没有」的来源信息。
+               v17：跨专业层的岗位必须自带角标，否则学生分不清哪些是按专业给的。 */
             var _why = (c.why || '');
-            return '<button type="button" class="chip" data-i="' + i + '" title="' + esc(_why) + '">' + esc(c.title) + '</button>';
-          }).join('') || '<span class="muted">这一批没有更多岗位了，可以直接手写。</span>';
+            var _badge = crossMajor
+              ? ' <span style="font-size:11px;color:#b45309;border:1px solid #f0c68a;border-radius:4px;padding:0 3px;margin-left:4px">跨专业</span>'
+              : '';
+            return '<button type="button" class="chip" data-i="' + i + '" title="' + esc(_why) + '">' + esc(c.title) + _badge + '</button>';
+          }).join('') || (blocked
+            ? '<span class="muted">没有专业，就没有推荐。回上一步填专业。</span>'
+            : '<span class="muted">这一层看完了；想看更宽的岗位，点下面「放宽一档」，或直接手写。</span>');
           root.querySelector('#job-tag').textContent = tag;
           var tierEl = root.querySelector('#job-tier');
-          if (tierEl) tierEl.textContent = tierLabel ? ('当前口径：' + tierLabel) : '';
+          if (tierEl) {
+            tierEl.textContent = tierLabel
+              ? ((crossMajor ? '⚠ 当前口径：' : '当前口径：') + tierLabel
+                 + (crossMajor ? '（这些岗位不要求你的专业，和上面的对口岗位不是一回事）' : ''))
+              : '';
+            tierEl.style.color = crossMajor ? '#b45309' : '#2563eb';
+          }
           whyBox.textContent = notice;
+          if (relaxBtn) relaxBtn.style.display = (hasNext && !blocked) ? '' : 'none';
+          if (refreshBtn) refreshBtn.disabled = blocked || !cands.length;
           chipsBox.querySelectorAll('[data-i]').forEach(function(b) {
             const c = cands[+b.dataset.i];
             if (c && selTitles.has(c.title)) { b.style.background = 'var(--accent, #2563eb)'; b.style.color = '#fff'; }
@@ -229,14 +273,22 @@ function jobRecommendStep() {
               if (!c) return;
               if (selTitles.has(c.title)) { selTitles.delete(c.title); b.style.background = ''; b.style.color = ''; }
               else { selTitles.add(c.title); b.style.background = 'var(--accent, #2563eb)'; b.style.color = '#fff'; }
-              whyBox.textContent = c.title + '：' + (c.why || '') + _srcNote(c);
+              whyBox.textContent = c.title + '：' + (c.why || '') + _srcNote(c)
+                + (crossMajor ? '（这一层是跨专业岗位，投之前先确认它要不要求你的专业。）' : '');
             };
           });
         }
         paint();
         root.querySelector('[data-act="refresh"]').onclick = async function() {
           cands.forEach(function(c) { if (c && c.title && shown.indexOf(c.title) < 0) shown.push(c.title); });
-          whyBox.textContent = '正在换一批（本层看完会自动放宽）…';
+          whyBox.textContent = '正在换一批（只在本层内换，不升层）…';
+          await load();
+          paint();
+        };
+        if (relaxBtn) relaxBtn.onclick = async function() {
+          cands.forEach(function(c) { if (c && c.title && shown.indexOf(c.title) < 0) shown.push(c.title); });
+          wantRelax = true;                  // 只有这一次请求允许升层
+          whyBox.textContent = '正在放宽一档…';
           await load();
           paint();
         };
@@ -267,7 +319,12 @@ window.fetch = function(url, opts) {
     if (FAIR_ONLINE) {
       return _prevFetch.apply(this, arguments)
         .then(res => res.json())
-        .then(j => (j && j.candidates && j.candidates.length) ? _resp(j) : fallback())
+        /* need_major 是服务端的拒绝答复，必须原样交给界面——不能在这里掉进规则兜底，
+           规则池对空专业给的正是「销售/行政/人事/生产技术员」那批泛岗。 */
+        /* need_major 是服务端的拒绝答复；ok:true 但 candidates 为空是「本层看完了」，
+           两者都必须原样交给界面——掉进规则兜底会把「本层看完，点放宽」变成
+           又一屏离线泛岗，正好把新加的层闸门绕过去。 */
+        .then(j => (j && (j.need_major || j.ok)) ? _resp(j) : fallback())
         .catch(() => fallback());
     }
     return fallback();

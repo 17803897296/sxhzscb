@@ -630,12 +630,27 @@ window.__mountMatch = function(doc, opts){
     if (ev.target === contentsDialog) contentsDialog.close();
   });
 
-  function pickNames(text){
+  /* 企业名判定：与服务端 portal.looks_like_company 同口径。
+     以前这里只要求「4~40 字、含中文」，于是 CSV 表头「所属行业」、岗位列
+     「人事行政、财务」都被当成企业名塞进名单，检索时白跑一趟还显示「未找到」。 */
+  const CO_RE = /公司|集团|银行|支行|分行|营业部|研究院|研究所|设计院|科学院|大学|学院|医院|中心|事务所|事业单位|出版社|报社|杂志社|合作社|(?:财政|税务|市场监督|生态环境|人力资源|统计|气象|地震|邮政|铁路|海关|药监|烟草)局|(?:机械|印刷|纺织|食品|化工|电子|建材|造纸|钢铁|冶炼|加工|制造)厂/;
+  const HEAD_RE = /^(序号|编号|企业名称|公司名称|单位名称|企业|单位|公司名|所属行业|行业|单位性质|性质|展位号|展位|招聘岗位数|岗位数|岗位方向|岗位|备注|说明|地址|联系人|联系电话|电话|人数|专业|学历|要求)$/;
+
+  function pickNames(text, strict){
     return String(text || "").split(/[\n\r,，、;；\t]+/)
       .map(s => s.replace(/^\s*\d+[\s.、)）]*/, "").replace(/["']/g, "").trim())
       .filter(s => s.length >= 4 && s.length <= 40 && /[\u4e00-\u9fa5A-Za-z]/.test(s))
-      .filter(s => !/^(序号|企业名称|单位名称|公司名称|展位号|岗位|备注)$/.test(s))
+      .filter(s => !HEAD_RE.test(s))
+      .filter(s => !/序号|岗位|专业|人数|展位|备注|要求|所属行业|单位性质/.test(s))
+      .filter(s => (strict ? CO_RE.test(s) : true))
       .filter((s, i, arr) => arr.indexOf(s) === i);
+  }
+
+  /* 先按严格口径（必须有 公司/集团/银行… 这类后缀）解析；一个都没有才退回
+     宽松口径——粘贴的短名单（「华为」「小米」）还能用，CSV 表头/备注列又进不来。 */
+  function pickNamesSmart(text){
+    const strict = pickNames(text, true);
+    return strict.length ? strict : pickNames(text, false);
   }
 
   function addToBox(list){
@@ -669,13 +684,20 @@ window.__mountMatch = function(doc, opts){
 
       if (isXlsx) {
         chip.innerHTML = '<b>' + esc2(f.name) + '</b> 解析中…';
-        fetch("/api/names", { method: "POST", headers: { "X-Filename": f.name }, body: f })
+        /* 文件名放查询串，不放请求头：头只能用 ISO-8859-1，中文文件名会让
+           fetch 直接抛错（页面上显示「本地服务没起来」，请求根本没发出去）。 */
+        fetch("/api/names?f=" + encodeURIComponent(f.name), { method: "POST", body: f })
           .then(r => r.json())
           .then(d => {
             if (!d.ok) { fail(d.error || "解析失败"); return; }
             const n = addToBox(d.names || []);
+            if (!n) {                       // 解析成功但一个都没认出：别只说 +0
+              fail((d.count ? "读到 " + d.count + " 条但都不像企业名" : "没认出企业名") +
+                   "，检查是不是名称列不对，或直接粘贴名单");
+              return;
+            }
             chip.innerHTML = '<b>' + esc2(f.name) + '</b> +' + n;
-            stat.textContent = "已从 Excel 读到 " + pickNames(box.value).length + " 家。";
+            stat.textContent = "已从 Excel 读到 " + pickNamesSmart(box.value).length + " 家。";
           })
           .catch(() => fail("本地服务没起来"));
         return;
@@ -683,13 +705,27 @@ window.__mountMatch = function(doc, opts){
 
       if (!isText) { fail("只读 txt / csv / md / xlsx"); return; }
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        const n = addToBox(pickNames(reader.result));
+      /* 编码：Excel「另存为 CSV」默认是 GBK，按 utf-8 硬读会整片变问号，
+         名单直接归零。先按 utf-8 解，出现替换字符就退回 GBK 再解一次。 */
+      f.arrayBuffer().then(buf => {
+        let text = "";
+        try {
+          text = new TextDecoder("utf-8").decode(buf);
+          if (text.indexOf("\uFFFD") >= 0) {
+            try { text = new TextDecoder("gbk").decode(buf); } catch (e) {}
+          }
+        } catch (e) {
+          fail("这个文件读不出来");
+          return;
+        }
+        const n = addToBox(pickNamesSmart(text));
+        if (!n) {
+          fail("没认出企业名，检查是不是名称列不对，或直接粘贴名单");
+          return;
+        }
         chip.innerHTML = '<b>' + esc2(f.name) + '</b> +' + n;
-        stat.textContent = "已从文件读到 " + pickNames(box.value).length + " 家。";
-      };
-      reader.readAsText(f, "utf-8");
+        stat.textContent = "已从文件读到 " + pickNamesSmart(box.value).length + " 家。";
+      }).catch(() => fail("这个文件读不出来"));
     });
     ev.target.value = "";
   });
@@ -703,7 +739,7 @@ window.__mountMatch = function(doc, opts){
   wrap.querySelector("#mlookup").addEventListener("click", async () => {
     const btn = wrap.querySelector("#mlookup");
     const raw = box.value.trim();
-    const all = raw ? pickNames(raw) : BUILTIN_NAMES.slice();
+    const all = raw ? pickNamesSmart(raw) : BUILTIN_NAMES.slice();
     if (!all.length) { stat.textContent = "先导入或粘贴企业名单。"; return; }
 
     const CHUNK = 8;
@@ -794,7 +830,7 @@ window.__mountMatch = function(doc, opts){
     const urlInput = wrap.querySelector("#murl");
     const url = (urlInput.value || "").trim();
     const raw = box.value.trim();
-    const names = raw ? pickNames(raw) : BUILTIN_NAMES.slice();
+    const names = raw ? pickNamesSmart(raw) : BUILTIN_NAMES.slice();
 
     const prof = profileFromDoc(doc);
 

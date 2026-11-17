@@ -1050,15 +1050,57 @@ def build(name):
                     ("（招聘页未标注校招/社招）" if stage == "未知" and jobs else "")}
 
 
+# 表头词：整格等于这些就一定是表头，不是企业名（「所属行业」曾因含「行」被收进名单）
+_HEADER_CELLS = {
+    "序号", "编号", "企业名称", "公司名称", "单位名称", "企业", "单位", "公司名",
+    "所属行业", "行业", "单位性质", "性质", "展位号", "展位", "招聘岗位数", "岗位数",
+    "岗位方向", "岗位", "备注", "说明", "填写说明", "地址", "联系人", "联系电话", "电话",
+    "人数", "专业", "学历", "要求", "序号（可不填）",
+}
+
+# 单字触发词以前是「行 / 局 / 社 / 厂」直接 in 判断，噪声极大：
+# 「所属行业」「人事行政、财务」都因一个「行」字被当成企业名，检索时白跑一次。
+# 现在这几个只认成词形态（银行 / 财政局 / 出版社 / 印刷厂）。
+_COMPANY_RE = re.compile(
+    r"公司|集团|银行|支行|分行|营业部|研究院|研究所|设计院|科学院|大学|学院|医院|"
+    r"中心|事务所|事业单位|出版社|报社|杂志社|合作社|"
+    r"(?:财政|税务|市场监督|生态环境|人力资源|统计|气象|地震|邮政|铁路|海关|药监|烟草)局|"
+    r"(?:机械|印刷|纺织|食品|化工|电子|建材|造纸|钢铁|冶炼|加工|制造)厂")
+
+
 def looks_like_company(v):
+    v = str(v or "").strip()
     if not (4 <= len(v) <= 40):
         return False
     if v.isdigit() or v.startswith(("#", "-", "=")):
         return False
-    if any(bad in v for bad in ("序号", "岗位", "专业", "人数", "展位", "备注", "要求")):
+    if v in _HEADER_CELLS:            # 表头整格先挡掉，别再依赖「含某个字」的巧合
         return False
-    return any(k in v for k in ("公司", "集团", "银行", "研究院", "研究所", "大学", "学院",
-                                "医院", "中心", "事务", "事业", "厂", "局", "社", "行"))
+    if any(bad in v for bad in ("序号", "岗位", "专业", "人数", "展位", "备注", "要求",
+                                "所属行业", "单位性质")):
+        return False
+    return bool(_COMPANY_RE.search(v))
+
+
+def _header_col(row):
+    """表头行里哪一格是「企业名称」列：返回列下标，认不出返回 None。"""
+    for i, cell in enumerate(row or ()):
+        s = str(cell or "").strip()
+        if not s:
+            continue
+        if re.search(r"企业名称|公司名称|单位名称|企业全称|公司全称|^企业$|^单位$|^公司$", s):
+            return i
+    return None
+
+
+def _skip_cols(row):
+    """表头里这些列不是企业名，整列跳过（备注里常有「公司统一安排面试」这类字样）。"""
+    out = set()
+    for i, cell in enumerate(row or ()):
+        s = str(cell or "").strip()
+        if re.search(r"备注|说明|岗位|专业|人数|展位|行业|性质|地址|电话|联系|学历|要求|序号", s):
+            out.add(i)
+    return out
 
 
 def names_from_xlsx(data):
@@ -1067,9 +1109,30 @@ def names_from_xlsx(data):
     wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
     out = []
     for ws in wb.worksheets:
-        for row in ws.iter_rows(values_only=True):
-            for cell in row:
-                if cell is None:
+        rows = ws.iter_rows(values_only=True)
+        head = None
+        for _ in range(5):                 # 表头一般在前 5 行
+            r = next(rows, None)
+            if r is None:
+                break
+            if any(str(c or "").strip() for c in r):
+                head = r
+                if _header_col(r) is not None:
+                    break
+        col = _header_col(head) if head else None
+        skip = _skip_cols(head) if head else set()
+        if col is not None:
+            # 认出了「企业名称」列：只收这一列，其余列一律不看
+            for r in rows:
+                if r and col < len(r) and r[col] is not None:
+                    v = str(r[col]).strip().replace("\u3000", " ")
+                    if looks_like_company(v):
+                        out.append(v)
+            continue
+        # 认不出表头：退回全表扫描，但跳过明显的非名称列
+        for r in (([head] if head else []) + list(rows)):
+            for i, cell in enumerate(r or ()):
+                if i in skip or cell is None:
                     continue
                 v = str(cell).strip().replace("\u3000", " ")
                 if looks_like_company(v):
@@ -1311,6 +1374,7 @@ def api_lookup(payload):
 
 def api_names(data, fname):
     """从上传的 Excel/CSV/TXT 解析企业名单。"""
+    fname = str(fname or "").lower()      # 浏览器传的是原始文件名，.XLSX 大写也要认
     try:
         if fname.endswith((".xlsx", ".xlsm")):
             names = names_from_xlsx(data)

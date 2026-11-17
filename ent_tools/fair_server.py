@@ -478,7 +478,12 @@ class Handler(BaseHTTPRequestHandler):
         try:
             # ---- 企业搜索/补全（来自 portal.py，单一来源）----
             if p == "/api/names":
-                out = portal.api_names(raw, self.headers.get("X-Filename") or "")
+                # 文件名走查询串：HTTP 头只能是 ISO-8859-1，中文文件名塞进
+                # X-Filename 会让浏览器直接抛 TypeError（页面显示「本地服务没起来」，
+                # 服务端连请求都收不到）。头里的旧写法保留做兼容。
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                fname = (q.get("f") or [""])[0] or self.headers.get("X-Filename") or ""
+                out = portal.api_names(raw, urllib.parse.unquote(fname))
                 self._json(out, 200)
                 return
             if p == "/api/filter":
@@ -547,6 +552,7 @@ class Handler(BaseHTTPRequestHandler):
                     shown=body.get("shown") or body.get("exclude") or [],
                     tier=body.get("tier", 0),
                     accept_no_major=bool(body.get("accept_no_major")),
+                    allow_relax=bool(body.get("allow_relax")),
                     experiences=body.get("experiences") or [])
                 self._json(out)
                 return
