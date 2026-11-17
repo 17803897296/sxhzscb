@@ -291,6 +291,61 @@ def sync_ind_codes_to_seed():
         return "失败：%s: %s" % (type(exc).__name__, exc)
 
 
+def sync_jobs_seed():
+    """把活库 company_jobs 整表同步进只读种子库。
+
+    为什么必须做：build_fair_page 的内置企业数组直接读 company_jobs；
+    种子是 clone/CI 里唯一的库。种子落后（比如岗位富化后没同步），
+    冷克隆构建出的页面就和正本对不上 —— CI 的 git diff --exit-code 会红，
+    本地 build 与发布 build 字节不一致。2026-11-17 实测：活库 1956 岗 /
+    72.7k 要求字，种子 1108 岗 / 31.0k，正本页 1204.6 KB vs 克隆页 984.8 KB。
+
+    只动 company_jobs 一张表（企业 + 岗位的公开业务数据，无 PII）；
+    画像/命中的脱敏由 sync_profile_seed 负责。幂等：逐行比对，全一致不写。
+    """
+    import sqlite3
+    src = DEV / "ent_tools/data/careersafari.db"
+    seed = REPO / "ent_tools/data/careersafari.db.seed"
+    if not (src.is_file() and seed.is_file()):
+        return "跳过（活库或种子缺失）"
+    try:
+        ro = sqlite3.connect(str(src))
+        rows = ro.execute(
+            "select name, item_json, updated_at from company_jobs order by name"
+        ).fetchall()
+        ro.close()
+        if not rows:
+            return "跳过（活库 company_jobs 为空）"
+        db = sqlite3.connect(str(seed))
+        changed = 0
+        for name, ij, upd in rows:
+            row = db.execute("select item_json from company_jobs where name=?",
+                             (name,)).fetchone()
+            if row is None:
+                db.execute("insert into company_jobs(name, item_json, updated_at) "
+                           "values(?,?,?)", (name, ij, upd))
+                changed += 1
+            elif row[0] != ij:
+                db.execute("update company_jobs set item_json=?, updated_at=? "
+                           "where name=?", (ij, upd, name))
+                changed += 1
+        # 活库里删掉的公司从种子一并删除，保持同构
+        names = [r[0] for r in rows]
+        q = ",".join("?" * len(names))
+        changed += db.execute(
+            "delete from company_jobs where name not in (%s)" % q, names).rowcount
+        db.commit()
+        db.execute("vacuum")
+        db.close()
+        for suffix in ("-shm", "-wal"):
+            f = Path(str(seed) + suffix)
+            if f.exists():
+                f.unlink()
+        return "company_jobs 已同步进种子：%d 行变更（共 %d 家）" % (changed, len(rows))
+    except Exception as exc:
+        return "失败：%s: %s" % (type(exc).__name__, exc)
+
+
 def compare(target: Path, rels):
     same, diff, missing = [], [], []
     for rel in rels:
@@ -391,6 +446,7 @@ def main(argv=None):
             print("== 种子库生效画像配套 ==")
             print("  " + sync_profile_seed())
             print("  " + sync_ind_codes_to_seed())
+            print("  " + sync_jobs_seed())
 
     rels = source_files(not a.no_payload)
     # 数据同源是默认行为，但隐私优先：画像里出现姓名/学校/电话/邮箱就跳过 payload，
