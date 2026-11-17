@@ -1596,6 +1596,66 @@ function rowHTML(r,idx,P){
      证据太薄 / 别的行业 五类，前端只负责照说，不再自己重算一套分类。
      老 payload 没有这个字段时退回本地判定（强词一票制）。 */
   const _bk=r.biz_recheck||null;
+  /* 复核判定「不对口」的行：复核说明 + 对口理由一起折进 <details>。
+     这类行本来就是「岗位名对上了、但行业线不对，已撤为现场待问」，
+     把红字和鼓励句一起铺在主行上既占地方又自相矛盾（一边说同名、
+     一边说不通过）。结论留一行可点开的摘要，原因收进去。 */
+  const _neg=!!(_bk&&(_bk.code==='code_out'||_bk.code==='biz_other'));
+  let _rkFold='';
+  const _fold=function(title,detail,cnt,extra){
+    return '<details class="rkfold" style="margin:6px 0"><summary style="cursor:pointer;font-size:13px">'
+      +'<span class="hits" style="color:#c0392b">'+e(title)+(cnt||'')+' · 点开看原因</span></summary>'
+      +'<div class="line" style="color:#c0392b;font-size:12.5px">'+detail+'</div>'
+      +(extra||'')+'</details>';
+  };
+  /* 对口理由：一句话说清「这家做什么（细分行业）+ 对上了哪个岗位 + 你学什么 +
+     你勾了什么」，末尾给一句鼓励。兜底句以前只有「本家岗位名与你的意向岗位同名」，
+     学生看了等于没说，还带股机器腔。撤下的行不写鼓励——理由进折叠，跟复核放一起。 */
+  const _majorNow=(P&&((P.profile&&P.profile.major)||P.major))||'';
+  const _intentsNow=(P&&P.intended_jobs)||[];
+  const _ENC=['这条线值得走一趟，问的时候直接报专业就行。',
+              '同一条线，放心去问，顺带确认一句岗位归属。',
+              '别跳过这家，聊三分钟比看十张海报管用。'];
+  const _encOf=function(r){
+    const k=(String(r.name||'').length+String(r.booth||'').length)%_ENC.length;
+    return _ENC[k];
+  };
+  /* 鼓励只在「公告原文命中、且理由里没有存疑」时给。
+     睿创微纳那条理由写的是「尚未找到明确对口证据，建议现场确认」，
+     再补一句「别跳过这家」就是自相矛盾——先看结论，再决定要不要鼓励。 */
+  const _strong=function(r){
+    if(r.state!=='hit') return false;
+    return !/推断|尚未找到|未查到|建议现场确认|暂无|待核实/.test(String(r.reason||''));
+  };
+  const reasonLine=function(r){
+    if(!r.reason) return '';
+    const ind=r.ind_name||'';
+    const jobs=(r.hits&&r.hits.length)?r.hits:(r.intent_hit||[]);
+    // 意向要取**这条命中对应的那个**，不能拿画像里第一个意向顶包
+    // （菲沃泰对上的是「材料研发工程师」，写成「化学检验工程师」就成了错配）。
+    const _im=(r.intent_matches&&r.intent_matches.length)?r.intent_matches[0]:null;
+    const job=(_im&&_im.job)||jobs[0]||'';
+    const it=(_im&&_im.intent)||(_intentsNow[0]||'');
+    const terse=/^本家岗位名与你的意向岗位同名$/.test(String(r.reason).trim());
+    if(!terse){
+      // 模型/规则已经写清依据的（多对、方向细分），保留原话，只补主语和落点
+      return '<span class="line">对口理由：'+(ind?e('这家做的是「'+ind+'」；'):'')
+        +e(short(r.reason,110))+(/。$/.test(r.reason)?'':'。')+(_strong(r)?e(_encOf(r)):'')+'</span>';
+    }
+    const parts=[];
+    if(ind) parts.push('这家做的是「'+ind+'」');
+    if(job&&it&&job===it) parts.push('公告里就有「'+job+'」这个岗位名，正是你勾的那个，属于公告原文、不是推断');
+    else if(job) parts.push('公告里写明了「'+job+'」，和你勾的「'+it+'」是同一条线');
+    else if(it) parts.push('和你的意向「'+it+'」是同一条线');
+    if(_majorNow) parts.push('你学的是'+_majorNow+'，方向对得上');
+    if(!parts.length) return '<span class="line">对口理由：'+e(short(r.reason,90))+'</span>';
+    return '<span class="line">对口理由：'+e(parts.join('，')+'。')+(_strong(r)?e(_encOf(r)):'')+'</span>';
+  };
+  const _reasonFold=function(r){
+    if(!r.reason) return '';
+    return '<div class="line" style="color:#7b8492;font-size:12.5px">对口理由（已随命中撤下）：'
+      +e(short(r.reason,100))+'</div>';
+  };
   const _rk=(function(){
     const mj=(P&&((P.profile&&P.profile.major)||P.major))||'';
     const MK=miBizKw(mj, P.intended_jobs||[]);
@@ -1617,14 +1677,16 @@ function rowHTML(r,idx,P){
       return '<span class="hits" style="color:#b7791f">主营复核：词表未覆盖（待补词表）——'+_d+_cnt+'</span>';
     if(_code==='biz_weak')
       return '<span class="hits" style="color:#b7791f">主营复核：证据太薄（待人工核）——'+_d+_cnt+'</span>';
-    if(_code==='biz_other')
-      return '<span class="hits" style="color:#c0392b">主营复核：已执行 · 不通过——'+_d
-        +'；无方向的同名命中已撤为现场待问'+_cnt+'</span>';
+    if(_code==='biz_other'){
+      _rkFold=_fold('主营复核：不通过', _d+'；无方向的同名命中已撤为现场待问', _cnt, _reasonFold(r));
+      return '';
+    }
     /* 查表判据的三种结论（2026-11-17）：码是枚举，说清「这家是什么行业、
        为什么对/不对口」，比再念一遍主营文本好懂。 */
-    if(_code==='code_out')
-      return '<span class="hits" style="color:#c0392b">行业码复核：不通过——'+_d
-        +'；这条命中已撤为现场待问'+_cnt+'</span>';
+    if(_code==='code_out'){
+      _rkFold=_fold('行业码复核：不通过', _d+'；这条命中已撤为现场待问', _cnt, _reasonFold(r));
+      return '';
+    }
     if(_code==='code_edge')
       return '<span class="hits" style="color:#b7791f">行业码复核：有限对口——'+_d
         +_cnt+'</span>';
@@ -1730,8 +1792,9 @@ function rowHTML(r,idx,P){
         +'：'+e(short(r.misses.join('、'),70))
         +((r.job_title_total||0)>r.misses.length+r.hits.length?' · 这家共 '+r.job_title_total+' 个岗位名，其余未逐一列出':'')
         +'</span>':'')
-   +   (r.reason?'<span class="line">对口理由：'+e(short(r.reason,90))+'</span>':'')
+   +   (_neg?'':reasonLine(r))
    + '</div><div class="sc">'+r.score+'<em>缺数据维度记 0</em></div></div>'
+   + _rkFold
    + notice
    + '<div class="calc"><b>算分依据（七项 100 · 按你当前画像实时重算）</b>'
    +   '<div class="calc-sub">七维权重全部计入（合计 100）；缺数据的维度记 0 分，'
