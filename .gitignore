@@ -101,3 +101,6 @@ ent_tools/data/_*_names.txt
 demo/*.old.html
 # 主营复核诊断清单：开发期调词表/补采集的一次性产物，不进库
 ent_tools/data/_recheck_diag.json
+# 145 家增补业务档案（无 PII）：克隆断食的最后一处，必须入库
+!ent_tools/data/fair2026_enrich.db
+ent_tools/data/_stale_cache/

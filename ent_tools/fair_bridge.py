@@ -25,7 +25,9 @@ import sys
 import time
 import collections
 from collections import Counter
+from dataclasses import dataclass, field
 from dataclasses import dataclass, field, fields
+import payload_contract
 from decimal import Decimal, ROUND_HALF_UP
 
 
@@ -2279,7 +2281,11 @@ def assemble(st, rows, campus_nofit, biz_diag_all, persist=True):
             "zero_jobs": sum(1 for r in rows if r["state"] == "inferred" and not r["job_count"]),
         },
         "rows": rows,
+        "schema_version": payload_contract.SCHEMA_VERSION,
     }
+    # 契约校验（评审 2026-11-18 Step 1）：违约即炸，不让坏 payload 出门。
+    # 预览链路同样过校验——前后端读的是同一份接口承诺。
+    payload_contract.ensure_valid(out)
     if persist:
         with open(OUT, "w", encoding="utf-8") as f:
             json.dump(out, f, ensure_ascii=False, indent=1)

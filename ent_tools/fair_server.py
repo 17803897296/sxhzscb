@@ -43,6 +43,7 @@ sys.path.insert(0, HERE)
 
 import fair_ingest          # noqa: E402
 import fair_bridge          # noqa: E402
+import payload_contract
 import job_recommend        # noqa: E402
 import resume_parse         # noqa: E402
 import test_sessions        # noqa: E402  v12 测试数据库（只追加的实验日志）
@@ -423,6 +424,13 @@ class Handler(BaseHTTPRequestHandler):
                     except Exception:
                         fair_bridge.build()
                 # payload 是首屏最大的一块：走文件 ETag，配合 gzip 后只传 77 KB
+                # 出门前过一遍契约（评审 Step 1）：盘上文件被手改/旧版本残留
+                # 时在这里拦下，不给前端一份违约 JSON。
+                try:
+                    with open(PAYLOAD, encoding="utf-8") as _f:
+                        payload_contract.ensure_valid(json.load(_f))
+                except payload_contract.PayloadContractError as _pce:
+                    fair_bridge.build()   # 违约 → 按当前画像重建一份合法的
                 self._bytes_file(PAYLOAD, "application/json; charset=utf-8")
                 return
             # v12 测试记录：列表 / 单条详情（供页面查看与清理）
