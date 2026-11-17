@@ -162,8 +162,8 @@ function miDirCore(t){
   return {t:x, k:MI_DIRWORDS.filter(function(w){ return x.indexOf(w)>=0; })};
 }
 /* 这一对（岗位 × 意向）能不能算对口：
-   ok  算（意向没方向；或岗位没方向；或岗位方向 ⊂ 意向方向）
-   ask 值得问一句（同向但岗位更细：测试 → 电气测试 / 器件测试）
+   ok  算（意向没方向；或岗位没方向；或岗位方向 ⊂ 意向方向；或岗位方向 ⊃ 意向方向）
+   ask 值得问一句（泛研发意向撞上带方向的岗位：研发工程师 × C++研发）
    no  不成立（并列方向：后端 × 量化 / 前端 / 嵌入式，同大类两条路）
    与 intent_semantics.pair_verdict 同源。 */
 /* 岗位名归一化：与 job_family._norm 逐字符同源（全角括号、顿号、J 码要先抹掉）。 */
@@ -233,7 +233,7 @@ function miPairVerdict(title,intent){
   const dgt=miDesignGroup(title), dgi=miDesignGroup(intent);
   if(dgt.length&&dgi.length&&!dgt.some(function(g){ return dgi.indexOf(g)>=0; })) return 'no';
   /* 注意方向：a=意向方向，b=岗位方向。
-     b ⊃ a → 岗位更细（测试 → 器件测试）→ ask；
+     b ⊃ a → 岗位更细（仓储物流 × 物流专员）→ ok（大类意向进小类，2026-11-17 删规则）；
      b ⊂ a → 岗位更泛（AI算法研究 → 算法）→ ok（小类能进大类）。
      ⑤ 共享动作核 + 不同领域限定词 → no：人工智能算法 × 运动控制算法——都以
      「算法」结尾，前面的领域限定互不包含，是并列领域不是同一个岗（与
@@ -250,7 +250,11 @@ function miPairVerdict(title,intent){
   /* 职责词不算方向：设备维护工程师 × 设备工程师 → 同一岗位，不是「更细的方向」 */
   let b2=b.t; MI_DUTY.forEach(function(w){ b2=b2.split(w).join(''); });
   if(b2 && b2===a.t) return 'ok';
-  if(b.t.indexOf(a.t)>=0) return 'ask';
+  /* 岗位比意向更细（仓储物流 × 物流专员 / 器件测试 × 测试）：2026-11-17 用户拍板
+     大类意向能进小类，规则层放行，存疑的交给主营复核与学生专业收紧。原先这里判
+     ask（「不是同一个岗位」），但后端 same_dir 又把同一对升级成命中，于是页面命中栏
+     列着岗位、理由却说不是同一个岗。 */
+  if(b.t.indexOf(a.t)>=0) return 'ok';
   if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })){
     if(miSameLine(a.k,b.k)) return 'ok';   /* 采购/物流/仓储 ⊂ 供应链：同一条线照旧算 */
     return 'no';
@@ -270,7 +274,6 @@ function miDirReason(t,intent){
     return '「'+t+'」与「'+intent+'」同属一个大类但方向不同（'+b.t+' × '+a.t+'）';
   }
   if(!a.t) return '「'+t+'」是「'+intent+'」下的'+b.t+'方向（同一大类，不是同一细分）';
-  if(a.t&&b.t.indexOf(a.t)>=0) return '「'+t+'」的方向是'+b.t+'，比「'+intent+'」细，不是同一个岗位';
   return '';
 }
 /* 真·轮岗类岗位：只有这类「会不会往某方向培养」才是企业会考虑的事。
@@ -815,6 +818,52 @@ const BIZ_FIELDS=[
  ['商贸管理',['工商管理','市场营销','国际贸易','电子商务','管理科学','人力资源'],['市场','营销','销售','运营','电商','外贸','商务'],
   ['商贸','贸易','销售','市场','营销','电商','零售','品牌','运营','进出口','外贸','跨境','人力资源','劳务','招聘','外包'],[]]
 ];
+
+/* ── 专业族 × 行业码 准入表（2026-11-17 起为第一判据）────────────────────
+   与 ind_code.PRO_MAP 逐字同源：改表必须两边一起改，tests/test_ind_table.py
+   会解析这段字面量跟 Python 表比对，不一致直接挂测试。
+   core 直放 / edge 只放有方向证据的（岗位名、意向名、主营词其一）/ out 不放。
+   码判不了（企业没打码）退回下面的关键词通路，与后端 recheck_real 一致。 */
+const MI_PRO_MAP = { '化学化工材料':{chem:'core',metal:'core',pharma:'core',food:'core',energy:'core',textile:'edge',semi:'edge',elec:'edge',build:'edge',trade:'edge'},
+ '机械制造':{mech:'core',metal:'core',aero:'core',semi:'edge',elec:'edge',energy:'edge',chem:'edge',build:'edge',logistics:'edge'},
+ '电气自动化':{ele:'core',mech:'edge',energy:'core',semi:'edge',aero:'edge',build:'edge'},
+ '电子信息':{elec:'core',semi:'core',it:'edge',aero:'edge',mech:'edge',ele:'edge'},
+ '计算机软件':{it:'core',semi:'edge',finance:'edge',trade:'edge',edu:'edge',logistics:'edge',design:'edge'},
+ '物流供应链':{logistics:'core',trade:'core',mech:'edge',food:'edge',chem:'edge',elec:'edge',pharma:'edge'},
+ '金融财会':{finance:'core',trade:'edge',public:'edge'},
+ '土木建筑':{build:'core',energy:'edge',public:'edge'},
+ '医学生物':{pharma:'core',public:'edge',food:'edge',chem:'edge'},
+ '食品':{food:'core',agri:'edge',pharma:'edge',trade:'edge'},
+ '能源环境':{energy:'core',chem:'edge',build:'edge',metal:'edge'},
+ '教育':{edu:'core',public:'edge',design:'edge'},
+ '设计创意':{design:'core',trade:'edge',it:'edge'},
+ '纺织服装':{textile:'core',chem:'edge',trade:'edge'},
+ '商贸管理':{trade:'core',logistics:'core',finance:'edge',edu:'edge',design:'edge',public:'edge'}};
+
+/* 合法码集合：从表里反推。认不出的码（空/unknown/手写错）一律按「判不了」
+   处理、退回关键词通路 —— 与后端 ind_code.normalize 的 UNKNOWN 语义一致，
+   不能当成 out 把人毙掉（数据缺口不是企业不符）。 */
+const MI_CODES = (function(){
+  const m={}; Object.keys(MI_PRO_MAP).forEach(function(f){
+    Object.keys(MI_PRO_MAP[f]).forEach(function(c){ m[c]=1; }); });
+  return m;
+})();
+function miCodeFit(major, intent, code){
+  const c=String(code||'').trim().toLowerCase();
+  if(!c || !MI_CODES[c]) return '';
+  code=c;
+  const pf=miBizKw(major||'', [intent]).fields;
+  if(!pf.length) return '';
+  let edge=false;
+  for(let i=0;i<pf.length;i++){
+    const m=MI_PRO_MAP[pf[i]]; if(!m) continue;
+    const v=m[code];
+    if(v==='core') return 'core';
+    if(v==='edge') edge=true;
+  }
+  return edge?'edge':'out';
+}
+
 function miCleanBiz(s){ let x=String(s||''); BIZ_JUNK.forEach(function(j){ x=x.split(j).join(' '); }); return x.replace(/\\s+/g,' ').trim(); }
 function miStripGeneric(s){ const G=['管理培训生','管培生','培训生','储备干部','储干','校招生','专员/助理','仓储管理员','管理员','工程师','技术员','代表','办事员','专员','助理','人员','职员','文员','操作工','实习生','学徒','岗','主管','经理','总监','员']; let x=String(s||'').trim(),p; do{ p=x; G.forEach(function(t){ if(x.indexOf(t)>=0) x=x.split(t).join(''); }); x=x.trim(); }while(x!==p); return x; }
 function miBizKw(major,intents){
@@ -863,10 +912,17 @@ function miNameHasDir(job,fields){
   }
   return false;
 }
-function miBizOkReal(job,intent,MK,biz,major){
+function miBizOkReal(job,intent,MK,biz,major,code){
   if(miGenericJob(intent) || miGenericJob(job)) return true;
   const pf=miBizKw(major||'', [intent]).fields;
   const fld=pf.length?pf:(MK&&MK.fields);
+  /* 查表优先（与后端 recheck_real 同源）：码是 20 类粗粒度，一家企业只有一个码，
+     所以码不是死判据 —— 岗位名自带方向照样放（本家公告比码硬），edge 再放宽
+     到意向名与主营词。三条证据都没有才拦。 */
+  const v=miCodeFit(major,intent,code);
+  if(v==='core') return true;
+  if(v==='out') return miNameHasDir(job,fld);
+  if(v==='edge') return miNameHasDir(job,fld)||miNameHasDir(intent,fld)||miBizHit(fld,biz);
   if(miNameHasDir(job,fld)) return true;
   return miBizHit(fld,biz);
 }

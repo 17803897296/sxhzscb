@@ -424,8 +424,8 @@ function miDirCore(t){
   return {t:x, k:MI_DIRWORDS.filter(function(w){ return x.indexOf(w)>=0; })};
 }
 /* 这一对（岗位 × 意向）能不能算对口：
-   ok  算（意向没方向；或岗位没方向；或岗位方向 ⊂ 意向方向）
-   ask 值得问一句（同向但岗位更细：测试 → 电气测试 / 器件测试）
+   ok  算（意向没方向；或岗位没方向；或岗位方向 ⊂ 意向方向；或岗位方向 ⊃ 意向方向）
+   ask 值得问一句（泛研发意向撞上带方向的岗位：研发工程师 × C++研发）
    no  不成立（并列方向：后端 × 量化 / 前端 / 嵌入式，同大类两条路）
    与 intent_semantics.pair_verdict 同源。 */
 /* 岗位名归一化：与 job_family._norm 逐字符同源（全角括号、顿号、J 码要先抹掉）。 */
@@ -495,7 +495,7 @@ function miPairVerdict(title,intent){
   const dgt=miDesignGroup(title), dgi=miDesignGroup(intent);
   if(dgt.length&&dgi.length&&!dgt.some(function(g){ return dgi.indexOf(g)>=0; })) return 'no';
   /* 注意方向：a=意向方向，b=岗位方向。
-     b ⊃ a → 岗位更细（测试 → 器件测试）→ ask；
+     b ⊃ a → 岗位更细（仓储物流 × 物流专员）→ ok（大类意向进小类，2026-11-17 删规则）；
      b ⊂ a → 岗位更泛（AI算法研究 → 算法）→ ok（小类能进大类）。
      ⑤ 共享动作核 + 不同领域限定词 → no：人工智能算法 × 运动控制算法——都以
      「算法」结尾，前面的领域限定互不包含，是并列领域不是同一个岗（与
@@ -512,7 +512,11 @@ function miPairVerdict(title,intent){
   /* 职责词不算方向：设备维护工程师 × 设备工程师 → 同一岗位，不是「更细的方向」 */
   let b2=b.t; MI_DUTY.forEach(function(w){ b2=b2.split(w).join(''); });
   if(b2 && b2===a.t) return 'ok';
-  if(b.t.indexOf(a.t)>=0) return 'ask';
+  /* 岗位比意向更细（仓储物流 × 物流专员 / 器件测试 × 测试）：2026-11-17 用户拍板
+     大类意向能进小类，规则层放行，存疑的交给主营复核与学生专业收紧。原先这里判
+     ask（「不是同一个岗位」），但后端 same_dir 又把同一对升级成命中，于是页面命中栏
+     列着岗位、理由却说不是同一个岗。 */
+  if(b.t.indexOf(a.t)>=0) return 'ok';
   if(a.k.length&&b.k.length&&!a.k.some(function(w){ return b.k.indexOf(w)>=0; })){
     if(miSameLine(a.k,b.k)) return 'ok';   /* 采购/物流/仓储 ⊂ 供应链：同一条线照旧算 */
     return 'no';
@@ -531,8 +535,9 @@ function miDirReason(t,intent){
       return '「'+t+'」是「'+intent+'」条线下的'+b.t+'细分（同一条线）';
     return '「'+t+'」与「'+intent+'」同属一个大类但方向不同（'+b.t+' × '+a.t+'）';
   }
-  if(!a.t) return '「'+t+'」是「'+intent+'」下的'+b.t+'方向（同一大类，不是同一细分）';
-  if(a.t&&b.t.indexOf(a.t)>=0) return '「'+t+'」的方向是'+b.t+'，比「'+intent+'」细，不是同一个岗位';
+  /* 意向没限定方向、岗位带方向：说「大类下的具体岗位」就够，别把岗位核原样
+     回读（会出「供应链事业群工艺方向」这种噪音），也别再说「不是同一细分」。 */
+  if(!a.t) return '「'+t+'」是「'+intent+'」这一大类下的具体岗位，方向更细，算对口';
   return '';
 }
 /* 真·轮岗类岗位：只有这类「会不会往某方向培养」才是企业会考虑的事。
@@ -1189,6 +1194,14 @@ function miBizOkReal(job,intent,MK,biz,major,code){
 function e(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function short(s,n){ s=String(s||''); return s.length>n ? s.slice(0,n)+'…' : s; }
+/* 对口理由逐对用「；」隔开，超长时在**对与对之间**截断：按字数硬切会把
+   「供应链事业群管培生-工…」这种岗位名切断，读起来像数据坏了。 */
+function shortAt(s,n){
+  s=String(s||'');
+  if(s.length<=n) return s;
+  const i=s.lastIndexOf('；',n);
+  return (i>n*0.5 ? s.slice(0,i) : s.slice(0,n))+'…';
+}
 function stateLabel(s){ return s==='hit'?'明确命中':s==='inferred'?'推断待核实':'不对口'; }
 /* 「只有大类岗 ask」的企业（2026-11-17 用户定口径）：没有真实命中、没有推断
    命中，仅靠无方向的管培生/储备干部 ↔ 具体意向撑着——照常显示但全部后置
@@ -1640,7 +1653,7 @@ function rowHTML(r,idx,P){
     if(!terse){
       // 模型/规则已经写清依据的（多对、方向细分），保留原话，只补主语和落点
       return '<span class="line">对口理由：'+(ind?e('这家做的是「'+ind+'」；'):'')
-        +e(short(r.reason,110))+(/。$/.test(r.reason)?'':'。')+(_strong(r)?e(_encOf(r)):'')+'</span>';
+        +e(shortAt(r.reason,150))+(/。$/.test(r.reason)?'':'。')+(_strong(r)?e(_encOf(r)):'')+'</span>';
     }
     const parts=[];
     if(ind) parts.push('这家做的是「'+ind+'」');
@@ -1654,7 +1667,7 @@ function rowHTML(r,idx,P){
   const _reasonFold=function(r){
     if(!r.reason) return '';
     return '<div class="line" style="color:#7b8492;font-size:12.5px">对口理由（已随命中撤下）：'
-      +e(short(r.reason,100))+'</div>';
+      +e(shortAt(r.reason,110))+'</div>';
   };
   /* 主营「沾边但没有任何命中/推断」的行：这类企业唯一的入口是轮岗类岗位
      （管培生 / 储备干部），需要在主行把它写出来，见下面的 _rotLine。 */

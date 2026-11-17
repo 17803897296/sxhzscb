@@ -45,8 +45,8 @@ class BroadIntentFlood(unittest.TestCase):
         self.assertEqual(S.pair_verdict("UI设计师", "研发工程师"), "no")
 
     def test_specific_intent_untouched(self):
-        # 意向本身带方向的原逻辑一概不动
-        self.assertEqual(S.pair_verdict("AI算法研究工程师", "算法工程师"), "ask")
+        # 意向本身带方向的原逻辑一概不动；「岗位更细」自 2026-11-17 起算对口
+        self.assertEqual(S.pair_verdict("AI算法研究工程师", "算法工程师"), "ok")
         self.assertEqual(S.pair_verdict("算法工程师", "人工智能算法工程师"), "ok")
         self.assertEqual(S.pair_verdict("供应链管培生", "管培生"), "ok")
 
@@ -65,9 +65,9 @@ class AlgorithmDomainQualifiers(unittest.TestCase):
         self.assertNotEqual(S.pair_verdict("人工智能算法工程师", "ai算法工程师"), "no")
 
     def test_one_sided_qualifier_untouched(self):
-        # 一侧无限定词（算法工程师）走原有 ask→same_dir 命中，不触发 R3
+        # 一侧无限定词（算法工程师）是「大类进小类」，不触发 R3
         v = S.pair_verdict("运动控制算法工程师", "算法工程师")
-        self.assertEqual(v, "ask")
+        self.assertEqual(v, "ok")
 
 
 class UserDirectionRescue(unittest.TestCase):
