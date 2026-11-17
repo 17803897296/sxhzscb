@@ -758,6 +758,19 @@ def guess_city(text, name):
     return "未知"
 
 
+def name_city(name):
+    """名单名以城市**开头**时，返回那个城市；否则空串。
+
+    只认开头，是因为「XX（上海）有限公司」这种分支机构名里的城市不是总部；
+    而「成都中科集团」开头的成都就是这家企业的所在地。
+    """
+    s = str(name or "").strip()
+    for c in sorted(CITIES, key=len, reverse=True):
+        if s.startswith(c):
+            return c
+    return ""
+
+
 def guess_industry(text):
     table = [("金融", ("银行", "证券", "基金", "保险", "金融")),
              ("IT", ("软件", "信息技术", "互联网", "数据", "算法", "计算机")),
@@ -1338,6 +1351,18 @@ def api_lookup(payload):
                         "industry": "未知", "jobs": [], "jobSource": "未知",
                         "jobEvidence": "未知", "source": "未知", "date": "未知",
                         "note": str(exc)[:80]}
+            # 名称地理校验：名单写「成都中科集团」，搜出来却是北京的中科实业集团
+            # （同音/同字号的不同公司）。这种档案宁可不给——把别家企业的岗位算到
+            # 这家头上，比「没查到」错得多。
+            _want = name_city(n)
+            _got = str(item.get("city") or "").strip()
+            if _want and _got not in ("", "未知") and _want != _got:
+                item = {"id": item.get("id") or ("web-" + str(abs(hash(n)) % 10 ** 8)),
+                        "name": n, "nature": "未知", "city": "未知", "industry": "未知",
+                        "jobs": [], "jobSource": "未知", "jobEvidence": "未知",
+                        "source": item.get("source") or "未知", "date": "未知",
+                        "note": "搜到的公司在「%s」，与名单里的「%s」对不上，按没查到处理"
+                                % (_got, _want)}
             base = LIB.get(n) or db_partial.get(n)
             if base:
                 # 主营只补不抹：这次没从页面找到业务介绍，不能把库里已有那句冲掉
