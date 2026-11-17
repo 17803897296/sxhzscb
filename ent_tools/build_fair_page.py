@@ -112,16 +112,35 @@ def _companies_from_db(limit_req=300):
     岗位描述只截前 300 字（仅供关键词打分，避免页面体积暴涨）。
     """
     import sqlite3
-    # 活库不在（冷克隆/CI 只有只读种子）就退回种子库——种子里的 company_jobs
-    # 与活库同构（145 家），保证构建在干净检出上也能出完整页面。
+    # 选库：活库真有 company_jobs 表才用活库；缺席、或是被测试/误触 sqlite
+    # 创建出来的 0 表空壳，一律退回种子库（种子与活库同构，145 家）。
+    # 用只读 URI 连接探测，探测动作本身不会再造空壳文件。
     data_dir = ROOT / "ent_tools" / "data"
-    db = data_dir / "careersafari.db"
-    if not db.exists():
-        db = data_dir / "careersafari.db.seed"
-    if not db.exists():
+
+    def _open_ro(p):
+        return sqlite3.connect("file:///" + p.resolve().as_posix() + "?mode=ro", uri=True)
+
+    def _has_jobs_table(p):
+        try:
+            con = _open_ro(p)
+        except sqlite3.OperationalError:
+            return False
+        try:
+            return con.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='company_jobs'"
+            ).fetchone() is not None
+        finally:
+            con.close()
+
+    db = None
+    for cand in (data_dir / "careersafari.db", data_dir / "careersafari.db.seed"):
+        if cand.exists() and _has_jobs_table(cand):
+            db = cand
+            break
+    if db is None:
         return "[]"
     out = []
-    con = sqlite3.connect(str(db))
+    con = _open_ro(db)
     con.row_factory = sqlite3.Row
     try:
         for row in con.execute("SELECT name, item_json FROM company_jobs ORDER BY name"):

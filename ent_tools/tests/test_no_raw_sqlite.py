@@ -111,7 +111,10 @@ class TestNoRawSqlite(unittest.TestCase):
 
     def test_repository_is_usable(self):
         import repository as R
-        self.assertTrue(os.path.exists(R.LIVE_DB) or True)   # 路径常量存在即可
+        if not os.path.exists(R.LIVE_DB):
+            # 不能直接 connect：sqlite 对缺席路径会静默创建 0 表空壳，
+            # 留在克隆里会坑死所有「看文件存在就当活库用」的下游（比如 build）。
+            self.skipTest("活库不在（冷克隆/CI 只有种子），跳过可用性检查")
         with R.connect(R.LIVE_DB) as con:
             self.assertIsNotNone(con.execute("SELECT 1").fetchone())
 
