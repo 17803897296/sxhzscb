@@ -112,32 +112,9 @@ function miDesignGroup(s){
 /* 命中判据专用窄义领域词（与 intent_semantics.HIT_DOMAIN 逐词同源）：只放指向明确、
    不会出现在通用职能岗里的词。拦「新能源 × 软件开发 / 装备 × 嵌入式」这类模型按
    「都叫开发」挑出的跨行岗；一方泛词识别不出领域时不拦。 */
-const MI_HITDOMAIN={
-  it:['软件','互联网','计算机','数据库','前端','后端','嵌入式','java','c++','android','ios','算法工程'],
-  elec:['新能源','电气','半导体','芯片','集成电路','光伏','锂电','电力','电芯'],
-  mech:['机械','装备','机电','数控','模具','发动机','结构'],
-  chem:['化学','化工','精细化工','石化','炼化','高分子','试剂','树脂'],
-  medical:['医药','制药','临床','药学','生物','医学','药品','原料药'],
-  fin:['证券','基金','银行','保险','期货','金融','信托','私募'],
-  civil:['建筑','土木','路桥','地产','施工','造价'],
-  food:['食品','餐饮','饮料','乳业','烘焙'],
-  edu:['教师','教学','学校','中学','小学','班主任','教研'],
-  supply:['供应链','物流','仓储','货运','采购'],
-  energy:['石油','煤炭','燃气','核电','风电','发电']
-};
-function miHitDomain(s){
-  const x=String(s==null?'':s).toLowerCase(), out=[];
-  Object.keys(MI_HITDOMAIN).forEach(function(f){
-    if(MI_HITDOMAIN[f].some(function(k){ return x.indexOf(k)>=0; })) out.push(f);
-  });
-  return out;
-}
 /* 泛职能意向（管培生/专员/计划…）：本就要收各领域岗位，不参与跨行领域过滤。
    与 intent_semantics.GENERIC_INTENT_WORDS 逐词同源。语义映射在后端清洗，
    前端这里只做词表镜像以备同源校验。 */
-const MI_GENERIC_INTENT=['管培生','培训生','储备干部','储备','专员','助理',
-  '计划','干部','校招生'];
-function miIsGenericIntent(s){ return MI_GENERIC_INTENT.some(function(w){ return String(s).indexOf(w)>=0; }); }
 /* 方向层级：父类 → 下属细分（与 intent_semantics.DIR_PARENTS 同源）。
    采购/物流/仓储 ⊂ 供应链 → 同一条线照旧算；计划不是供应链专属（生产/核电都有
    计划岗），「计划管培生 × 供应链管培生」是并列方向，不算命中。 */
@@ -937,3 +914,5 @@ function miBizOkReal(job,intent,MK,biz,major,code){
   if(miNameHasDir(job,fld)) return true;
   return miBizHit(fld,biz);
 }
+
+/*[/ENGINE:B]*/

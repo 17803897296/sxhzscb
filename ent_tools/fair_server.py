@@ -560,6 +560,24 @@ class Handler(BaseHTTPRequestHandler):
                 payload = fair_bridge.build()
                 self._json({"ok": True, "stats": payload["stats"]})
                 return
+            if p == "/api/fair/preview":
+                # 薄页面「换画像预览」：按请求里的画像跑一遍 装载→匹配→组装，
+                # 返回与 payload 同形状的结果。不动 fair_active、不写 fair_profiles、
+                # 不覆盖 data/fair_payload.json —— 生效画像仍是当前学生那份。
+                doc = body.get("document") or body.get("profile") or body
+                try:
+                    payload = fair_bridge.build_preview(doc)
+                except Exception as exc:
+                    traceback.print_exc()
+                    self._json({"ok": False,
+                                "error": "%s: %s" % (type(exc).__name__, str(exc)[:200])})
+                    return
+                self._json({"ok": True, "rows": payload.get("rows") or [],
+                            "weights": payload.get("weights") or {},
+                            "profile": payload.get("profile") or {},
+                            "intent_semantics": payload.get("intent_semantics") or {},
+                            "stats": payload.get("stats") or {}})
+                return
             # v12 测试数据库：把「这次填了什么 + 排出了什么」落一条只追加的记录
             if p == "/api/fair/test-save":
                 payload = json.load(open(PAYLOAD, encoding="utf-8"))

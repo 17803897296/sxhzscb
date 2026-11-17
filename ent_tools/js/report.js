@@ -1,6 +1,12 @@
 (function(){
 const D = __TRI_DATA__;
-let BASE = D.rows, W0 = D.weights, PM = D.province_map || {};
+let BASE = D.rows, W0 = D.weights;
+/* 构建变体开关（2026-11-17 薄化拍板）：true=离线全量变体（内联完整引擎，
+   断网双击可跑）；false=薄页面（打分/判定全部走服务端，前端只渲染）。
+   build_fair_page.py 按变体注入：--offline-full → true，默认构建 → false。
+   薄页面里被剥离的代码块用「ENGINE:A/B/C」标记注释圈定。 */
+var FULL_ENGINE=__FULL_ENGINE__;
+window.__FULL_ENGINE=FULL_ENGINE;   /* 诊断用：控制台/冒烟脚本可读 */
 // ORDER 已停用：名次只按排序分，岗位状态不再参与比较（见 recompute）
 const WMAP = {岗位:'industry', 行业:'industry', 职责:'scale', 阶段:'scale',
               薪资:'scale', 人数:'scale', 城市:'city', 性质:'company_type',
@@ -15,6 +21,8 @@ const DIM_LABEL={city:'城市条件',home:'离家近',company_type:'企业类型
                  industry_status:'行业地位',growth:'成长性'};
 
 __RULES_JS__
+/*[ENGINE:A 打分几何助手：只被 calcOne 使用。薄页面 calcOne 改读服务端
+  score/parts，整块剥离（companyTypeBucket 本身是死代码，一并清理）。]*/
 function rankValue(rank,n){ if(n<=1) return 1.0; return +(1.0-(rank-1)/(n-1)*0.6).toFixed(3); }
 function cityCategories(city){
   if(!city||city==='未知'||city==='') return [];
@@ -39,11 +47,6 @@ function workCities(r){
   const c=r&&r.city;
   return ok(c)?[String(c).trim()]:[];
 }
-function companyTypeBucket(nature){
-  const b=RULES.ct_buckets;
-  for(const k in b){ if(b[k].indexOf(nature)>=0) return k; }
-  return null;
-}
 function classifyScale(nature,name,industry){
   name=name||''; const n=nature||'';
   const listed=/股份|集团|上市|银行/.test(name);
@@ -54,6 +57,7 @@ function classifyScale(nature,name,industry){
   if(listed||name.indexOf('集团')>=0) return (/集团|股份|科技股份|电气|银行|证券|能源|数据/.test(name))?'大型':'中型';
   return '中小型';
 }
+/*[/ENGINE:A]*/
 
 /* ---------- v6：同源服务下从服务端拉最新 payload ----------
    采集端写库 -> fair_ingest 重建 fair_payload.json -> 报告层换掉 BASE/W0，
@@ -206,7 +210,7 @@ function refreshFromServer(){
       if(p.intent_semantics) D.intent_semantics=p.intent_semantics;
       if(p.hard_filter) D.hard_filter=p.hard_filter;
       if(p.active_fair_id) D.active_fair_id=p.active_fair_id;
-      if(p.province_map) PM=p.province_map;
+      if(p.province_map) D.province_map=p.province_map;   /* 旧 PM 变量已死，只透传 */
       BASE=D.rows; W0=D.weights;
       lastSig=''; render();
     }).catch(function(){ if(tries++<45) setTimeout(go,4000); });
@@ -214,6 +218,66 @@ function refreshFromServer(){
   go();
 }
 window.__triRefresh=refreshFromServer;
+
+/* ---------- 薄变体（FULL_ENGINE=false）：打分/判定全部走服务端 ----------
+   payload 的 score/parts/questions/*_backend 都是 fair_bridge 预计算的终值，
+   前端零重复计算（「打分双实现」就此收敛为服务端一份）。唯一剩下的动态
+   场景是「换画像」：引擎已剥离，改 POST /api/fair/preview 让服务端按任意
+   画像重算（不动生效画像），拿到行再合并渲染。离线全量变体不受影响。 */
+function thinCalcOne(r,P){
+  const matches=r.intent_matches_backend||[];
+  return {score:(typeof r.score==='number')?r.score:(Number(r.score)||0),
+          effective_weight:(typeof r.effective_weight==='number')?r.effective_weight:(Number(r.effective_weight)||0),
+          parts:r.parts||[],
+          questions:(r.questions||[]).slice(0,2),
+          intent_hit:matches.map(function(m){return m.intent;}),
+          intent_matches:matches,
+          infer_matches:r.infer_matches_backend||[]};
+}
+var PREVIEW=null;          // {sig, byName, inflight}
+function _psig(P){
+  /* 换画像请求的指纹：意向/专业/家乡/权重任一变了都要重算 */
+  return [P.major||'', (P.intended_jobs||[]).join('|'), P.home_city||'', P.region||'',
+          Object.keys(P.weights||{}).map(function(k){return k+'='+P.weights[k];}).sort().join(','),
+          JSON.stringify(P.city_rank||{}), JSON.stringify(P.company_type_rank||{}),
+          JSON.stringify(P.industry_rank||{})].join('~');
+}
+function previewFromServer(P){
+  const sig=_psig(P);
+  const doc={fair_id:P.fair_id||'',
+             identity:{major:P.major||''},
+             answers:{intended_jobs:P.intended_jobs||[], tri_weights:P.weights||{},
+                      city_rank:P.city_rank||{}, company_type_rank:P.company_type_rank||{},
+                      industry_rank:P.industry_rank||{}, region:P.region||''},
+             fair:{home_city:P.home_city||''}};
+  PREVIEW={sig:sig, byName:{}, inflight:true};
+  window.__previewState='requested';   /* 诊断探针 */
+  semNote('换画像预览：正在让服务端按新画像重算全部分企业与打分……');
+  fetch(SEM_BASE+'/api/fair/preview',{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({document:doc})})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(j){
+      if(!j||!j.ok) throw new Error(j&&j.error||'preview failed');
+      const byName={};
+      (j.rows||[]).forEach(function(rw){ byName[rw.name]=rw; });
+      /* 新画像的语义映射并进 D，报告里「语义命中」的口径跟着换画像走 */
+      if(j.intent_semantics&&Object.keys(j.intent_semantics).length){
+        D.intent_semantics=D.intent_semantics||{};
+        Object.keys(j.intent_semantics).forEach(function(k){ D.intent_semantics[k]=j.intent_semantics[k]; });
+      }
+      PREVIEW={sig:sig, byName:byName, inflight:false};
+      window.__previewState='done rows='+(j.rows||[]).length;   /* 诊断探针 */
+      semNote('换画像预览完成：已按服务端重算结果展示（生效画像未变）。');
+      lastSig=''; render();
+    })
+    .catch(function(err){
+      PREVIEW={sig:sig, byName:{}, inflight:false};
+      window.__previewState='failed: '+(err&&err.message||err);   /* 诊断探针 */
+      semNote('换画像预览失败（'+(err&&err.message||err)+'）：仍显示生效画像的结果。'
+              +'薄页面打分走服务端，需要 fair_server 在线。');
+    });
+}
 
 /* ---------- v7：现场「招 / 不招」核实结果 ----------
    离线写 localStorage（重开页面仍在），同源服务同时写 fair_feedback 表并重建 payload。
@@ -241,6 +305,10 @@ function saveFeedback(name,result){
    模型没覆盖到时退回字面/关键词匹配。返回 [{intent, job, via, reason}]。
    jobTitles = 企业校招公告里的真实岗位名（不是模型预生成的 matched_jobs），
    这样报告里显示的命中岗位才和采集端勾选的岗位对得上。 */
+/*[ENGINE:B 语义判定引擎：与 ent_tools/intent_semantics.py 同源的本地兜底规则。
+  只被 calcOne / recompute 的「换画像」分支使用；薄页面这两个分支改走服务端
+  （POST /api/fair/preview），整块剥离。parity 夹具 _js_matchintent.js 仍从
+  全量源文件抽取，夹具与本标记无关。]*/
 /* ---- 本地兜底匹配规则：与 ent_tools/intent_semantics.py 同一套（不含大模型）----
    只有 payload 的语义映射没覆盖某个意向时才走这里（换学生、现场新勾岗位、模型不可用）。
    旧版是一张 22 词表做关键词相交，会把「战略管培生」算进「供应链管培生」、
@@ -359,32 +427,9 @@ function miDesignGroup(s){
 /* 命中判据专用窄义领域词（与 intent_semantics.HIT_DOMAIN 逐词同源）：只放指向明确、
    不会出现在通用职能岗里的词。拦「新能源 × 软件开发 / 装备 × 嵌入式」这类模型按
    「都叫开发」挑出的跨行岗；一方泛词识别不出领域时不拦。 */
-const MI_HITDOMAIN={
-  it:['软件','互联网','计算机','数据库','前端','后端','嵌入式','java','c++','android','ios','算法工程'],
-  elec:['新能源','电气','半导体','芯片','集成电路','光伏','锂电','电力','电芯'],
-  mech:['机械','装备','机电','数控','模具','发动机','结构'],
-  chem:['化学','化工','精细化工','石化','炼化','高分子','试剂','树脂'],
-  medical:['医药','制药','临床','药学','生物','医学','药品','原料药'],
-  fin:['证券','基金','银行','保险','期货','金融','信托','私募'],
-  civil:['建筑','土木','路桥','地产','施工','造价'],
-  food:['食品','餐饮','饮料','乳业','烘焙'],
-  edu:['教师','教学','学校','中学','小学','班主任','教研'],
-  supply:['供应链','物流','仓储','货运','采购'],
-  energy:['石油','煤炭','燃气','核电','风电','发电']
-};
-function miHitDomain(s){
-  const x=String(s==null?'':s).toLowerCase(), out=[];
-  Object.keys(MI_HITDOMAIN).forEach(function(f){
-    if(MI_HITDOMAIN[f].some(function(k){ return x.indexOf(k)>=0; })) out.push(f);
-  });
-  return out;
-}
 /* 泛职能意向（管培生/专员/计划…）：本就要收各领域岗位，不参与跨行领域过滤。
    与 intent_semantics.GENERIC_INTENT_WORDS 逐词同源。语义映射在后端清洗，
    前端这里只做词表镜像以备同源校验。 */
-const MI_GENERIC_INTENT=['管培生','培训生','储备干部','储备','专员','助理',
-  '计划','干部','校招生'];
-function miIsGenericIntent(s){ return MI_GENERIC_INTENT.some(function(w){ return String(s).indexOf(w)>=0; }); }
 /* 方向层级：父类 → 下属细分（与 intent_semantics.DIR_PARENTS 同源）。
    采购/物流/仓储 ⊂ 供应链 → 同一条线照旧算；计划不是供应链专属（生产/核电都有
    计划岗），「计划管培生 × 供应链管培生」是并列方向，不算命中。 */
@@ -1185,6 +1230,7 @@ function miBizOkReal(job,intent,MK,biz,major,code){
   return miBizHit(fld,biz);
 }
 
+/*[/ENGINE:B]*/
 function e(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function short(s,n){ s=String(s||''); return s.length>n ? s.slice(0,n)+'…' : s; }
@@ -1206,11 +1252,8 @@ function onlyAsk(r){
     && !(r.infer_matches&&r.infer_matches.length)
     && !!(r.ask_jobs&&r.ask_jobs.length);
 }
-function groupTitle(s){
-  if(s==='hit') return ['t1','优先去 · 有真实岗位证据'];
-  if(s==='inferred') return ['t2','按行业推断 · 现场问一句确认'];
-  return ['t3','暂不优先'];
-}
+/* groupTitle 已删（2026-11-17 死代码清理）：无任何调用方，分组标题由 render
+   按 state 直出。 */
 
 /* ---------- 采集端：读学生当前画像 ---------- */
 function getProfile(){
@@ -1252,6 +1295,9 @@ function getProfile(){
 
 /* ---------- 匹配端：按当前画像实时重算 ---------- */
 function calcOne(r,P){
+  /* 薄变体：payload 的 score/parts/questions/裁决都是 fair_bridge 预计算的
+     终值，直接采信，前端不重算（打分双实现收敛为服务端一份）。 */
+  if(!FULL_ENGINE) return thinCalcOne(r,P);
   const w=P.weights, vals={};
   /* 城市：遍历全部工作城市，命中多类/多城取用户排名最靠前（最高分） */
   const wcs=workCities(r);
@@ -1389,6 +1435,7 @@ function calcOne(r,P){
           infer_matches:(!_bc && r.infer_matches_backend) ? r.infer_matches_backend : []};
 }
 
+/*[ENGINE:C 推断命中现算：只被 recompute 的「换画像」分支使用，薄页面剥离。]*/
 /* 推断命中对现算（换画像 / 自定义画像场景）：业务链推断岗（biz_fit.jobs）+
    画像推断岗（inferred_jobs）× 学生意向。口径与后端 _infer_pairs 同源且刻意
    收紧为「同名或互含」：推断岗不是公告原文，宁可少标不错标（职能族兜底会把
@@ -1427,6 +1474,7 @@ function miInferPairs(intended,pool,MK,biz,major,code){
     return miBizHit(pf.length?pf:(MK&&MK.fields), biz);
   });
 }
+/*[/ENGINE:C]*/
 
 function recompute(P){
   /* 换了画像（本地切换测试画像 / 学生现场改勾选）时，payload 里的 state 与
@@ -1438,7 +1486,25 @@ function recompute(P){
   const rows=BASE.map(function(r){
     const c=calcOne(r,P);
     const x=Object.assign({}, r, c);
-    if(_custom){
+    if(_custom && !FULL_ENGINE){
+      /* 薄变体：引擎已剥离，换画像改走服务端预览。拿到 PREVIEW 前先用
+         服务端冻结值渲染（如实展示，不本地重算冒充）。 */
+      const pv=(PREVIEW&&PREVIEW.sig===_psig(P))?(PREVIEW.byName[r.name]||null):null;
+      if(pv){
+        x.state=pv.state; x.matched_jobs=pv.matched_jobs;
+        x.intent_hit=(pv.intent_matches||[]).map(function(m){return m.intent;});
+        x.intent_matches=pv.intent_matches||[];
+        x.infer_matches=pv.infer_matches||[];
+        x.level_blocked=pv.level_blocked||[]; x.ask_jobs=pv.ask_jobs||[];
+        x.score=pv.score; x.parts=pv.parts||[];
+        x.questions=(pv.questions||[]).slice(0,2);
+        x.reason=pv.reason; x.infer_notice=pv.infer_notice;
+        x.state_recalc=true;
+        if(pv.check_notes) x.check_notes=pv.check_notes;
+      } else {
+        x.preview_pending=true;
+      }
+    } else if(_custom){
       const jt=(r.job_titles||[]);
       /* 公司业务（名字 / 行业 / 主营）：判断大类岗位名（管培生）能不能算对口 */
       const biz=(r.name||'')+' '+(r.industry||'')+' '+(r.biz_scope||'')
@@ -1531,6 +1597,9 @@ function recompute(P){
       r.rank_reason+='；主营方向与你的意向不交叉，已顺延到队尾';
     if(onlyAsk(r)) r.rank_reason+='；仅「管培生/储备干部」大类岗待问方向，已后置';
   });
+  /* 薄变体：有行等待换画像预览且没有进行中的请求 → 触发一次 */
+  if(!FULL_ENGINE && P && !(PREVIEW&&PREVIEW.inflight)
+     && rows.some(function(r){return r.preview_pending;})) previewFromServer(P);
   return rows;
 }
 
@@ -1668,8 +1737,10 @@ function rowHTML(r,idx,P){
   let _nearOnly=false;
   const _rk=(function(){
     const mj=(P&&((P.profile&&P.profile.major)||P.major))||'';
-    const MK=miBizKw(mj, P.intended_jobs||[]);
-    if(!MK.fields.length) return '';
+    /* 薄变体：miBizKw 已随引擎剥离，主营复核行只吃服务端 biz_recheck 结论
+       （payload 行必带；老 payload 缺失时不显示这一行，不本地重算冒充）。 */
+    const MK=FULL_ENGINE?miBizKw(mj, P.intended_jobs||[]):{fields:[]};
+    if(FULL_ENGINE ? !MK.fields.length : !_bk) return '';
     const _d=(_bk&&_bk.detail)?e(_bk.detail):'';
     const _cnt=(_bk&&(_bk.n_watch||_bk.n_blocked))
       ? '（'+(_bk.n_watch?('暂留待补 '+_bk.n_watch+' 对'):'')
@@ -1702,6 +1773,9 @@ function rowHTML(r,idx,P){
         +_cnt+'</span>';
     if(_code==='code_core')
       return '<span class="hits" style="color:#1a6b4f">行业码复核：对口——'+_d+'</span>';
+    /* 薄变体：本地兜底判定（miCodeFit/miBizHit）已随引擎剥离。走到这里说明
+       服务端 biz_recheck 没给结论，如实不显示，不本地重算。 */
+    if(!FULL_ENGINE) return '';
     const _vf=miCodeFit(mj, '', r.ind_code);
     if(_vf==='core')
       return '<span class="hits" style="color:#1a6b4f">行业码复核：对口——这家是「'

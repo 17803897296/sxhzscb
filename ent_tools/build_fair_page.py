@@ -197,6 +197,26 @@ html = html.replace(
 # 页面形式不变，只把 #mres 的内容换成完善报告（见 fair_report_js.py）。
 TRI_PATH = Path(__file__).resolve().parent / "data" / "fair_payload.json"
 TRI_JSON = TRI_PATH.read_text(encoding="utf-8") if TRI_PATH.exists() else "{}"
+
+# ── 变体处理（2026-11-17 薄化拍板）──
+# js/report.js 用「ENGINE:A/B/C」标记圈出三块「只服务本地引擎」的代码：
+#   A 打分几何助手（calcOne 专用）  B 语义判定引擎（换画像分支）  C 推断命中现算
+# 薄页面（默认构建）打分/判定全走服务端：FULL_ENGINE=false，三块剥离；
+# 离线全量变体（--offline-full）：FULL_ENGINE=true，原样内联。
+REPORT_JS = REPORT_JS.replace("__FULL_ENGINE__", "true" if OFFLINE_FULL else "false")
+if not OFFLINE_FULL:
+    def _strip_engine(src):
+        for tag in ("A", "B", "C"):
+            a = src.index("/*[ENGINE:" + tag)
+            _end = "/*[/ENGINE:" + tag + "]*/"
+            b = src.index(_end) + len(_end)
+            src = (src[:a]
+                   + "/* ENGINE:%s 已剥离：薄页面打分/判定走服务端（fair_bridge 预计算），"
+                     "全量引擎见 js/report.js 源文件与离线全量变体 */" % tag
+                   + src[b:])
+        return src
+    REPORT_JS = _strip_engine(REPORT_JS)
+    print("  薄化：ENGINE A/B/C 三块已剥离，FULL_ENGINE=false")
 REPORT_BUNDLE = REPORT_JS.replace("__TRI_DATA__", TRI_JSON).replace("__RULES_JS__", _rules_js())
 
 bundle = (SHIM + RECOMMEND_JS + "<script>\n" + fair_js + "\n</script>\n"

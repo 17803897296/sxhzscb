@@ -1528,12 +1528,17 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     }
 
 
-def load_inputs():
+def load_inputs(profile_override=None):
     """装载段：读库、并档案、硬约束过滤、建语义/推断缓存、算权重。
 
     只做「把数据凑齐」，不判任何一家企业的命不命中 —— 这一段是可以单独
     跑来看输入对不对的（交接时最常出问题的正是这里：库路径、档案缺失、
     缓存代际）。返回字典，下一段按名字取用。
+
+    profile_override：画像文档（fair_profiles.document_json 同形状）。传了就
+    用它替代 fair_active 指向的生效画像 —— 供 POST /api/fair/preview 给
+    薄页面做「换画像预览」用：不改 fair_active、不写 fair_profiles，
+    语义缓存按 key 指纹共享，重跑无副作用。
     """
     # 缓存体检先跑：代码一改，相关缓存自动判失效（读取方会重建），
     # 这里把结果打进 payload，页面「更多设置」里能直接看到本版用的是哪一代结果。
@@ -1545,6 +1550,8 @@ def load_inputs():
         print("已归档旧缓存：" + "、".join("%s→%s" % (n, os.path.basename(p))
                                         for n, p in _moved))
     companies, llm, raw_profile = read_db()
+    if profile_override is not None:
+        raw_profile = profile_override
     _dir_book = load_dir_hint()
     v42 = load_v42()
     enrich = load_enrich()
@@ -2178,6 +2185,18 @@ def build():
     口径没有任何变化 —— 拆前拆后 payload 逐字段一致。
     """
     st = load_inputs()
+    rows, campus_nofit, biz_diag_all = match_rows(st)
+    return assemble(st, rows, campus_nofit, biz_diag_all)
+
+
+def build_preview(profile_doc):
+    """按**任意画像**算一份 payload，不动 fair_active、不写 fair_profiles。
+
+    薄页面（打分走服务端）的「换画像预览」专用：前端传画像文档，服务端
+    跑同一条 装载→匹配→组装 链，返回与 build() 同形状的 payload。语义缓存
+    按 key 指纹共享（intent_semantics_live.json），同一画像第二次请求直接命中。
+    """
+    st = load_inputs(profile_override=profile_doc)
     rows, campus_nofit, biz_diag_all = match_rows(st)
     return assemble(st, rows, campus_nofit, biz_diag_all)
 
