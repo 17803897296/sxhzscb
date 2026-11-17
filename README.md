@@ -2,7 +2,7 @@
 
 把「招聘会现场几百家企业」变成「一张按你自己的偏好排好的清单」的本地演示系统。
 
-学生用对话回答 6 个问题，系统就把双选会上的 **145 家企业、1936 条真实校招岗位**按 7 个维度打分排序，每一家都给出**算分依据、缺口、现场要问的问题、证据链接**；同时用大模型判定「企业的真实岗位名」和「你填的意向岗位」是不是同一类。
+学生用对话回答 6 个问题，系统就把双选会上的 **145 家企业、1956 条真实校招岗位**按 7 个维度打分排序，每一家都给出**算分依据、缺口、现场要问的问题、证据链接**；同时用大模型判定「企业的真实岗位名」和「你填的意向岗位」是不是同一类。
 
 > 核心立场：不做「黑箱大模型排序」。分数是**可复算的加权和**，大模型只负责两件它擅长的事——**读语义**（岗位名同类判定）和**写人话**（推荐岗位、提示缺口），不参与打分。
 
@@ -44,8 +44,8 @@
 **环境**：Python 3.10+。**零第三方依赖**（核心链路只用标准库：`http.server` / `sqlite3` / `json` / `urllib` / `zipfile`）。
 
 ```bash
-cd ent_tools
-python -X utf8 fair_server.py --port 8102 --host 127.0.0.1
+# 统一入口（也可直接跑 ent_tools/fair_server.py）
+python -m ent_tools serve --port 8102 --host 127.0.0.1
 ```
 
 浏览器打开：
@@ -81,28 +81,35 @@ DEEPSEEK_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 
 ```
 careersafari-fair/
-├── ent_tools/                     # 后端与构建脚本（29 个 py，共 ~5.5k 行）
-│   ├── fair_server.py             # 同源服务：页面 + 画像落库 + 报告数据（225 行）
-│   ├── fair_bridge.py             # 业务核心：库 → payload（打分字段 + 三态 + 可信度，667 行）
+├── ent_tools/                     # 后端与构建（52 个 py 顶层 + 22 pipeline + 23 tests ≈ 2.6 万行）
+│   ├── fair_server.py             # 同源服务：页面 + 画像落库 + 报告数据 + 预览端点（670 行）
+│   ├── fair_bridge.py             # 业务核心：库 → payload（装载/匹配/组装三段，2320 行）
 │   ├── fair_ingest.py             # 画像写入 fair_profiles / fair_active
-│   ├── fair_report_js.py          # 报告页前端逻辑（打分 + 渲染，680 行，注入 HTML）
-│   ├── build_fair_page.py         # 把问卷页 + 报告页打包成单文件 fair.html（1682 行）
+│   ├── fair_report_js.py          # 装载器：把 js/report.js 读进来注入 HTML
+│   ├── build_fair_page.py         # 打包问卷页 + 报告页成单文件页（薄版/离线全量分叉，293 行）
+│   ├── js/                        # 前端真源（构建时内联）：report.js 2591 行（薄化双路径）、
+│   │                              #   fair.js 1077 行（采集对话）、match/recommend/shim
 │   ├── demo_v2/rules.py           # 打分规则唯一来源：维度、城市分档、规模档、榜单分档（372 行）
 │   ├── intent_semantics.py        # 大模型语义匹配（岗位 ↔ 意向），带缓存
 │   ├── job_recommend.py           # 校招岗位推荐（大模型 + 词表兜底）
 │   ├── resume_parse.py            # 简历解析（txt/md/html/docx，正则 + 可选大模型）
 │   ├── portal.py                  # 企业搜索三层取数（库 → 离线库 → 联网补）
-│   ├── job_store.py / job_lookup.py / company_module.py
+│   ├── pipeline/                  # 22 个手动工具脚本（合并/修补/名单/采集/手动构建页）
+│   ├── tests/                     # 198 个单测（含裸 sqlite 预算门禁、页面 md5 对拍）
+│   ├── refresh_all.py             # 流水线编排：缓存→推断→构建→页面→回归
 │   └── data/
-│       ├── careersafari.db        # 活库（8 表：企业/岗位/画像/v4.2/快照…）
-│       ├── v42_company_match.db   # v4.2 企业档案（35 列 / 118 家，含榜单与成长性）
+│       ├── careersafari.db        # 活库（企业/岗位/画像/v4.2…；克隆里只有只读种子）
+│       ├── careersafari.db.seed   # 种子库（145 家同构，CI 冷启动用）
 │       ├── fair_payload.json      # 报告数据缓存（每次 GET 校验画像 ID，变了就重建）
-│       └── companies.json 等      # 企业名单与离线检索库
-├── demo/
-│   ├── fair.html                  # 构建产物：单文件应用（1.3 MB，可离线双击）
-│   ├── index.html                 # 旧版搜索页（构建时提供名单与排序规则）
+│       ├── *.json.seed            # 各缓存种子的只读副本（克隆可跑）
+│       ├── snapshots/             # 历史轮次企业快照（companies_118 等）
+│       └── archive/               # 本地归档（一次性诊断产物，不入库）
+├── demo/                          # 正本构建产物（薄页：打分走服务端 /api/fair/*）
+│   ├── fair.html                  # 双选会工作台（1.2 MB）
+│   ├── enterprises.html / match.html / portal.html / start.html …
 │   └── 架构图.svg
-├── _handoff/shuangxuan/app/static/  # 采集端原始前端（fair.js / fair.css / style.css）
+├── demo_offline/                  # 离线全量变体（构建注入完整引擎，本地生成不入库）
+├── _handoff/shuangxuan/app/static/  # 采集端原始素材（fair.html / fair.css / style.css）
 ├── docs/                          # 口径文档：权重分配、问卷设计、可采性分析
 └── README.md
 ```
@@ -118,7 +125,7 @@ careersafari-fair/
       ↓  提交（POST /api/fair/profile）
 ③ 画像落库 + 报告数据重建（约 0.2s）
       ↓
-④ 看到进榜企业分档：明确命中 / 按行业推断（示例画像 47 家：明确命中 19、推断 28）
+④ 看到进榜企业分档：明确命中 / 按行业推断（家数随画像变化，服务端实时算）
       ↓  点某家「查看完整报告」
 ⑤ 单家页：7 维算分依据 · 缺口 · 现场该问什么 · 证据链接 · v4.2 企业档案
 ```
@@ -129,7 +136,7 @@ careersafari-fair/
 
 ## 一、采集端：6 个问题问出什么
 
-对话流程在 `_handoff/shuangxuan/app/static/fair.js`，构建时被 `build_fair_page.py` 打补丁后内联进 `fair.html`。
+对话流程在 `ent_tools/js/fair.js`（1077 行，从交接包 fair.js 固化的真源文件），构建时内联进 `fair.html`。
 
 | 问题 | 落到哪个字段 | 用在哪 |
 |---|---|---|
@@ -326,7 +333,7 @@ curl -X POST http://127.0.0.1:8102/api/fair/resume \
 现场学生可能自己带一份名单（Excel/文本），点「搜索」把名单变成企业档案。顺序是：
 
 ```
-① 本地活库 company_jobs（含 v4.2 全量岗位，145 家 / 1936 条）
+① 本地活库 company_jobs（含 v4.2 全量岗位，145 家 / 1956 条）
       ↓ 库里没有，或库里有档案但没岗位
 ② 离线检索库 CACHE / LIB（companies.json 等）
       ↓ 仍然没有
@@ -470,7 +477,7 @@ node --check <(sed -n '/<script>/,/<\/script>/p' demo/fair.html)   # 或直接�
 
 ## 已知限制
 
-- **演示数据规模**：145 家企业、1936 条岗位，来自一次真实双选会名单；不是全量招聘市场数据。
+- **演示数据规模**：145 家企业、1956 条岗位，来自一次真实双选会名单；不是全量招聘市场数据。
 - **3 家企业 0 岗**：南京泛成生物、南通海星电子、江苏汉邦科技。属「未查到」，没有臆造岗位填进去。
 - **榜单覆盖不完整**：不少企业没有公开榜单记录，走中性地板分；这不是「它们不优秀」，只是没查到。
 - **大模型是可选件**：不配 key 时语义匹配退化为字面匹配，命中率会变低但仍可用。
