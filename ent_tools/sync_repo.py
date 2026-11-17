@@ -350,6 +350,65 @@ def sync_jobs_seed():
         return "失败：%s: %s" % (type(exc).__name__, exc)
 
 
+def sync_llm_match_seed():
+    """把活库 llm_match 整表同步进只读种子库。
+
+    为什么必须做：llm_match 是「企业 × 匹配结论」（state/matched_jobs/reason），
+    匹配段的原始判定层。种子落后一期，克隆重建的企业集合就漂移 ——
+    2026-11-18 实测：活库与种子 73 家 state 不同（55 所活库 hit / 种子 miss），
+    克隆首开重建 34 行 vs 正本 42 行，缺 20 家多 12 家。
+
+    表内容是企业公开业务匹配数据，无 PII；画像脱敏仍由 sync_profile_seed
+    负责。幂等：逐行比对，全一致不写、不 vacuum（字节级幂等）。
+    走 repository.connect 出口，不新增裸连接（sqlite 预算守卫盯着）。
+    """
+    from repository import connect as db_connect
+    src = DEV / "ent_tools/data/careersafari.db"
+    seed = REPO / "ent_tools/data/careersafari.db.seed"
+    if not (src.is_file() and seed.is_file()):
+        return "跳过（活库或种子缺失）"
+    cols = ("name, state, priority, matched_jobs, reason, gaps, "
+            "verify_question, has_jd, generated_at")
+    try:
+        with db_connect(src, row_factory=False) as ro:
+            rows = ro.execute("select %s from llm_match order by name" % cols).fetchall()
+        if not rows:
+            return "跳过（活库 llm_match 为空）"
+        with db_connect(seed, row_factory=False) as db:
+            changed = 0
+            for row in rows:
+                old = db.execute(
+                    "select state, priority, matched_jobs, reason, gaps, "
+                    "verify_question, has_jd, generated_at from llm_match "
+                    "where name=?", (row[0],)).fetchone()
+                if old is None:
+                    db.execute("insert into llm_match(%s) values(?,?,?,?,?,?,?,?,?)"
+                               % cols, row)
+                    changed += 1
+                elif tuple(old) != tuple(row[1:]):
+                    db.execute("update llm_match set state=?, priority=?, "
+                               "matched_jobs=?, reason=?, gaps=?, "
+                               "verify_question=?, has_jd=?, generated_at=? "
+                               "where name=?", row[1:] + (row[0],))
+                    changed += 1
+            names = [r[0] for r in rows]
+            q = ",".join("?" * len(names))
+            changed += db.execute(
+                "delete from llm_match where name not in (%s)" % q, names).rowcount
+            if changed:
+                db.commit()
+                db.execute("vacuum")
+        if not changed:
+            return "llm_match 已配套（%d 家），无需改动" % len(rows)
+        for suffix in ("-shm", "-wal"):
+            f = Path(str(seed) + suffix)
+            if f.exists():
+                f.unlink()
+        return "llm_match 已同步进种子：%d 行变更（共 %d 家）" % (changed, len(rows))
+    except Exception as exc:
+        return "失败：%s: %s" % (type(exc).__name__, exc)
+
+
 def compare(target: Path, rels):
     same, diff, missing = [], [], []
     for rel in rels:
@@ -451,6 +510,7 @@ def main(argv=None):
             print("  " + sync_profile_seed())
             print("  " + sync_ind_codes_to_seed())
             print("  " + sync_jobs_seed())
+            print("  " + sync_llm_match_seed())
 
     rels = source_files(not a.no_payload)
     # 数据同源是默认行为，但隐私优先：画像里出现姓名/学校/电话/邮箱就跳过 payload，
