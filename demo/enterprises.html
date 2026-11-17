@@ -5,63 +5,474 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>企业端 · 参会企业名单导入</title>
   <style>
+    /* ============================================================
+       企业端：名单导入工作台
+       定位：我们自己（采集 / 组委会）用，不是企业 HR 的自助入口。
+       所以这一页只做一件事 —— 把参会名单交上来，让搜索按名单
+       逐家补齐档案与岗位。岗位信息统一从采集端来。
+       视觉沿用报告端的设计系统：editorial clarity，白卡 + 细线 +
+       一个蓝 accent，不用深色终端风。
+       ============================================================ */
     :root {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-      color: #202b42;
-      background: #f8faff;
+      --bg: #f7f8f6;
+      --surface: #ffffff;
+      --surface-2: #fbfcfe;
+      --ink: #16181d;
+      --ink-2: #3f4550;
+      --muted: #6b7280;
+      --faint: #9aa1ad;
+      --line: #e6e8ec;
+      --line-2: #dfe3ea;
+      --accent: #2f5bd3;
+      --accent-ink: #2449ad;
+      --accent-soft: #eef3fe;
+      --ok: #1f7a4d;
+      --ok-soft: #e8f3ec;
+      --radius: 16px;
+      --shadow: 0 1px 2px rgba(16, 24, 40, .04),
+                0 14px 34px -14px rgba(30, 50, 110, .16);
     }
     * { box-sizing: border-box; }
-    body { margin: 0; }
-    button, input, textarea { font: inherit; }
-    .app {
-      width: min(820px, calc(100% - 32px));
-      min-height: 100dvh;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      padding-bottom: 28px;
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
     }
+    button, input, textarea { font: inherit; }
+
+    .app {
+      width: min(880px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    /* ── 顶栏 ─────────────────────────────────────────────── */
     .topbar {
-      height: 76px;
       display: flex;
       align-items: center;
       gap: 12px;
-      flex: none;
+      margin-bottom: 30px;
     }
     .brand-mark {
       display: grid;
       place-items: center;
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 10px;
-      background: #4268ee;
-      color: white;
-      font-size: 18px;
+      background: linear-gradient(145deg, #4268ee, #2f5bd3);
+      color: #fff;
+      font-size: 16px;
       font-weight: 700;
+      letter-spacing: .02em;
+      box-shadow: 0 4px 10px -4px rgba(47, 91, 211, .55);
+      flex: none;
     }
-    .topbar strong { font-size: 15px; letter-spacing: .01em; }
-    .page-hint {
+    .brand-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .brand-txt strong { font-size: 14.5px; font-weight: 650; letter-spacing: .01em; }
+    .brand-txt span { font-size: 12px; color: var(--muted); }
+    .topbar .back {
+      margin-left: auto;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 12.5px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: .16s ease;
+      flex: none;
+    }
+    .topbar .back:hover {
+      color: var(--accent);
+      border-color: var(--line-2);
+      background: var(--surface);
+    }
+
+    /* ── 标题区 ───────────────────────────────────────────── */
+    .hero { margin-bottom: 22px; }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 25px;
+      font-weight: 680;
+      letter-spacing: -.01em;
+      line-height: 1.3;
+    }
+    .hero p {
+      margin: 0;
+      max-width: 66ch;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.8;
+    }
+    .hero p + p { margin-top: 3px; color: #7c8492; font-size: 13px; }
+    .hero p b { color: var(--ink-2); font-weight: 600; white-space: nowrap; }
+
+    /* 流程：三个小步骤，弱化存在感但明确顺序 */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+      flex-wrap: wrap;
+    }
+    .flow li {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12.5px;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 12px 5px 7px;
+    }
+    .flow li i {
+      font-style: normal;
+      display: grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 650;
+      flex: none;
+    }
+    .flow li.now { color: var(--ink-2); border-color: #c9d5f2; background: #f8faff; }
+    .flow li.now i { background: var(--accent); color: #fff; }
+    .flow .arrow { color: #c7cdd8; font-size: 12px; }
+
+    /* ── 主卡容器（match.js 把名单块挂进 #chat）─────────────── */
+    #chat { min-height: 200px; }
+    #matchbox { margin: 0 !important; }
+
+    /* match.js 自带了一套基础样式，这里按企业端场景重排：
+       更大的卡、更松的行距、把「搜索」立成主操作。 */
+    #matchbox .mb-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px 26px 22px;
+      box-shadow: var(--shadow);
+    }
+    #matchbox h3 {
+      margin: 0 0 16px;
+      font-size: 16.5px;
+      font-weight: 660;
+      letter-spacing: -.005em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #matchbox h3::before {
+      content: "";
+      width: 3px;
+      height: 16px;
+      border-radius: 2px;
+      background: var(--accent);
+      flex: none;
+    }
+    #matchbox .mb-sub {
+      /* 副标题与页头说明重复，页面这一层已经讲清了，收掉更干净 */
+      display: none;
       margin: 0 0 18px;
-      color: #5b6b88;
-      font-size: 13px;
-      line-height: 1.7;
+      color: var(--muted);
+      font-size: 12.8px;
+      line-height: 1.75;
+      padding-left: 13px;
     }
-    #chat { flex: 1 1 auto; }
-    .footnote { margin: 18px 0 0; text-align: center; color: #9aa5ba; font-size: 12px; }
-    .offline-note {
-      margin: 6px 0 0;
-      padding: 14px 16px;
-      border: 1px solid #dde5f5;
-      border-radius: 12px;
+
+    /* 上传 / 网址一行 */
+    #matchbox .mb-inputs { display: flex; gap: 10px; align-items: stretch; margin-bottom: 12px; }
+    #matchbox .mb-plus {
+      flex: none;
+      width: auto;
+      min-width: 132px;
+      height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 16px;
+      border-radius: 11px;
+      border: 1px dashed #c3cbd8;
+      background: var(--surface-2);
+      color: var(--accent);
+      font-size: 0;                 /* 藏掉原始「+」，用伪元素重排大小 */
+      font-weight: 600;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+      transition: .16s ease;
+    }
+    #matchbox .mb-plus::before {
+      content: "+";
+      font-size: 17px;
+      font-weight: 400;
+      line-height: 1;
+      margin-top: -1px;
+    }
+    #matchbox .mb-plus::after { content: "上传名单文件"; font-size: 13px; font-weight: 600; }
+    #matchbox .mb-plus:hover {
+      background: var(--accent-soft);
+      border-color: #9db2e0;
+      border-style: solid;
+    }
+    #matchbox #murl {
+      flex: 1;
+      height: 46px;
+      min-width: 0;
+      border: 1px solid var(--line-2);
+      border-radius: 11px;
+      padding: 0 14px;
+      background: var(--surface-2);
+      font-size: 13px;
+      color: var(--ink);
+      transition: .16s ease;
+    }
+    #matchbox #murl::placeholder { color: var(--faint); }
+    #matchbox #murl:focus,
+    #matchbox #mnames:focus {
+      outline: none;
+      border-color: #8fa8e4;
       background: #fff;
-      color: #5b6b88;
-      font-size: 13px;
-      line-height: 1.7;
+      box-shadow: 0 0 0 3px rgba(47, 91, 211, .10);
     }
-    @media (max-width: 600px) {
-      .topbar { height: 62px; }
-      .page-hint { font-size: 12px; }
-      .footnote { font-size: 11px; }
+
+    /* 已选文件的小 chip */
+    #matchbox .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 12px;
+      padding: 5px 10px;
+      margin: 0 6px 8px 0;
+    }
+    #matchbox .chip b { font-weight: 600; }
+    #matchbox .chip i { font-style: normal; cursor: pointer; opacity: .6; }
+    #matchbox .chip i:hover { opacity: 1; }
+
+    /* 粘贴区：145 家是一屏放不下的，固定高度内部滚动，别把页面撑爆 */
+    #matchbox textarea {
+      width: 100%;
+      min-height: 230px;
+      max-height: 320px;
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: var(--surface-2);
+      font-size: 13px;
+      line-height: 1.95;
+      color: var(--ink-2);
+      resize: vertical;
+      transition: min-height .2s ease, border-color .16s ease;
+    }
+    /* 还没放名单时收矮一点，别先摆一块大白板 */
+    #matchbox .mb-card.is-empty textarea { min-height: 150px; }
+
+    /* 按钮组：搜索是主操作 */
+    #matchbox .mb-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    #matchbox button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 10px;
+      padding: 0 18px;
+      height: 42px;
+      font-size: 13.5px;
+      font-weight: 620;
+      transition: .16s ease;
+    }
+    #matchbox .mb-ghost {
+      background: var(--surface);
+      color: var(--ink-2);
+      border: 1px solid var(--line-2);
+    }
+    #matchbox .mb-ghost:hover { background: #f4f6fa; border-color: #ccd3de; }
+    #matchbox #mlookup {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 6px 14px -8px rgba(47, 91, 211, .7);
+    }
+    #matchbox #mlookup:hover { background: var(--accent-ink); }
+    #matchbox .mb-go { background: var(--accent); color: #fff; flex: 1; min-width: 160px; }
+    #matchbox .mb-go:hover { background: var(--accent-ink); }
+    #matchbox .mb-fast { background: var(--ok-soft); color: var(--ok); }
+    #matchbox .mb-fast:hover { background: #d9ebe1; }
+    #matchbox .mb-view {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid #b9c8e9;
+      margin-left: auto;
+    }
+    #matchbox .mb-view:hover { background: #f3f7ff; }
+    #matchbox .mb-view:disabled {
+      background: transparent;
+      color: #b3b9c4;
+      border-color: var(--line);
+      cursor: not-allowed;
+    }
+
+    /* 说明与状态 */
+    #matchbox .note,
+    #matchbox #mhint {
+      font-size: 12.3px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    #matchbox #mhint {
+      margin-top: 14px;
+      padding: 11px 14px;
+      background: #f8faf9;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    #matchbox #mthink:empty { display: none; }
+    #matchbox #mstat {
+      margin-top: 12px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      font-size: 12.5px;
+      color: var(--ink-2);
+      line-height: 1.75;
+    }
+    #matchbox #mstat:empty { display: none; }
+    #matchbox #mstat b { font-weight: 650; color: var(--ink); }
+    /* 状态条按结果换色：搜完是绿的，出问题是黄的，进行中保持中性 */
+    #matchbox #mstat.ok {
+      background: #f4faf6;
+      border-color: #d6ecdd;
+      color: #2c6b47;
+    }
+    #matchbox #mstat.warn {
+      background: #fdf9ee;
+      border-color: #eadfc2;
+      color: #7a5b14;
+    }
+
+    /* 进度条：页面脚本插在 #mstat 前面，按「104 / 145」算宽度 */
+    .mb-progress {
+      margin-top: 14px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+    .mb-progress.on { display: flex; }
+    .mb-progress .track {
+      flex: 1;
+      height: 6px;
+      border-radius: 999px;
+      background: #eceff4;
+      overflow: hidden;
+    }
+    .mb-progress .bar {
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #4f79e0, #2f5bd3);
+      transition: width .35s ease;
+    }
+    .mb-progress .pct {
+      flex: none;
+      font-size: 12px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    /* 名单行数：始终显示，空态是 0 家，别让人以为这块没作用 */
+    .mb-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      background: #f4f6fa;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-variant-numeric: tabular-nums;
+    }
+    .mb-count b { color: var(--accent); font-weight: 650; }
+    .mb-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 2px 0 8px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    /* ── 底部说明 ─────────────────────────────────────────── */
+    .foot {
+      margin-top: 26px;
+      padding: 16px 18px;
+      border-radius: 12px;
+      background: #fbfbfa;
+      border: 1px solid var(--line);
+      color: #5b6472;
+      font-size: 12.6px;
+      line-height: 1.85;
+    }
+    .foot b { color: var(--ink-2); font-weight: 600; }
+    .foot .row { display: flex; gap: 9px; }
+    .foot .row + .row { margin-top: 6px; }
+    .foot .dot {
+      flex: none;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #c3cbd8;
+      margin-top: 9px;
+    }
+    .foot .sign {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--line);
+      color: var(--faint);
+      font-size: 11.5px;
+    }
+
+    .offline-note {
+      margin: 0;
+      padding: 14px 16px;
+      border: 1px solid #eadfc2;
+      border-radius: 12px;
+      background: #fdf9ee;
+      color: #7a5b14;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 640px) {
+      .app { width: calc(100% - 28px); padding-top: 20px; }
+      .hero h1 { font-size: 21px; }
+      .flow li { font-size: 12px; }
+      #matchbox .mb-card { padding: 20px 18px 18px; }
+      #matchbox .mb-inputs { flex-wrap: wrap; }
+      #matchbox .mb-plus { width: 100%; height: 44px; }
+      #matchbox #murl { height: 44px; }
+      #matchbox textarea { min-height: 180px; }
+      #matchbox .mb-view { margin-left: 0; }
+      .topbar .back { display: none; }
     }
   </style>
 </head>
@@ -69,49 +480,158 @@
 <main class="app">
   <header class="topbar">
     <div class="brand-mark" aria-hidden="true">企</div>
-    <strong>企业端 · 参会企业名单导入</strong>
+    <div class="brand-txt">
+      <strong>企业端 · 参会企业名单</strong>
+      <span>双选会助手 · 名单导入与档案补齐</span>
+    </div>
+    <a class="back" href="/portal.html">← 返回工作台</a>
   </header>
 
-  <p class="page-hint">
-    把参会企业名单交上来：上传名单文件、贴一个网址，或直接粘贴，一行一家。
-    搜索会按名单逐家补齐企业档案与岗位。
-  </p>
+  <section class="hero">
+    <h1>把参会企业名单交上来</h1>
+    <p>上传名单文件、贴一个网址，或直接粘贴，<b>一行一家</b>。</p>
+    <p>搜索会按名单<b>逐家补齐企业档案与岗位</b>，补完的结论直接进匹配端排行。</p>
+    <ul class="flow">
+      <li class="now"><i>1</i>交名单</li>
+      <span class="arrow">→</span>
+      <li><i>2</i>搜索补全</li>
+      <span class="arrow">→</span>
+      <li><i>3</i>匹配端看排行</li>
+    </ul>
+  </section>
 
   <!-- 名单导入块挂在这里（rosterOnly 模式）。企业岗位信息统一由采集端
        从公开来源获取，这一页不再接受企业自助粘贴岗位。 -->
   <section id="chat"></section>
 
-  <p class="footnote">名单只用于补齐这家企业的档案与岗位；库内清单不在本页展示。</p>
+  <div class="foot">
+    <div class="row"><span class="dot"></span><span><b>名单用途</b>：只用来补齐这家企业的档案与岗位，库内清单不在本页展示。</span></div>
+    <div class="row"><span class="dot"></span><span><b>岗位来源</b>：统一由采集端从公开校招公告获取，不需要企业自己上传。</span></div>
+    <div class="row"><span class="dot"></span><span><b>没抓到的企业</b>：照样保留在名单里，按已有资料参与匹配，不会凭空丢。</span></div>
+    <div class="sign">双选会助手 · 企业端 · 2026-11-17</div>
+  </div>
 </main>
 
 <script>
-  /* 名单导入块（v12 三端分工）：源码来自 /js/match.js（服务端替换占位符），
-     rosterOnly 模式只挂「导入参会企业名单」，不渲染开始匹配与结果区——
-     匹配排行归匹配端。file:// 离线双击没有本地服务，退成一句说明。 */
+  /* 名单导入块（三端分工）：源码来自 /js/match.js（服务端替换占位符）。
+     rosterOnly 模式只挂「导入参会企业名单」，不渲染开始匹配与结果区 ——
+     匹配排行归匹配端。
+
+     注意：match.js 里自带 <style>，注入时**样式必须一起搬**，否则名单块
+     在企业端是裸的（这正是之前「好丑」的原因：只搬了 script）。 */
   (async () => {
+    const chat = document.querySelector("#chat");
     if (location.protocol === "file:") {
       const note = document.createElement("p");
       note.className = "offline-note";
       note.textContent = "当前是离线双击模式，名单导入需要本地服务："
         + "双击「启动离线版.bat」后从 http://127.0.0.1:8103/enterprises.html 打开。";
-      document.querySelector("#chat").appendChild(note);
+      chat.appendChild(note);
       return;
     }
     try {
-      const src2 = await (await fetch("/js/match.js")).text();
+      const src = await (await fetch("/js/match.js")).text();
       const host = document.createElement("div");
-      host.innerHTML = src2;
+      host.innerHTML = src;
+
+      // 1) 样式先搬进 head —— 必须插在本页样式**之前**：
+      //    match.js 自带 #matchbox 基础样式，同特异性下后出现的赢；
+      //    插在后面会把本页的尺寸/间距全顶掉（textarea 又变回 88px）。
+      const first = document.head.querySelector("style");
+      host.querySelectorAll("style").forEach(old => {
+        const st = document.createElement("style");
+        st.textContent = old.textContent;
+        document.head.insertBefore(st, first);
+      });
+
+      // 2) 脚本再执行（innerHTML 里的 script 不会自己跑）
       host.querySelectorAll("script").forEach(old => {
         const s = document.createElement("script");
         s.textContent = old.textContent;
         document.body.appendChild(s);
       });
+
       if (window.__mountMatch) window.__mountMatch(null, { rosterOnly: true });
+      decorate();
     } catch (e) {
       const note = document.createElement("p");
       note.className = "offline-note";
       note.textContent = "名单导入块没加载出来（服务不可达）。请确认服务在跑，再刷新本页。";
-      document.querySelector("#chat").appendChild(note);
+      chat.appendChild(note);
+    }
+
+    /* 页面级增强：只读 DOM、不改匹配逻辑 */
+    function decorate() {
+      const box = document.getElementById("matchbox");
+      const ta = document.getElementById("mnames");
+      if (!box) return;
+
+      // 名单行数徽标 + 小标题（match.js 没有给粘贴区标题）
+      const label = document.createElement("div");
+      label.className = "mb-label";
+      label.innerHTML = '<span>名单内容（一行一家）</span>'
+        + '<span class="mb-count" id="mbCount"><b>0</b> 家</span>';
+      if (ta) ta.parentElement.insertBefore(label, ta);
+
+      const count = label.querySelector("#mbCount");
+      const card = box.querySelector(".mb-card") || box;
+      const nOf = v => String(v || "").split(/\r?\n/).filter(x => x.trim()).length;
+      let last = -1;
+      function tick() {
+        if (!ta) return;
+        const n = nOf(ta.value);
+        if (n !== last) {
+          last = n;
+          count.querySelector("b").textContent = n;
+          card.classList.toggle("is-empty", n === 0);
+        }
+      }
+      if (ta) {
+        ta.addEventListener("input", tick);
+        setInterval(tick, 250);   // 「用内置名单」直接改 value，不触发 input
+        tick();
+      }
+
+      // 进度条：从 #mstat 的「104 / 145」解析，搜索中显示
+      const stat = document.getElementById("mstat");
+      const prog = document.createElement("div");
+      prog.className = "mb-progress";
+      prog.innerHTML = '<div class="track"><div class="bar"></div></div>'
+        + '<span class="pct">0%</span>';
+      if (stat && stat.parentElement) stat.parentElement.insertBefore(prog, stat);
+      const bar = prog.querySelector(".bar");
+      const pct = prog.querySelector(".pct");
+
+      function sync() {
+        const txt = (stat && stat.textContent) || "";
+        if (stat) {
+          stat.classList.toggle("ok", /搜索完成|已放入/.test(txt));
+          stat.classList.toggle("warn", /⚠|失败|连不上/.test(txt));
+        }
+        const m = txt.match(/(\d+)\s*\/\s*(\d+)/);
+        if (m && +m[2] > 0) {
+          const p = Math.min(100, Math.round(+m[1] / +m[2] * 100));
+          prog.classList.add("on");
+          bar.style.width = p + "%";
+          pct.textContent = p + "%";
+        } else if (/正在|搜索中/.test(txt)) {
+          prog.classList.add("on");
+          if (!m) { bar.style.width = "12%"; pct.textContent = "…"; }
+        } else if (/搜索完成/.test(txt)) {
+          bar.style.width = "100%";
+          pct.textContent = "100%";
+          setTimeout(() => {
+            prog.classList.remove("on");
+            bar.style.width = "0";
+          }, 1400);
+        } else if (!txt.trim()) {
+          prog.classList.remove("on");
+        }
+      }
+      if (stat) {
+        new MutationObserver(sync).observe(stat, { childList: true, subtree: true, characterData: true });
+        sync();
+      }
     }
   })();
 </script>
