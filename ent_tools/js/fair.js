@@ -272,36 +272,79 @@ function sendTyped() {
 /* ---------------- 步骤定义 ---------------- */
 
 
-/* 没有简历时：一句自由填写，替代 6 个身份问题 */
-const identityFreeTextStep = {
-  id: 'id-free',
-  kind: 'text',
-  ask: '没有简历也没关系。学校 / 专业 / 年级，一句话说清就行（可跳过）。',
-  optional: true,
-  placeholder: '比如：南京大学 管理科学与工程 研一',
-  hint: '只从这句话里拆学校、专业、年级；拆不出就留空，不猜。',
-  parse(text) {
-    const grade = (text.match(/(研[一二三]|大[一二三四五])/) || [])[0] || '';
-    const rest = grade ? text.replace(grade, ' ').trim() : text.trim();
-    const parts = rest.split(/[\/,，、;；|]+|\s+/).map(x => x.trim()).filter(Boolean);
-    if (!parts.length && !grade) return { error: '没识别到内容，可以直接点「跳过」。' };
-    return { value: { school: parts[0] || '', major: parts.slice(1).join(' ') || '', grade } };
-  },
-  apply(res) {
-    if (res.skipped) return;
-    const v = res.value || {};
-    if (v.school) state.answers.identity.school = v.school;
-    if (v.major) state.answers.identity.major = v.major;
-    if (v.grade) state.answers.identity.grade = v.grade;
-    syncAnswers();
-  },
-  reset() {
-    state.answers.identity.school = '';
-    state.answers.identity.major = '';
-    state.answers.identity.grade = '';
-    syncAnswers();
-  },
-};
+/* 没有简历时：学校 / 专业 / 年级 **分三个框**。专业必填，学校和年级可空。
+   为什么不再用「一句话说清」：旧版把第一个词当学校，学生只写「材料 研三」时
+   专业被吞成空（school=材料、major=''），后段匹配再拿默认专业顶上，整张榜都错。
+   为什么专业改必填：专业是「岗位对不对口」的唯一判据，空着后端只能编一个默认
+   专业去判，等于替学生答题。学校/年级只影响展示与校招资格，不写不影响结论，
+   所以仍可空。 */
+const IDENTITY_GRADES = ['研一', '研二', '研三', '大四', '大三', '大二', '大一'];
+
+function identityFieldsStep(opts) {
+  const o = opts || {};
+  return {
+    id: 'id-fields',
+    kind: 'card',
+    ask: o.ask || '先记一下你的专业（必填）；学校和年级可以不填。',
+    render() {
+      const id = state.answers.identity || {};
+      const html = `<div class="chat-card">
+        <div class="cc-title">学校 / 专业 / 年级</div>
+        <div class="cc-sub">专业必填——对口判断、岗位匹配都要按它算；学校和年级可以不填，三项分开填、互不依赖。</div>
+        <div class="grid g2" style="margin-top:8px">
+          <div class="f"><label>学校（可不填）</label>
+            <input data-k="school" type="text" maxlength="60" value="${esc(id.school || '')}" placeholder="比如：南京大学"></div>
+          <div class="f"><label>专业 <span style="color:#b91c1c">*</span>（必填）</label>
+            <input data-k="major" type="text" maxlength="40" value="${esc(id.major || '')}" placeholder="比如：材料科学与工程" required></div>
+          <div class="f"><label>年级（可不填）</label>
+            <select data-k="grade"><option value="">未填</option>${IDENTITY_GRADES.map(g => `<option ${id.grade === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
+        </div>
+        <div class="cc-sub" data-err style="display:none;color:#b91c1c">专业还没填：写专业全名或大致方向都行（比如「材料科学与工程」「会计」）。这一项要用来判断岗位对不对口，不能不填。</div>
+        <div class="cc-actions">
+          <button type="button" class="btn btn-p" data-act="save">保存并继续</button>
+        </div>
+      </div>`;
+      const el = appendMsg('bot', html, 'wide');
+      const root = el.querySelector('.bubble');
+      state.awaiting = { step: null, botEls: [el], resolve: () => {} };
+      state.awaitingEls = (state.awaitingEls || []).concat([el]);
+      return new Promise(resolve => {
+        const errEl = root.querySelector('[data-err]');
+        const majorEl = root.querySelector('[data-k="major"]');
+        const finish = () => {
+          const v = {};
+          root.querySelectorAll('[data-k]').forEach(x => { v[x.dataset.k] = String(x.value || '').trim(); });
+          if (!v.major) {                       // 专业必填：就地拦下，卡片不关闭、已填的学校和年级不丢
+            if (errEl) errEl.style.display = '';
+            try { majorEl.focus(); } catch (e) {}
+            return;
+          }
+          state.awaiting = null;
+          el.classList.add('resolved');
+          root.querySelectorAll('button,input,select').forEach(x => { try { x.disabled = true; } catch (e) {} });
+          const shown = [v.school, v.major, v.grade].filter(Boolean).join(' · ');
+          resolve({ value: v, skipped: false, label: shown });
+        };
+        if (majorEl) majorEl.oninput = () => { if (errEl) errEl.style.display = 'none'; };
+        root.querySelector('[data-act="save"]').onclick = () => finish();
+      });
+    },
+    apply(res) {
+      if (res.skipped) return;
+      const v = res.value || {};
+      state.answers.identity.school = v.school || '';
+      state.answers.identity.major = v.major || '';
+      state.answers.identity.grade = v.grade || '';
+      syncAnswers();
+    },
+    reset() {
+      state.answers.identity.school = '';
+      state.answers.identity.major = '';
+      state.answers.identity.grade = '';
+      syncAnswers();
+    },
+  };
+}
 
 function fairStep(id, ask, opts) {
   const o = opts || {};
@@ -486,7 +529,7 @@ async function identityEditCard() {
     <div class="grid g2" style="margin-top:8px">
       <div class="f"><label>姓名</label><input data-k="name" type="text" maxlength="20" value="${esc(id.name)}"></div>
       <div class="f"><label>学校</label><input data-k="school" type="text" maxlength="60" value="${esc(id.school)}"></div>
-      <div class="f"><label>专业</label><input data-k="major" type="text" maxlength="40" value="${esc(id.major)}"></div>
+      <div class="f"><label>专业 <span style="color:#b91c1c">*</span></label><input data-k="major" type="text" maxlength="40" value="${esc(id.major)}" required></div>
       <div class="f"><label>学历</label><select data-k="degree"><option value="">未填</option>${Q.fair.degrees.map(d => `<option ${id.degree === d ? 'selected' : ''}>${esc(d)}</option>`).join('')}</select></div>
       <div class="f"><label>年级</label><select data-k="grade"><option value="">未填</option>${['研一', '研二', '研三', '大四', '大三', '大二', '大一'].map(d => `<option ${id.grade === d ? 'selected' : ''}>${esc(d)}</option>`).join('')}</select></div>
       <div class="f"><label>毕业时间</label><input data-k="graduation" type="text" maxlength="30" value="${esc(id.graduation)}"></div>
@@ -498,6 +541,11 @@ async function identityEditCard() {
   return makeCard(html, (root, done) => {
     root.querySelector('[data-act="save"]').onclick = () => {
       root.querySelectorAll('[data-k]').forEach(el => { state.answers.identity[el.dataset.k] = el.value.trim(); });
+      if (!state.answers.identity.major) {   // 专业必填：清空了就拦住，不落一个空专业给后段
+        const mi = root.querySelector('[data-k="major"]');
+        try { mi.style.borderColor = '#b91c1c'; mi.focus(); } catch (e) {}
+        return;
+      }
       syncAnswers();
       done('saved');
     };
@@ -708,7 +756,18 @@ function fairSteps() {
 
 function buildFlow() {
   const flow = [];
-  if (!state.resume) flow.push(identityFreeTextStep);
+  /* 身份信息：三项分开填、都可空。简历已经抽到专业的就不再问；
+     抽不到专业时补问一次（学校 / 年级即使已有也照常回填，可改可空）。 */
+  /* 身份信息：三项分开填，专业必填、学校年级可空。简历已经抽到专业的就不再问；
+     抽不到专业时补问一次（学校 / 年级即使已有也照常回填，可改可空）。 */
+  const _idNow = state.answers.identity || {};
+  if (!state.resume) {
+    flow.push(identityFieldsStep());
+  } else if (!String(_idNow.major || '').trim()) {
+    flow.push(identityFieldsStep({
+      ask: '简历里没抽到专业，麻烦补一下（必填）；学校和年级可以不填。',
+    }));
+  }
   
   /* v15：简历已抽到经历时跳过「实习/竞赛/论文」追问，直接用简历里的。 */
   const _resumeExpN = (function(){ const r = state.resume || {};
@@ -1008,7 +1067,7 @@ async function init() {
         + ' 段，匹配优先看第 1 段），不再重复问你。', { fast: true });
     }
   } else {
-    await say('没问题，那我们只聊 4 个问题；身份信息可以一句话带过，也可以跳过。');
+    await say('没问题，那我们只聊 4 个问题；学校、专业、年级分开填，专业必填，学校和年级可以不填。');
   }
   state.flow = buildFlow();
   updateProgress();
