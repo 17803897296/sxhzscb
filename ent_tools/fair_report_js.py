@@ -1656,6 +1656,9 @@ function rowHTML(r,idx,P){
     return '<div class="line" style="color:#7b8492;font-size:12.5px">对口理由（已随命中撤下）：'
       +e(short(r.reason,100))+'</div>';
   };
+  /* 主营「沾边但没有任何命中/推断」的行：这类企业唯一的入口是轮岗类岗位
+     （管培生 / 储备干部），需要在主行把它写出来，见下面的 _rotLine。 */
+  let _nearOnly=false;
   const _rk=(function(){
     const mj=(P&&((P.profile&&P.profile.major)||P.major))||'';
     const MK=miBizKw(mj, P.intended_jobs||[]);
@@ -1713,7 +1716,37 @@ function rowHTML(r,idx,P){
       return '<span class="hits" style="color:#c0392b">主营复核：已执行 · 不通过——主营与你的方向对不上，推断命中已全部撤下</span>';
     if(r.infer_matches&&r.infer_matches.length)
       return '<span class="hits" style="color:#1a6b4f">主营复核：已执行 · 通过——主营里出现你的方向词（'+w+'），推断命中据此保留</span>';
+    _nearOnly=true;
     return '<span class="hits" style="color:#1a6b4f">主营复核：已执行 · 主营沾边——现场问一句（管培生/储备干部培养方向）的准入通过，无推断命中</span>';
+  })();
+  /* 轮岗入口（2026-11-17 用户要求）：管培生 / 储备干部这类只写大类、不写方向的
+     岗位，是「方向沾边」的企业最现实的一条路。以前只在复核那句的括号里带一句
+     「（管培生/储备干部培养方向）」，学生看不到具体该问什么。现在用与命中同一套
+     箭头格式写出来，括号里明说「培养方向待核实」，排在所有箭头对的最后——
+     它不是命中，是现场要问的那一句。有真实轮岗岗名就问那个岗名；公告里连岗名
+     都没有（0 岗企业）时，写通用问法并注明「这家公告没写」。 */
+  const _rotLine=(function(){
+    if(r.state==='hit') return '';
+    /* 政府机关、事业单位、学校不办「管培生」：这类单位走考试 / 编制招录，
+       套一句「管培生培养方向待核实」是把企业话术按到体制内头上，纯误导。
+       （呼市行政审批局、人事考试中心、水文地质大队、精英中学都在推断层里。） */
+    const _rotOff=/政府|事业|科研/.test(String(r.ind_name||''))
+      || /(中学|小学|大学|学院|学校|教育局|考试中心|政务|管理局|研究所|研究院|大队|人才服务中心)/.test(String(r.name||''));
+    if(_rotOff) return '';
+    const _dft=(_intentsNow[0]||'');
+    const rot=(r.ask_jobs||[]).filter(function(a){
+      return /管培|储备干部|培训生|轮岗/.test(String((a&&a.job)||''));
+    });
+    if(rot.length){
+      return '<span class="hits" style="color:#b7791f">轮岗入口：'
+        +e(rot.slice(0,2).map(function(a){
+            return a.job+'（培养方向待核实）→ 你选的「'+(a.intent||_dft)+'」';
+          }).join('；'))+'</span>';
+    }
+    if(!_nearOnly||!_dft) return '';
+    return '<span class="hits" style="color:#b7791f">轮岗入口：'
+      +e('管培生 / 储备干部（这家公告没写，培养方向待核实）→ 你选的「'+_dft+'」')
+      +'</span>';
   })();
   /* 层级提示：同一职能但写着主管 / 资深 / 经理的岗位，校招投不进这一档。
      不假装对口、也不说人家不招——企业照常留榜，给学生一句现场可问的话。 */
@@ -1785,6 +1818,7 @@ function rowHTML(r,idx,P){
         +'</span>':'')
    +   intentLine
    +   inferLine
+   +   _rotLine
    +   _rk
    +   levelLine
    +   (r.misses.length?'<span class="misses">未对口'

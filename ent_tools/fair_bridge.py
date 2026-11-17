@@ -772,6 +772,22 @@ def _same_title(a, b):
     return False
 
 
+def _limit_to_kept(jobs, real):
+    """「命中岗位」只列主营复核后仍有效的对（2026-11-17 用户要求）。
+
+    matched_jobs 里可能还留着已被撤下的岗位名——琥崧那行就是「命中岗位：材料研发
+    工程师、工艺工程师」，复核行却写「撤下 1 对」，两栏自相矛盾。real 是复检
+    kept 之后的岗位名，以它为白名单收敛；用 _same_title 比，避免脱敏名
+    （「（待现场确认：xxx）」）或写法差异把有效岗误删。
+    收敛后为空说明一个都没留下，原样返回、交给调用方的降级分支处理，不在这里
+    硬清空（否则 hit 行会没有命中岗位却仍留在 hit 组）。
+    """
+    if not real:
+        return list(jobs)
+    kept = [x for x in jobs if x and any(_same_title(x, t) for t in real)]
+    return kept or list(jobs)
+
+
 def hallucination_guard(c, m, trust, by_title):
     """v6 幻觉拦截：拦「岗位名」和「证据等级」，不拦「企业」。
 
@@ -1456,6 +1472,12 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     if real and m_eff["state"] != "hit" and not guard["state_fix"]:
         m_eff["state"] = "hit"
         m_eff["matched_jobs"] = _dedup(real)
+    # 「命中岗位」只列复核后仍有效的对（2026-11-17 用户要求）：llm_match 的
+    # matched_jobs 里可能还留着主营复核已经撤下的岗位名——琥崧那行就是
+    # 「命中岗位：材料研发工程师、工艺工程师」，复核行却写「撤下 1 对」，
+    # 两栏读起来自相矛盾。real 是复检 kept 之后的岗位名，以它为准收敛。
+    if m_eff["state"] == "hit" and real:
+        m_eff["matched_jobs"] = _limit_to_kept(m_eff["matched_jobs"], real)
     # 学生没勾任何意向、上面按 DEFAULT_PROFILE 的默认意向判出的 hit 不算「明确命中」：
     # 默认意向（供应链计划 / 数据分析师 / 商业分析）只是让 demo 有结果的兜底，
     # 不是学生选的岗位。一律降成推断待核实并写明原因；默认意向仍留在 profile
