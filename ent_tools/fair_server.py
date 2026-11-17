@@ -584,6 +584,8 @@ class Handler(BaseHTTPRequestHandler):
                             "weights": payload.get("weights") or {},
                             "profile": payload.get("profile") or {},
                             "intent_semantics": payload.get("intent_semantics") or {},
+                            "campus_no_fit": payload.get("campus_no_fit") or {},
+                            "biz_fit_no": payload.get("biz_fit_no") or {},
                             "stats": payload.get("stats") or {}})
                 return
             # v12 测试数据库：把「这次填了什么 + 排出了什么」落一条只追加的记录

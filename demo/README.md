@@ -162,6 +162,7 @@
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| 3.3.1 | 2026-11-18 | fit=no 抑制推断对（虚拟用户物理专业实测拍板）：主营复核判方向不交叉的推断命中撤出主榜，payload 新增 `biz_fit_no` 留档段（含逐家原因，现场确认招的除外）；物理专业 E2E：主榜 35→16 行，12 家推断命中全部 yes/ask；`/api/fair/preview` 同步透出 campus_no_fit / biz_fit_no |
 | 3.3 | 2026-11-18 | 结构大扫除（外部评审 P0–P3 全销账）：报告页 JS 从 Python 字符串抽出为 `js/report.js` 真源文件；正本薄化（`FULL_ENGINE` 构建开关 + thinCalcOne 直读服务端预计算，本地引擎只在离线变体，新增 `POST /api/fair/preview` 服务端预览）；构建分叉 demo/（薄页）与 demo_offline/（离线全量）同源产出；`match_rows` 巨函数拆 5 个纯函数 + MatchCtx/RowPrep dataclass，顺带修 assemble 无条件写盘（预览会覆盖生效画像）的 bug；pyproject + `python -m ent_tools` 统一入口 + GitHub Actions（pytest + build + git diff --exit-code，冷克隆逐字节可复现，种子库补岗位同步）；`_handoff` 死素材删除、data/ 收敛 88→48 项（snapshots/archive 分目录）、22 个手动脚本归入 pipeline/；README 数字与结构树订正 |
 | 3.2 | 2026-11-17 | 判对口换坐标系：20 类行业码 × 专业族查表，145 家 100% 打码（人工确认 37 / 模型 108），码表唯一真源 `ind_code.py`，人工覆写表 `_ind_code_override.json` 优先级最高、重跑不覆盖，`refresh_all --llm` 只给「还没定论」的新企业补码；主营复核加诊断层（没通过先查「为什么没有方向词」：岗位名自带方向 / 主营字段缺失 / 词表没覆盖 / 别的行业，开发期待补的保留待补、不直接毙），复检改吃 145 家档案的细分描述；报告行改口径（复核折叠、四段式理由、鼓励句加条件、命中栏收敛、轮岗入口）；匹配只排名单内企业；修 `llm.chat` 不传 cfg 落到「智谱 base + 空 key」返回 401、被误读成 key 失效的坑 |
 | 3.1 | 2026-11-17 | 岗位推荐放宽到职能方向级 + 跨专业拦截；三端真分页（名单导入进企业端、匹配排行独立成页）；推断命中显示与主营复核体系（按意向对各算各）；纯大类岗企业后置 |

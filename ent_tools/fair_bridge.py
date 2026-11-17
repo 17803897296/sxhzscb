@@ -2030,6 +2030,11 @@ def match_rows(st):
     # 依据「公告视为齐全 → 有就是有，没有就是没有」，与 websearch / 社招（清单不齐全，
     # 保留并提示现场确认）区别对待。清单单独存档，可回溯，不是静默丢弃。
     _campus_nofit = []
+    # 业务复核 no 的抑制清单：fit=no 是逐家主营复核的结论（这家公司的业务链条
+    # 与学生意向不交叉），它的「推断可能招 X」对用户是噪音。物理专业实测：
+    # 31 家 inferred 里 19 家 no，真正该去现场的 yes 被稀释（2026-11-18 用户拍板
+    # 「fit=no 抑制推断对」）。与 campus_no_fit 同模式：不进主榜、清单留档可回溯。
+    _bizfit_nofit = []
     # 复检诊断汇总：开发期补词表 / 补采集的依据（写 data/_recheck_diag.json）
     _biz_diag_all = []
     for name, c in companies.items():
@@ -2100,6 +2105,20 @@ def match_rows(st):
             })
             continue
 
+        # —— 业务复核 no → 抑制推断对（2026-11-18 用户拍板）——
+        # fit=no 只可能来自 llm 复核（无 key / 超时时 _fit_verdict 回落中性档
+        # ask，不替用户判「跳过」），所以这里不需要再验 via。推断命中本来就是
+        # 「建议现场核实」的参考，复核已判主营方向不交叉的，继续展示只会淹没
+        # 真正该去的几家。现场确认招（fbrow=yes）的不在此列：事实，不是推断。
+        if (prep.state_final == "inferred" and prep.fit == "no"
+                and not (prep.fbrow and prep.fbrow["result"] == "yes")):
+            _bizfit_nofit.append({
+                "name": name,
+                "why": ("主营复核判方向不交叉：%s" % prep.basis) if prep.basis
+                       else "主营复核判方向不交叉",
+            })
+            continue
+
         rows.append(_compose_row(ctx, name, c, ev, prep, m))
 
     # 名次只由排序分决定。
@@ -2110,14 +2129,12 @@ def match_rows(st):
     # 唯一例外：「现场确认不招」属于事实出局，仍顺延到队尾。
     # 同分并列时要给确定性次序，否则顺序取决于数据库返回顺序（页面上同分企业
     # 谁在前谁在后会莫名其妙地变）。规则：命中 > 推断，再按展位号，最后按名称。
-    # 顺延到队尾的两类：现场确认不招（事实出局）、fit=no（主营方向与意向不交叉，
-    # 页面已收进「与你的方向无关」折叠组）。fit=no 此前只折叠展示、名次仍靠前，
-    # 主榜第 6 位却出现在页面底部折叠组里，导逛顺序和卡片名次对不上。
-    # 注意：fit=no 只顺延，不删数据、不动展位号、不进 excluded —— 0 岗≠不招仍是红线。
-    return rows, _campus_nofit, _biz_diag_all
+    # （历史注：fit=no 曾走「顺延到队尾 + 折叠组」，2026-11-18 起改为直接撤出
+    # 主榜、进 biz_fit_no 留档；下面的排序键保留 fit=no 分支作防御，正常已空。）
+    return rows, _campus_nofit, _bizfit_nofit, _biz_diag_all
 
 
-def assemble(st, rows, campus_nofit, biz_diag_all, persist=True):
+def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
     """组装段：排序、统计，把顶层的表（权重 / 语义 / 状态）与行拼成 payload。
 
     下游页面只读这一份 JSON，「页面看到的东西」从这里开始定型。
@@ -2136,6 +2153,7 @@ def assemble(st, rows, campus_nofit, biz_diag_all, persist=True):
     intent_sem = st['intent_sem']
     profile = st['profile']
     _campus_nofit = campus_nofit
+    _bizfit_nofit = bizfit_nofit
     _biz_diag_all = biz_diag_all
 
     rows.sort(key=lambda r: (
@@ -2211,6 +2229,15 @@ def assemble(st, rows, campus_nofit, biz_diag_all, persist=True):
                      "按「公告没有就是没有」不进榜单，也不做「可能招」的推断。"
                      "清单保留在此供核对。"),
             "items": _campus_nofit,
+        },
+        # 业务复核 no 的推断命中（2026-11-18 起撤出主榜）：复核判主营方向与
+        # 意向不交叉，「推断可能招」对用户是噪音。清单留档可回溯，现场确认
+        # 招的不在此列。
+        "biz_fit_no": {
+            "count": len(_bizfit_nofit),
+            "note": ("主营方向与你的意向不交叉、推断命中被复核抑制的企业："
+                     "不进榜单，清单保留在此供核对（现场已确认招的除外）。"),
+            "items": _bizfit_nofit,
         },
         "province_map": R.CITY_PROVINCE,
         "sources": {
@@ -2299,8 +2326,8 @@ def build():
     口径没有任何变化 —— 拆前拆后 payload 逐字段一致。
     """
     st = load_inputs()
-    rows, campus_nofit, biz_diag_all = match_rows(st)
-    return assemble(st, rows, campus_nofit, biz_diag_all)
+    rows, campus_nofit, bizfit_nofit, biz_diag_all = match_rows(st)
+    return assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all)
 
 
 def build_preview(profile_doc):
@@ -2312,8 +2339,8 @@ def build_preview(profile_doc):
     persist=False：预览结果只进响应，绝不落盘（见 assemble）。
     """
     st = load_inputs(profile_override=profile_doc)
-    rows, campus_nofit, biz_diag_all = match_rows(st)
-    return assemble(st, rows, campus_nofit, biz_diag_all, persist=False)
+    rows, campus_nofit, bizfit_nofit, biz_diag_all = match_rows(st)
+    return assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=False)
 
 
 if __name__ == "__main__":
