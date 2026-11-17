@@ -1,0 +1,29 @@
+name: ci
+
+# 评审 P0 第二刀：克隆后一条命令可验证。
+# 页面和 payload 必须成对提交——构建产物与提交不一致时 CI 直接红。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      # 关闭行尾转换：保证构建输出与提交的 LF blob 逐字节可比
+      - name: git 行尾关闭 autocrlf
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: 安装测试依赖
+        run: pip install pytest
+      - name: 单元回归
+        run: pytest
+      - name: 重建正本薄页（python -m ent_tools build）
+        run: python -m ent_tools build
+      - name: 构建产物必须与提交一致
+        run: git diff --exit-code

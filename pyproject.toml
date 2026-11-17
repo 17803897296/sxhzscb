@@ -1,0 +1,14 @@
+[project]
+name = "careersafari-fair"
+version = "3.2.0"
+description = "双选会工作台：企业采集、画像匹配、报告单页的构建与服务"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+# 克隆后在仓库根一条命令能跑：pytest
+pythonpath = ["ent_tools"]
+testpaths = ["ent_tools/tests"]

@@ -85,12 +85,29 @@ class TestNoRawSqlite(unittest.TestCase):
         for f, cap in BUDGET.items():
             p = os.path.join(HERE, f)
             if not os.path.exists(p):
+                # .gitignore 的本机一次性脚本（ent_tools/_*.py）在克隆/CI 里不存在，
+                # 是预期缺席，不算 stale；但 git 跟踪的文件缺席必须红。
+                if not self._git_tracked(f):
+                    continue
                 stale[f] = "文件不存在"
                 continue
             n = raw_connects(p)
             if n < cap:
                 stale[f] = (cap, n)
         self.assertEqual(stale, {}, "预算该下调/删除（上限, 实际）：%r" % stale)
+
+    @staticmethod
+    def _git_tracked(rel):
+        """文件是否被 git 跟踪（冷克隆/CI 里判断「缺席是预期还是失职」）。"""
+        import subprocess
+        try:
+            r = subprocess.run(
+                ["git", "ls-files", "--", rel], cwd=HERE,
+                capture_output=True, text=True, timeout=10,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return True   # 拿不准就按缺席处理，宁红勿漏
+        return bool(r.stdout.strip())
 
     def test_repository_is_usable(self):
         import repository as R

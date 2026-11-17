@@ -33,6 +33,9 @@ desktop.ini
 
 # 一次性调试脚本 / 本地夹具（本机保留，永不入库）
 ent_tools/_*.py
+# 包文件以双下划线开头，是统一入口（python -m ent_tools），必须入库
+!ent_tools/__init__.py
+!ent_tools/__main__.py
 # 流水线第二步（refresh_all 2/8）直接调它，必须入库
 !ent_tools/_dir_fill.py
 ent_tools/_*.js
