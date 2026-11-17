@@ -77,12 +77,13 @@ _bak_*/
 _tmp*/
 _tmp_resume_test/
 ent_tools/_stale_cache/
-ent_tools/data/_stale_cache/
 ent_tools/.runtime/
 ent_tools/.env.*.bak_*
 # data/ 下的本地快照与审计产物；两个例外是门禁要用的夹具（见 sync_repo.TEST_ASSETS）
-ent_tools/data/_profile_backup_before_*.json
 ent_tools/data/_rec_pool_audit.json
+
+# data/ 归档区：一次性诊断产物与历史备份集中放置，永不入库
+ent_tools/data/archive/
 
 # 采集期临时产物：页面正文缓存（体积大、可重建）、未抓到名单、待采名单快照
 ent_tools/data/_pages/
