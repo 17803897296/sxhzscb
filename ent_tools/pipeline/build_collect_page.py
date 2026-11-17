@@ -12,7 +12,7 @@ import json
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 SRC = ROOT / "_new_review" / "new" / "index.html"
 NAMES = ROOT / "ent_tools" / "data" / "company_names.json"
 OUT = ROOT / "demo" / "collect.html"

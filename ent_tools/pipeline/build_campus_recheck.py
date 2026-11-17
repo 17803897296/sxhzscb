@@ -29,7 +29,7 @@ import os
 import sqlite3
 from urllib.parse import urlparse
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC_DB = os.path.join(HERE, "data", "careersafari.db")
 OUT_DB = os.path.join(HERE, "data", "campus_recheck.db")
 OUT_MD = os.path.join(HERE, "data", "campus_recheck_report.md")

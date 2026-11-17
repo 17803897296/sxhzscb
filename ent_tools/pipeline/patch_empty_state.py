@@ -1,7 +1,7 @@
 """详细页：没有企业数据时给个明确的空状态，不要白屏。"""
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 f = ROOT / "demo" / "index.html"
 s = f.read_text(encoding="utf-8")
 

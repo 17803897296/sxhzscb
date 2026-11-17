@@ -12,6 +12,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+# 脚本已移入 pipeline/：把 ent_tools 挂上 sys.path，兄弟模块照常导入
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import enrich_by_llm as e
 
 CAUSES = {

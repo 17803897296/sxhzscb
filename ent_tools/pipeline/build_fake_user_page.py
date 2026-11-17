@@ -8,7 +8,7 @@ import html as H
 import json
 import os
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(HERE, "data")
 DEMO = os.path.join(HERE, "..", "demo")
 

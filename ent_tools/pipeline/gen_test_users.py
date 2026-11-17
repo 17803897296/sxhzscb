@@ -25,7 +25,7 @@ import json
 import os
 import random
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(HERE, "data", "test_users")
 
 # ---------------------------------------------------------------- 专业族

@@ -19,7 +19,7 @@ from __future__ import annotations
 import argparse, json, os, re, sqlite3, sys, time, urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(HERE, "data")
 DB = os.path.join(DATA, "careersafari.db")
 REPORT = os.path.join(DATA, "enrich_report.json")

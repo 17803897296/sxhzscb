@@ -10,7 +10,7 @@ import json
 import os
 import time
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(HERE, "data", "_rank_libingcheng.json")
 OUT = os.path.join(HERE, "..", "demo", "ranking_libingcheng.html")
 

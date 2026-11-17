@@ -9,6 +9,10 @@ MCP stdio 传输：一行一个 JSON-RPC 消息。
 import json
 import sys
 import traceback
+from pathlib import Path
+
+# 脚本已移入 pipeline/：把 ent_tools 挂上 sys.path，兄弟模块照常导入
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import job_lookup
 

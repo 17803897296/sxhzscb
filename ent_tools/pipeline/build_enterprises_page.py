@@ -15,8 +15,8 @@ import sqlite3
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-HERE = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent.parent
+HERE = Path(__file__).resolve().parent.parent
 DB = HERE / "data" / "careersafari.db"
 OUT = ROOT / "demo" / "enterprises.html"
 

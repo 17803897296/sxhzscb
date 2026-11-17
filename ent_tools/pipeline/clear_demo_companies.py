@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 f = ROOT / "demo" / "index.html"
 s = f.read_text(encoding="utf-8")
 

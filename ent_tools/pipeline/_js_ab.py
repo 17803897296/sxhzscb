@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HERE))
 
 import cdp           # noqa: E402

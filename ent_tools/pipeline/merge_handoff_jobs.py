@@ -20,7 +20,7 @@ import sqlite3
 import sys
 import time
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(HERE, "data")
 DB = os.path.join(DATA, "careersafari.db")
 

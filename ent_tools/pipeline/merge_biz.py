@@ -10,7 +10,7 @@ import json
 import os
 import sqlite3
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(HERE, "data")
 TODO = os.path.join(DATA, "biz_scope_todo.json")
 INCOMING = os.path.join(DATA, "biz_incoming.json")

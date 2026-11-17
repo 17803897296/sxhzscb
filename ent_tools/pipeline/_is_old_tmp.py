@@ -23,7 +23,7 @@ import os
 import re
 import urllib.request
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(HERE, "data", "intent_semantics_cache.json")
 
 PROMPT = """你是校招岗位语义匹配助手。

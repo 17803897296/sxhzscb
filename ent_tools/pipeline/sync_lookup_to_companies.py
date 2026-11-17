@@ -7,7 +7,7 @@ import json
 import pathlib
 import sys
 
-DATA = pathlib.Path(__file__).resolve().parent / "data"
+DATA = pathlib.Path(__file__).resolve().parent.parent / "data"
 CACHE_FILE = DATA / "lookup_cache.json"
 COMPANIES_FILE = DATA / "companies.json"
 
