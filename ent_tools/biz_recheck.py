@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -80,7 +81,7 @@ FIELDS = [
      ("测试", "科技")),
     ("计算机软件",
      ("计算机", "软件", "信息安全", "网络工程", "人工智能", "数据科学"),
-     ("软件", "算法", "前端", "后端", "测试", "运维", "数据", "人工智能"),
+     ("软件", "算法", "前端", "后端", "软件测试", "运维", "数据", "人工智能"),
      ("软件", "信息技术", "互联网", "云计算", "人工智能", "算法", "数据",
       "系统集成", "数字化", "科技", "网络"),
      ()),
@@ -232,14 +233,26 @@ def biz_hit(kw_fields: set, biz_text: str) -> bool:
                for field in kw_fields)
 
 
+# 跨行业通用职能/实验室岗：采购、仓储物流、质检化验、EHS、专利注册……这类岗
+# 每家公司都设，不依赖主营——岗位名或意向含这些词时免查主营直放。
+# 领域研发/工艺/合成岗（研发、工艺、合成、设计…）不在此列：必须主营沾边，
+# 否则「半导体研发 & 工艺」会钻进化学学生的匹配（2026-11-17 用户反馈）。
+_GENERIC_JOB = re.compile(
+    r"采购|供应商|仓储|物流|供应链|客服|售前|售后|技术支持|EHS|安全工程师|"
+    r"计划员|化验|质检|实验|检验|检测|分析|测试|质量|专利|注册|"
+    r"生产管理|生产计划|生产跟单")
+
+
 def filter_real(real_pairs, kw: tuple, kw_fields: set, biz_text: str,
                 major: str = ""):
-    """明确命中复检：意向或岗位名带方向词 → 放行；否则主营强词一票。
+    """明确命中复检：跨行业通用职能/实验室岗直放；其余主营强词一票。
 
-    具体意向（化学分析工程师…）剥掉通用词后的核心词都在方向词表里，天然通过
-    —— 闸门只咬「全通用意向」（管培生/储备干部）配字面同名岗位的组合，
-    即用户给的反面案例：金融公司「管培生」 × 物流专业选的「管培生」。
-    真实岗位名公告是硬证据（有就是有），主营判定只兜方向缺失的这一类。
+    通用职能（采购/仓储物流/质检化验/EHS…）哪家公司都有，不依赖主营；
+    其余岗位（研发/工艺/合成这类领域岗）一律查主营——方向词命中不够，
+    主营必须沾边，否则「半导体研发 & 工艺」会钻进化学学生的匹配
+    （2026-11-17 用户反馈：物理/材料企业的研发岗不该匹配化学）。
+    「管培生/储备干部」不在豁免表里：通用意向 × 字面同名岗查主营，
+    即金融公司「管培生」 × 物流专业选的「管培生」这条反面案例。
 
     返回 (kept, blocked)。blocked 元素是 (job, intent)，由调用方转现场待问。
     kw 为空（专业未知、意向全是通用岗）→ 全部放行，闸门不咬人。
@@ -250,7 +263,7 @@ def filter_real(real_pairs, kw: tuple, kw_fields: set, biz_text: str,
     for pair in real_pairs:
         t = str((pair[0] if isinstance(pair, (list, tuple)) else pair) or "")
         it = str((pair[1] if isinstance(pair, (list, tuple)) else "") or "")
-        if any(k in it for k in kw) or any(k in t for k in kw):
+        if _GENERIC_JOB.search(it) or _GENERIC_JOB.search(t):
             kept.append(pair)
         elif biz_hit(pair_fields(it, major) or kw_fields, biz_text):
             kept.append(pair)

@@ -1400,9 +1400,16 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     # 必须出现学生方向词，否则降为现场待问并写明「主营与方向对不上」。
     _dom_kw, _dom_fields = biz_recheck.student_domain(
         intended, (profile or {}).get("major") or "")
-    real, _biz_blocked = biz_recheck.filter_real(
-        real, _dom_kw, _dom_fields, biz_text,
+    # filter_real 吃 (岗位名, 意向) 二元组：被拦的对要转成现场待问句（带意向），
+    # 纯岗位名列表解不出意向。real 下游都按「岗位名列表」用（成员判断/交集），
+    # 所以复检完再抽回岗位名。
+    _real_pairs = [(t, it) for t, it in aligned_all
+                   if ((not jd_titles) and not _has_infer)
+                   or any(_same_title(t, x) for x in jd_titles)]
+    _real_kept, _biz_blocked = biz_recheck.filter_real(
+        _real_pairs, _dom_kw, _dom_fields, biz_text,
         (profile or {}).get("major") or "")
+    real = [t for t, _it in _real_kept]
     for _bt, _bi in _biz_blocked:
         if any(a.get("job") == _bt for a in asks):
             continue
