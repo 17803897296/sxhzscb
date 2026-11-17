@@ -124,6 +124,30 @@ const COMPANIES = __COMPANIES__;
 const BUILTIN_NAMES = __NAMES__;
 let POOL = COMPANIES.slice();
 
+/* 排序对象 = 当前名单。
+   名单从哪来：用户自己录/上传的名单优先，没录就是内置名单（__NAMES__，即库里这批企业）。
+   以前直接把 POOL 丢给 match()，而 POOL 是「内置企业 + 这次补到的」，
+   于是录取名单以外的企业一直混在榜里——换一场双选会，学生看到的榜还掺着上一场的公司。
+   现在按名单逐个取画像，取不到就给一条「尚未采集」占位，照样进「资料不全」层，
+   不会被悄悄丢掉。 */
+function rosterStub(name){
+  return { id: "roster-" + name, name: name, city: "未知", province: "",
+           nature: "未知", industry: "未知", jobs: [], jobSource: "未知",
+           roster_stub: true };
+}
+
+function rosterPool(names){
+  const byName = new Map();
+  POOL.forEach(c => { if (c && c.name) byName.set(c.name, c); });
+  const pool = [];
+  names.forEach(n => {
+    const c = byName.get(n);
+    if (c) { pool.push(c); byName.delete(n); return; }
+    pool.push(rosterStub(n));
+  });
+  return pool;
+}
+
 const DIM_KEYS = ["salary","stability","growth","autonomy","impact","balance"];
 const DIM_LABEL = { salary:"薪资", stability:"稳定", growth:"成长",
                     autonomy:"自主", impact:"影响", balance:"平衡" };
@@ -834,16 +858,19 @@ window.__mountMatch = function(doc, opts){
 
     const prof = profileFromDoc(doc);
 
-    if (!POOL.length) {
-      stat.innerHTML = "还没有企业数据。先点上面的「联网补全企业画像」，"
-        + "抓到的企业会自动加进来。";
+    if (!names.length) {
+      stat.innerHTML = "名单是空的。先上传名单文件或粘贴企业名；"
+        + "不上传名单就按内置的 <b>" + BUILTIN_NAMES.length + "</b> 家排。";
       return;
     }
 
-    const rows = match(POOL, prof);
+    /* 只排名单里的企业：名单里没采集到画像的，给一条占位进「资料不全」。 */
+    const pool = rosterPool(names);
+    const rows = match(pool, prof);
 
-    const covered = new Set(POOL.map(c => c.name));
-    const pending = names.filter(n => !covered.has(n)).length;
+    const withProfile = pool.filter(c => !c.roster_stub).length;
+    const pending = pool.length - withProfile;
+    const fromBuiltin = !raw;
 
     res.innerHTML = TIER_META.map(t => {
       const list = rows.filter(r => r.tier === t.key);
@@ -877,9 +904,11 @@ window.__mountMatch = function(doc, opts){
             + "正式版这里会去抓公告页并抽取岗位；当前用名单里的企业匹配。";
     }
 
-    stat.innerHTML = "名单 " + names.length + " 家 · "
-      + "本次能匹配 " + POOL.length + " 家（有企业画像的）"
-      + (pending ? " · 另有 <b>" + pending + "</b> 家尚未采集企业画像" : "")
+    stat.innerHTML = "排序范围：<b>" + (fromBuiltin
+        ? "内置名单 " + BUILTIN_NAMES.length + " 家（没上传名单）"
+        : "你录入的名单 " + names.length + " 家") + "</b>"
+      + " · 其中 <b>" + withProfile + "</b> 家有企业画像"
+      + (pending ? " · 另有 <b>" + pending + "</b> 家尚未采集，列在「资料不全」" : "")
       + "<br>加权：" + esc2(wline || "未填偏好，按等权")
       + "<br>分数 = 基础分（城市 40 + 方向 35 + 紧急度 25）× 偏好系数（1 + 六项偏好加权/100）+ 加分（企业类型 5 / 家乡 8），最后四舍五入到 1 位小数。"
       + "<br>每家下面会写「命中 / 没中」：城市、方向、紧急度、六项偏好、企业类型、家乡。"
