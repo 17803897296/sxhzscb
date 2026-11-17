@@ -20,6 +20,13 @@
   - 强词：单次出现即可判「业务与方向相关」（物流 / 制造 / 生产…）；
   - 弱词：需出现 ≥2 个不同弱词（超市 / 商贸 / 跨境…）。
   网页导航垃圾短语（「安全生产」「主营产品」这类栏目标题）先剔除再匹配。
+
+2026-11-17 追加「诊断」层（开发期口径）：一条对没通过时，不直接判企业不符，
+先查原因 —— 岗位名自带方向 / 主营字段缺失 / 主营无词表方向词 / 只有宽泛词 /
+主营是别的行业。前四类是我们自己的缺口（规则漏判、采集没采到、词表没覆盖、
+证据太薄），开发期保留待补、写进 data/_recheck_diag.json；只有「主营是别的
+行业」才降级为现场待问。数据与词表补齐后把 FAIR_RECHECK_POLICY 设成 strict，
+待补的那批才按严格口径一起拦。
 """
 from __future__ import annotations
 
@@ -77,7 +84,7 @@ FIELDS = [
      ("电子", "通信", "微电子", "集成电路", "光电"),
      ("电子", "通信", "集成电路", "芯片", "半导体", "光电", "嵌入式"),
      ("电子", "通信", "芯片", "半导体", "集成电路", "光电", "电路", "嵌入式",
-      "硬件", "元器件", "封装", "研发"),
+      "硬件", "元器件", "封装", "研发", "矿机"),
      ("测试", "科技")),
     ("计算机软件",
      ("计算机", "软件", "信息安全", "网络工程", "人工智能", "数据科学"),
@@ -105,7 +112,8 @@ FIELDS = [
     ("食品",
      ("食品", "营养"),
      ("食品", "品控", "烘焙", "饮料"),
-     ("食品", "饮料", "乳品", "烘焙", "餐饮", "农产品", "调味", "品控"),
+     ("食品", "饮料", "乳品", "烘焙", "餐饮", "农产品", "调味", "品控",
+      "中医", "养生", "茶饮", "食养", "保健品"),
      ()),
     ("能源环境",
      ("能源", "环境", "环保", "安全工程"),
@@ -123,17 +131,45 @@ FIELDS = [
      ("设计", "视觉", "插画", "UI"),
      ("设计", "视觉", "创意", "广告", "品牌", "传媒", "文化"),
      ()),
+    # 诊断补出来的行业（2026-11-17）：家纺企业主营写「被子、件套、面料」，
+    # 词表里没有纺织这一行 → 被误记成「词表未覆盖」。补上之后，化学学生看
+    # 家纺企业会被正确判成「别的行业」，而不是「我们词表漏了」。
+    ("纺织服装",
+     ("纺织", "服装", "轻化工程"),
+     ("纺织", "服装", "面料", "家纺"),
+     ("纺织", "家纺", "面料", "服装", "针织", "无纺", "床上用品", "制衣"), ()),
     ("商贸管理",
-     ("工商管理", "市场营销", "国际贸易", "电子商务", "管理科学"),
+     ("工商管理", "市场营销", "国际贸易", "电子商务", "管理科学", "人力资源"),
      ("市场", "营销", "销售", "运营", "电商", "外贸", "商务"),
      ("商贸", "贸易", "销售", "市场", "营销", "电商", "零售", "品牌", "运营",
-      "进出口", "外贸", "跨境"),
+      "进出口", "外贸", "跨境", "人力资源", "劳务", "招聘", "外包"),
      ()),
 ]
+
+# 领域细分/工艺词（2026-11-17 诊断得出）：只用来判「这家企业与我的领域对不对
+# 得上」，**不**用来判「它属于别的行业」。原因：这些词跨行业通用（塑料厂也
+# 需要机械、玻璃厂也需要电气），拿去判「别的行业」会把对口的机械/电气学生
+# 误判成不符。词源都是真实库里「主营有字、却没有本领域词」的企业（电解铝、
+# 家纺印染、靶材、稀土永磁…），补上之后它们按对口处理，而不是被当成别行业。
+FIELD_EXTRA = {
+    "化学化工材料": (
+        "电解", "氧化铝", "碳素", "阳极", "铝箔", "有色金属", "金属材料",
+        "表面处理", "电镀", "涂装", "磷化", "钝化", "清洗剂", "溶剂", "颜料",
+        "染料", "油墨", "油漆", "农药", "化肥", "日化", "香精", "香料",
+        "发酵", "提取", "纯化", "色谱", "光谱", "质谱", "滴定", "合成",
+        "聚合", "改性", "复合", "粉体", "陶瓷", "玻璃", "稀土", "永磁",
+        "靶材", "硅料", "多晶硅", "单晶", "电子化学品",
+        "光刻胶", "橡胶", "塑料", "锂电", "正极", "负极", "电解液",
+        "隔膜", "催化剂", "添加剂", "防腐", "印染", "染整", "化纤",
+        "造纸", "制浆"),
+}
 
 _MAJOR_FIELD = {mk: f[0] for f in FIELDS for mk in f[1]}
 _INTENT_FIELD = {mk: f[0] for f in FIELDS for mk in f[2]}
 _STRONG_BY_FIELD = {f[0]: tuple(f[3]) for f in FIELDS}
+# 自家领域命中用的词表 = 强词 + 细分词；判「别的行业」仍只用强词（见下）
+_HIT_BY_FIELD = {k: tuple(v) + tuple(FIELD_EXTRA.get(k) or ())
+                 for k, v in _STRONG_BY_FIELD.items()}
 _WEAK_BY_FIELD = {f[0]: tuple(f[4]) for f in FIELDS}
 
 # 弱词同义族：同族词（商贸/贸易/批发/分销）在一篇主营里同时出现只算一个证据。
@@ -229,7 +265,7 @@ def biz_hit(kw_fields: set, biz_text: str) -> bool:
     biz = _clean_biz(biz_text)
     if not biz or not kw_fields:
         return False
-    return any(any(k in biz for k in (_STRONG_BY_FIELD.get(field) or ()))
+    return any(any(k in biz for k in (_HIT_BY_FIELD.get(field) or ()))
                for field in kw_fields)
 
 
@@ -243,53 +279,250 @@ _GENERIC_JOB = re.compile(
     r"生产管理|生产计划|生产跟单")
 
 
-def filter_real(real_pairs, kw: tuple, kw_fields: set, biz_text: str,
-                major: str = ""):
-    """明确命中复检：跨行业通用职能/实验室岗直放；其余主营强词一票。
+# ── 「为什么没有方向词」诊断（2026-11-17 用户定：开发期先查原因，不要直接毙）──
+# 一条对没通过主营复检，根因分四类，处理方式完全不同：
+#   name_dir     岗位名自己就写了方向词（「材料研发工程师」里的「材料」）→ 本该
+#                放行：本家公告比主营更硬，属规则漏判，跟企业不符无关。
+#   biz_missing  主营字段没采到（行业/细分/主营范围/简介都空，或只有「未知」）→
+#                数据缺口。拿缺失当证据否决企业，等于把采集的锅算到企业头上。
+#   biz_no_word  主营有实质文字，但一个本领域词都没出现（「溅射靶材、离子束
+#                设备研发」）→ 多半是词表没覆盖（靶材/永磁/镀膜/晶体都不含
+#                「材料」二字），该补词表，不该毙。
+#   biz_weak     只出现「分析/检测/质检」这类宽泛词 → 证据太薄，人工看一眼。
+#   biz_other    主营明确落在别的行业（金融/教育/软件/建筑…）→ 真不符，才降级。
+DIAG_TEXT = {
+    "name_dir": "岗位名自带方向词",
+    "biz_missing": "主营字段缺失",
+    "biz_no_word": "主营无词表方向词",
+    "biz_weak": "主营只有宽泛词",
+    "biz_other": "主营是别的行业",
+}
+# 只有这一类算「企业真的不符」，降级为现场待问。其余三类是我们自己的缺口
+# （采集没采到 / 词表没覆盖 / 证据太薄），开发期一律保留待补——见 recheck_real。
+DROP_CODES = frozenset(["biz_other"])
+# 一家企业有几条被问的对时，报告里展示最严重的那条。
+DIAG_ORDER = ("biz_other", "biz_no_word", "biz_missing", "biz_weak", "name_dir")
 
-    通用职能（采购/仓储物流/质检化验/EHS…）哪家公司都有，不依赖主营；
-    其余岗位（研发/工艺/合成这类领域岗）一律查主营——方向词命中不够，
-    主营必须沾边，否则「半导体研发 & 工艺」会钻进化学学生的匹配
-    （2026-11-17 用户反馈：物理/材料企业的研发岗不该匹配化学）。
-    「管培生/储备干部」不在豁免表里：通用意向 × 字面同名岗查主营，
-    即金融公司「管培生」 × 物流专业选的「管培生」这条反面案例。
+# 判「别的行业」时不算证据的通用词：制造/生产/科技/研发…几乎每家公司主营都有，
+# 拿它判行业会张冠李戴（机械厂会先命中「物流供应链」的「制造」）。
+_CROSS_GENERIC = frozenset((
+    "制造", "生产", "工厂", "加工", "实业", "科技", "研发", "设备", "工程",
+    "建设", "运营", "数据", "网络", "销售", "市场", "品牌", "服务", "技术",
+    # 「设计」也是经营范围里的套话（「…的设计与销售」），拿它判「设计创意」
+    # 行业会把靶材厂、设备厂全打成广告公司。
+    "设计"))
 
-    返回 (kept, blocked)。blocked 元素是 (job, intent)，由调用方转现场待问。
-    kw 为空（专业未知、意向全是通用岗）→ 全部放行，闸门不咬人。
+
+def biz_parts(name, c=None) -> dict:
+    """把主营上下文拆成字段：判断「没方向词」是数据缺口还是词表缺口要用到。
+
+    与 biz_text_of 同源同序（名字 + 行业 + 细分 + 主营范围 + 岗位简介），
+    多返回 has_desc：行业/细分/范围/简介是否至少有一个有实质文字。
+    四项全空 = 主营没采到，不能据此判企业不符（那是采集的锅）。
     """
-    if not kw:
-        return list(real_pairs), []
-    kept, blocked = [], []
-    for pair in real_pairs:
+    c = c or {}
+    out = {
+        "name": str(name or ""),
+        "industry": str(c.get("industry") or ""),
+        "segment": str(c.get("segment") or ""),
+        "scope": str(c.get("biz_scope") or ""),
+        "brief": str(c.get("job_brief") or ""),
+    }
+    out["text"] = _clean_biz(" ".join(out[k] for k in
+                                     ("name", "industry", "segment", "scope", "brief")))
+    _desc = _clean_biz(" ".join(
+        (out["industry"], out["segment"], out["scope"], out["brief"])))
+    # 只写了「消费」「制造」这种两三个字的行业标签，等于没描述——判方向时
+    # 按「主营没采到」处理，不能拿它当「主营有字但没方向词」。
+    out["has_desc"] = len(_desc) >= 4
+    return out
+
+
+def other_fields_hit(biz_text: str, own_fields) -> list:
+    """主营落在哪些「别的领域」上：返回 [(领域, 命中词), ...]。
+
+    只在自家领域没命中时才用来判「真不符」：金融公司管培生 × 物流专业，
+    自家（物流）不命中、别的领域（金融）命中 —— 这才叫企业不符。
+    通用词（制造/生产/科技…）不算证据，否则机械厂会先命中物流域的「制造」。
+    """
+    biz = _clean_biz(biz_text)
+    own = set(own_fields or ())
+    out = []
+    for field, words in _STRONG_BY_FIELD.items():
+        if field in own:
+            continue
+        for w in words:
+            if w and w not in _CROSS_GENERIC and w in biz:
+                out.append((field, w))
+                break
+    return out
+
+
+def diagnose(job, intent, biz_text, major="", kw_fields=None, parts=None) -> dict:
+    """为什么这条对「没发现主营业务方向词」：返回 {code, label, detail, drop}。
+
+    detail 是给人看的一句话：岗位名写了什么、主营字段缺了哪几项、主营原文
+    写了什么、命中的是哪个别的行业 —— 这一层就是「为什么没有方向词」的答案，
+    也是补词表 / 补采集的依据。drop=True 只给「主营确实是别的行业」。
+    """
+    job_s = str(job or "")
+    pf = pair_fields(intent, major) or set(kw_fields or ())
+    # ① 岗位名自带方向词：本家公告自证方向，比主营更硬
+    hitw = [w for f in sorted(pf) for w in (_HIT_BY_FIELD.get(f) or ())
+            if w and w in job_s]
+    if hitw:
+        return {"code": "name_dir", "label": DIAG_TEXT["name_dir"], "drop": False,
+                "detail": ("岗位名「%s」里就写了「%s」，本家公告自证方向，不必靠主营"
+                           % (job_s, "、".join(hitw[:3])))}
+    biz = _clean_biz(biz_text)
+    # ② 主营没采到：字段全空 → 数据缺口，不是企业不符
+    if (parts is not None and not parts.get("has_desc")) or not biz:
+        return {"code": "biz_missing", "label": DIAG_TEXT["biz_missing"], "drop": False,
+                "detail": ("这家行业/细分/主营范围/岗位简介四项都没采到（或只有「未知」），"
+                           "没有主营就没法判方向，属数据缺口")}
+    # ③ 主营落在别的行业 → 真不符
+    others = other_fields_hit(biz, pf)
+    if others:
+        # 取「先出现在主营里」的那行，同位置取更长的词：主营开头的往往是主业
+        # （「节能环保集团…能源…大健康」应判能源，不是医学生物）。
+        f0, w0 = min(others, key=lambda fw: (biz.find(fw[1]) if fw[1] in biz else 999,
+                                             -len(fw[1])))
+        return {"code": "biz_other", "label": DIAG_TEXT["biz_other"], "drop": True,
+                "detail": ("主营是「%s」这一行（命中「%s」），主营原文「%s」，与你的方向不是一回事"
+                           % (f0, w0, biz[:30]))}
+    # ④ 只有宽泛词（分析/检测/质检）→ 证据太薄
+    weak = [w for f in sorted(pf) for w in (_WEAK_BY_FIELD.get(f) or ())
+            if w and w in biz]
+    if weak:
+        return {"code": "biz_weak", "label": DIAG_TEXT["biz_weak"], "drop": False,
+                "detail": ("主营只出现「%s」这类宽泛词，凑不成方向证据（原文「%s」）"
+                           % ("、".join(weak[:3]), biz[:30]))}
+    # ⑤ 有实质文字、却没有本领域任何一个词 → 词表没覆盖
+    need = [w for f in sorted(pf) for w in (_STRONG_BY_FIELD.get(f) or ())][:6]
+    return {"code": "biz_no_word", "label": DIAG_TEXT["biz_no_word"], "drop": False,
+            "detail": ("主营有文字（「%s」）但没有任何本领域词；期望的词是「%s」这类"
+                       "—— 多半是词表没覆盖，补词后复检再看" % (biz[:40], "、".join(need)))}
+
+
+def dump_diag(rows, path=None) -> str:
+    """把本次复检的诊断清单落盘：开发期补词表 / 补采集的依据，可回溯。"""
+    import io as _io
+    import json as _json
+    p = path or os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             "data", "_recheck_diag.json")
+    try:
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        _io.open(p, "w", encoding="utf-8").write(
+            _json.dumps({"generated_at": __import__("time").strftime(
+                "%Y-%m-%d %H:%M:%S"), "rows": rows}, ensure_ascii=False, indent=1))
+    except Exception as e:                      # 落盘失败不影响报告生成
+        print("[主营复检] 诊断清单写盘失败：%s" % e)
+    return p
+
+
+def recheck_real(real_pairs, kw, kw_fields, biz_text, major="", parts=None,
+                 policy=None, diag=None):
+    """明确命中复检（三态）：通过 / 待补 / 不通过，并记下「为什么」。
+
+    2026-11-17 用户定口径：开发期不要直接毙，先查「为什么没有方向词」。
+    「主营缺失」「词表没覆盖」是我们自己的缺口，拿它当证据否决企业，等于把
+    采集/词表的锅算成企业不符 —— 所以开发期保留、标注待补、进诊断清单
+    （data/_recheck_diag.json）；只有「主营明确落在别的行业」才降级为现场待问。
+    数据与词表补齐后把 policy 设成 strict（或环境变量 FAIR_RECHECK_POLICY=strict），
+    这批待补的对就按严格口径一起拦。
+
+    返回 {"kept", "blocked", "watch", "diag"}；kept 含 watch（开发期口径），
+    strict 下 watch 并入 blocked。kw/kw_fields 都空 → 闸门不咬人，全部放行。
+    """
+    pairs = list(real_pairs)
+    rows = diag if diag is not None else []
+    if not kw and not kw_fields:
+        return {"kept": pairs, "blocked": [], "watch": [], "diag": rows}
+    dev = (policy or os.environ.get("FAIR_RECHECK_POLICY") or "dev").lower() != "strict"
+    kept, watch, blocked = [], [], []
+    for pair in pairs:
         t = str((pair[0] if isinstance(pair, (list, tuple)) else pair) or "")
         it = str((pair[1] if isinstance(pair, (list, tuple)) else "") or "")
+        # 跨行业通用职能/实验室岗：哪家公司都设，不依赖主营
         if _GENERIC_JOB.search(it) or _GENERIC_JOB.search(t):
             kept.append(pair)
-        elif biz_hit(pair_fields(it, major) or kw_fields, biz_text):
+            continue
+        pf = pair_fields(it, major) or set(kw_fields or ())
+        if biz_hit(pf, biz_text):
             kept.append(pair)
-        else:
+            continue
+        d = diagnose(t, it, biz_text, major, kw_fields, parts)
+        # 岗位名自带方向词 = 通过（本家公告自证），不是「待补」——记诊断只为
+        # 在报告里说清「这条为什么不靠主营也算数」，别混进待补清单。
+        if d["code"] == "name_dir":
+            kept.append(pair)
+            rows.append({"job": t, "intent": it, "code": d["code"], "label": d["label"],
+                         "verdict": "keep_name", "detail": d["detail"],
+                         "biz": _clean_biz(biz_text)[:60],
+                         "name": (parts or {}).get("name") or ""})
+            continue
+        is_block = bool(d["drop"]) or not dev
+        rows.append({"job": t, "intent": it, "code": d["code"], "label": d["label"],
+                     "verdict": "blocked" if is_block else "watch",
+                     "detail": d["detail"], "biz": _clean_biz(biz_text)[:60],
+                     "name": (parts or {}).get("name") or ""})
+        if is_block:
             blocked.append(pair)
-    return kept, blocked
+        else:
+            watch.append(pair)
+            kept.append(pair)
+    return {"kept": kept, "blocked": blocked, "watch": watch, "diag": rows}
 
 
-def filter_infer(infer_pairs, kw_fields: set, biz_text: str, major: str = ""):
+def filter_real(real_pairs, kw, kw_fields, biz_text, major="", parts=None, policy=None):
+    """兼容旧调用的两元组版本：返回 (kept（含待补）, blocked)。
+
+    新代码请直接用 recheck_real —— 它多返回 watch 与诊断，报告要靠它说清
+    「为什么没通过」。跨行业通用职能/实验室岗直放；其余主营强词一票。
+    """
+    r = recheck_real(real_pairs, kw, kw_fields, biz_text, major=major,
+                     parts=parts, policy=policy)
+    return r["kept"], r["blocked"]
+
+
+def filter_infer(infer_pairs, kw_fields, biz_text, major="", diag=None, name=""):
     """推断命中复检：岗位名是猜的不能自证，主营文本必须容纳方向。
 
-    主营为空 / 清洗后为空 → 没有业务依据，一律不保留。
-    kw_fields 为空 → 全部放行。
+    推断命中本来就是「猜的」，缺依据就不猜 —— 这里保持严格（主营为空/纯
+    「未知」一律不保留），与 recheck_real 的「开发期不直接毙企业」不矛盾：
+    那是不删企业，这只是不标推断对。诊断照样记下来，好知道有多少推断是
+    因为主营没采到 / 词表没覆盖才没标（那些是真该补的数据）。
     复检按意向对各算各的方向集（2026-11-17）：销售意向放行商贸类主营，
-    不再连带给其他意向（化学分析…）放行贸易/零售公司。
+    不再连带给其他意向放行化学分析岗。
     """
+    pairs = list(infer_pairs)
+    rows = diag if diag is not None else []
     if not kw_fields:
-        return list(infer_pairs)
+        return pairs
     biz = _clean_biz(biz_text)
     if not biz:
+        # 主营没采到 → 不标推断对（猜的岗没有业务依据），但记下来：这就是
+        # 「为什么这条推断没标」的答案，也是该补采集的地方。
+        for p in pairs:
+            rows.append({"job": str((p[0] if isinstance(p, (list, tuple)) else "") or ""),
+                         "intent": str((p[1] if isinstance(p, (list, tuple)) else "") or ""),
+                         "code": "biz_missing", "label": DIAG_TEXT["biz_missing"],
+                         "verdict": "drop_infer",
+                         "detail": "这家主营没采到，推断岗没有业务依据、不标推断对", "biz": "",
+                         "name": name})
         return []
     out = []
-    for p in infer_pairs:
+    for p in pairs:
         it = str((p[1] if isinstance(p, (list, tuple)) else "") or "")
         if biz_hit(pair_fields(it, major) or kw_fields, biz):
             out.append(p)
+            continue
+        if diag is not None:
+            d = diagnose("", it, biz, major, kw_fields)
+            rows.append({"job": str((p[0] if isinstance(p, (list, tuple)) else "") or ""),
+                         "intent": it, "code": d["code"], "label": d["label"],
+                         "verdict": "drop_infer", "detail": d["detail"],
+                         "biz": biz[:60], "name": name})
     return out
 
 

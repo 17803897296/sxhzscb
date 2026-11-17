@@ -1298,7 +1298,7 @@ def _final_state_notes(m, m_eff, trust, check_notes, fbrow, dropped_jobs, dir_no
 
 
 def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended,
-              profile, W, bm):
+              profile, W, bm, seg=""):
     """一家企业的「对口证据」：对齐 → 命中复核 → 幻觉脱敏 → 可信度 → gaps → 打分。
 
     这是整条链路里最要命的一段，也是在 build() 里藏了最久的 79 行。它干的事：
@@ -1320,9 +1320,21 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     # 导致 payload.hard_filter.dropped 永远显示 0（被剔除的 12 家教培无处可查）。
     # 判断「大类岗位名能不能算对口」要看公司业务：供应链公司的「管培生」
     # 可以算「供应链管培生」，新材料公司的「管培生」只能问一句。
+    # 主营上下文拆成字段（2026-11-17）：复检要回答「为什么没有方向词」，
+    # 得知道是主营根本没采到（数据缺口）还是词表没覆盖。
+    # 关键修正：companies 表 145 家的 segment 全是空的，细分业务描述只存在
+    # 145 家增补档案（v42）里 —— 页面一直拿 v42.segment 判主营，后端复检却
+    # 只用 companies 的字段，等于拿半截主营判方向，「明明写了业务却说没方向
+    # 词」的根因就在这。这里把 v42 细分补进**复检用**文本；align/ask 仍用
+    # 原来的 biz_text，避免动到命中口径。
     biz_text = " ".join(str(x or "") for x in (
         name, c.get("industry"), c.get("segment"), c.get("biz_scope"),
         c.get("job_brief")))
+    _rk_c = dict(c)
+    if not str(_rk_c.get("segment") or "").strip():
+        _rk_c["segment"] = seg
+    _biz_parts = biz_recheck.biz_parts(name, _rk_c)
+    _biz_text_rk = _biz_parts["text"]
     # 只用真实岗位名做证据：推断岗（job_source_kind=大模型推断）混进 title_all
     # 会被 align 收进 matched_jobs，页面「对口岗位」念出模型猜的岗（电科55所坐实）。
     title_all = [j.get("title", "") for j in _clean_jobs(c.get("jobs"))]
@@ -1406,9 +1418,15 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     _real_pairs = [(t, it) for t, it in aligned_all
                    if ((not jd_titles) and not _has_infer)
                    or any(_same_title(t, x) for x in jd_titles)]
-    _real_kept, _biz_blocked = biz_recheck.filter_real(
-        _real_pairs, _dom_kw, _dom_fields, biz_text,
-        (profile or {}).get("major") or "")
+    # 用 recheck_real 而不是 filter_real：要多拿两样东西——watch（开发期
+    # 保留的待补对）和 diag（每对「为什么没有方向词」）。被否决的对转现场
+    # 待问；待补的对保留，但在报告里写明缺的是主营还是词表，不装成通过。
+    _biz_diag = []
+    _biz_r = biz_recheck.recheck_real(
+        _real_pairs, _dom_kw, _dom_fields, _biz_text_rk,
+        (profile or {}).get("major") or "", parts=_biz_parts, diag=_biz_diag)
+    _real_kept, _biz_blocked = _biz_r["kept"], _biz_r["blocked"]
+    _biz_watch = _biz_r["watch"]
     real = [t for t, _it in _real_kept]
     for _bt, _bi in _biz_blocked:
         if any(a.get("job") == _bt for a in asks):
@@ -1451,6 +1469,15 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     m_audit = dict(m)
     m_audit["state"] = m_eff["state"]
     trust, check_notes = audit(c, m_audit, by_title, by_title)
+    # 复检「待补」的对（2026-11-17）：主营没采到 / 词表没覆盖，这条对暂时
+    # 判不了。开发期先保留（不删企业、不降命中），但把原因写进报告备注——
+    # 「为什么没有方向词」要能看见，否则又是一次黑箱命中。
+    for _wp in _biz_watch:
+        _wd = next((d for d in _biz_diag
+                    if d["job"] == _wp[0] and d["intent"] == _wp[1]), None)
+        if _wd:
+            check_notes.append("主营复检待补：「%s」%s —— %s"
+                               % (_wp[0], _wd["label"], _wd["detail"]))
     if _intents_defaulted:
         check_notes.append("未填写意向岗位，命中按默认方向推断、不算明确命中")
     m_gap = dict(m_eff)
@@ -1461,8 +1488,17 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
         gap_jobs = list(profile.get("intended_jobs") or [])[:2] or ["对口岗位"]
     m_gap["matched_jobs"] = gap_jobs
     guard["ask_jobs"] = gap_jobs   # payload 里也不再留「对口岗位」空占位
+    # 行级复检结论（前端 _rk 展示用）：一家可能有多对被问，取最严重的那条。
+    _biz_rk = None
+    if _biz_diag:
+        _codes = [d["code"] for d in _biz_diag]
+        _code = next((cd for cd in biz_recheck.DIAG_ORDER if cd in _codes), _codes[0])
+        _one = next(d for d in _biz_diag if d["code"] == _code)
+        _biz_rk = {"code": _code, "label": _one["label"], "detail": _one["detail"],
+                   "n_watch": len(_biz_watch), "n_blocked": len(_biz_blocked)}
     return {
         "dir_notes": dir_notes, "dropped_jobs": dropped_jobs, "aligned_all": aligned_all,
+        "biz_rk": _biz_rk, "biz_diag": _biz_diag, "biz_text_rk": _biz_text_rk,
         "lvl_blocked": lvl_blocked, "ask_blocked": ask_blocked, "real": real, "asks": asks,
         "guard": guard, "m_eff": m_eff, "trust": trust, "check_notes": check_notes,
         "gaps": dynamic_gaps(c, m_gap, bm.get(name)), "sc": score_parts(c, W, profile),
@@ -1537,6 +1573,8 @@ def build():
     # 依据「公告视为齐全 → 有就是有，没有就是没有」，与 websearch / 社招（清单不齐全，
     # 保留并提示现场确认）区别对待。清单单独存档，可回溯，不是静默丢弃。
     _campus_nofit = []
+    # 复检诊断汇总：开发期补词表 / 补采集的依据（写 data/_recheck_diag.json）
+    _biz_diag_all = []
     for name, c in companies.items():
         # 成长档位 vs 证据自洽性检查：档案里 4 家写 rising_star 却 growth_hits 为空，
         # 其中 3 家备注直接写「未检索到」。不改档（改档要人拍板），先在报告里标出来。
@@ -1560,12 +1598,16 @@ def build():
         # 导致 payload.hard_filter.dropped 永远显示 0（被剔除的 12 家教培无处可查）。
         # 判断「大类岗位名能不能算对口」要看公司业务：供应链公司的「管培生」
         # 可以算「供应链管培生」，新材料公司的「管培生」只能问一句。
+        # 细分业务描述在 145 家增补档案里（companies 表 segment 全空），
+        # 复检必须拿到它，否则等于拿半截主营判方向。
+        _seg = (v42_view(enrich.get(name) or v42.get(name)) or {}).get("segment", "")
         ev = _evidence(name, c, m, intent_sem, hit_verdicts, by_title, _dir_book,
-                       _intended, profile, W, bm)
+                       _intended, profile, W, bm, seg=_seg)
         m_eff, guard = ev["m_eff"], ev["guard"]
         _dropped_jobs, _aligned_all = ev["dropped_jobs"], ev["aligned_all"]
         _lvl_blocked, _ask_blocked = ev["lvl_blocked"], ev["ask_blocked"]
         _real, _dir_notes, _asks = ev["real"], ev["dir_notes"], ev["asks"]
+        _biz_diag_all.extend(ev["biz_diag"])
         trust, check_notes = ev["trust"], ev["check_notes"]
         gaps, sc = ev["gaps"], ev["sc"]
         booth = bm.get(name, {})
@@ -1645,6 +1687,7 @@ def build():
         # 每个意向最多一对，业务链岗优先于画像推断岗；与真实命中同岗位名的不
         # 重复标（真实命中那栏已经亮过了）。
         _infer_pairs = []
+        _infer_diag = []
         _real_set = set(_real)
         _ipool = list(dict.fromkeys(
             [str(t or "").strip() for t in (fit_info.get("jobs") or []) if str(t or "").strip()]
@@ -1664,9 +1707,12 @@ def build():
             # 推断岗名是模型按画像猜的，不能自证方向 —— 主营文本（行业/细分/
             # 主营范围）里必须出现学生方向词；主营为空/纯「未知」一律不标，
             # 没有业务依据就不该推断（教育出版推断「物流专员」这类就这么拦下）。
+            # 推断对的诊断单独收：它不决定企业去留（只是不标推断），
+            # 但「为什么没标的推断」正是要看的东西——主营没采到还是词表漏了。
             _infer_pairs = biz_recheck.filter_infer(
-                _infer_pairs, _dom_fields, biz_recheck.biz_text_of(name, c),
-                profile.get("major") or "")
+                _infer_pairs, _dom_fields, ev["biz_text_rk"],
+                profile.get("major") or "", diag=_infer_diag, name=name)
+            _biz_diag_all.extend(_infer_diag)
 
         # 现场问句也念学生自己的意向岗位。llm_match 里的 verify_question 是
         # 早期按别的画像生成的（如「是不是招供应链管理专员」），与当前意向
@@ -1716,10 +1762,14 @@ def build():
         if (state_final == "inferred" and jobs
                 and not (fbrow and fbrow["result"] == "yes")
                 and source_class(c, jobs)[0] == "campus"):
+            # 因主营复核被判「别的行业」而落地成 0 对的，把原因写进排除清单：
+            # 不然企业悄悄从榜上消失，看不出是公告没有还是主营对不上。
+            _bk_why = ("；主营复核：" + (ev["biz_rk"] or {}).get("detail", "")
+                       if (ev["biz_rk"] or {}).get("code") == "biz_other" else "")
             _campus_nofit.append({
                 "name": name,
-                "why": ("校招公告里 %d 个岗位，没有与意向对口的；公告视为齐全，不再推断"
-                        % _title_total),
+                "why": ("校招公告里 %d 个岗位，没有与意向对口的%s；公告视为齐全，不再推断"
+                        % (_title_total, _bk_why)),
                 "sample": [j.get("title", "") for j in jobs][:6],
             })
             continue
@@ -1818,6 +1868,9 @@ def build():
             # 大类岗位名（管培生 / 储备干部 / 研究员）：不是对口证据，
             # 但值得现场问一句「是不是我这个方向」。
             "ask_jobs": _ask_blocked,
+            # 画像×主营复检结论（2026-11-17）：{code,label,detail,n_watch,n_blocked}。
+            # 前端只读不算，避免前端重算一套分类、两边各说各话。
+            "biz_recheck": ev["biz_rk"],
             "gaps": gaps, "questions": qs[:2],
             "score": sc["score"], "effective_weight": sc["effective_weight"],
             "parts": sc["parts"],
@@ -1876,6 +1929,14 @@ def build():
         r["nearby"] = ([by_booth[p - 1]["name"]] if p and p > 0 else []) + \
                       ([by_booth[p + 1]["name"]] if p is not None and p + 1 < len(by_booth) else [])
 
+    # 复检诊断落盘 + 打一行汇总：哪几类「没有方向词」，各多少对。
+    # 这是开发期的核心指标 —— 主营缺失/词表未覆盖多，就该补采集/补词表，
+    # 而不是继续收紧闸门（2026-11-17 用户定口径）。
+    if _biz_diag_all:
+        _dc = Counter(d["code"] for d in _biz_diag_all)
+        print("[主营复检] 被问 %d 对：%s" % (len(_biz_diag_all), " / ".join(
+            "%s %d" % (biz_recheck.DIAG_TEXT.get(k, k), v) for k, v in _dc.most_common())))
+        biz_recheck.dump_diag(_biz_diag_all)
     _cstat = cache_guard.status(verbose=True)
     # 成长性可用家数（只统计本页，用于解释权重为何被关闭）
     _growth_avail_n = sum(1 for r in rows

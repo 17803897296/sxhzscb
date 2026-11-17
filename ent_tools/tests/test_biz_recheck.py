@@ -169,5 +169,86 @@ class TestChemProfileNoRegression(unittest.TestCase):
         self.assertIn("物流管理", why)
 
 
+class TestDiag(unittest.TestCase):
+    """「为什么没有方向词」诊断：开发期先查原因，不直接毙企业（2026-11-17）。"""
+
+    def _parts(self, **kw):
+        base = {"industry": "", "segment": "", "biz_scope": "", "job_brief": ""}
+        base.update(kw)
+        return B.biz_parts("某某有限公司", base)
+
+    def test_name_dir_kept_without_biz(self):
+        # 公告写的就是「材料研发工程师」：本家公告自证方向，不该拿主营否决
+        r = B.recheck_real([("材料研发工程师", "研发工程师")], CHEM_KW, CHEM_FIELDS,
+                           "专用集成电路、感知芯片与AI智能整机研发")
+        self.assertEqual(r["watch"], [])
+        self.assertEqual(r["blocked"], [])
+        self.assertIn(("材料研发工程师", "研发工程师"), r["kept"])
+        self.assertEqual(r["diag"][0]["code"], "name_dir")
+
+    def test_other_industry_blocked(self):
+        # 主营明确是金融：这才是真不符，降级为现场待问
+        r = B.recheck_real([("管培生", "管培生")], LOG_KW, LOG_FIELDS,
+                           "全国性商业银行，主营公司金融、零售金融与财富管理业务")
+        self.assertEqual(r["blocked"], [("管培生", "管培生")])
+        self.assertEqual(r["diag"][0]["code"], "biz_other")
+
+    def test_missing_biz_is_watch_not_block(self):
+        # 主营字段四项全空 = 数据缺口：保留待补，不判企业不符
+        r = B.recheck_real([("管培生", "管培生")], LOG_KW, LOG_FIELDS, "",
+                           parts=self._parts())
+        self.assertEqual(r["blocked"], [])
+        self.assertEqual(r["watch"], [("管培生", "管培生")])
+        self.assertEqual(r["diag"][0]["code"], "biz_missing")
+        self.assertIn("数据缺口", r["diag"][0]["detail"])
+
+    def test_no_word_in_dict_is_watch(self):
+        # 主营有文字、但一个本领域词都没有 → 词表没覆盖，先保留待补
+        r = B.recheck_real([("研发工程师", "研发工程师")], CHEM_KW, CHEM_FIELDS,
+                           "精密部件与精密结构件的加工与销售",
+                           parts=self._parts(biz_scope="精密部件与精密结构件的加工与销售"))
+        self.assertEqual(r["blocked"], [])
+        self.assertEqual(len(r["watch"]), 1)
+        self.assertEqual(r["diag"][0]["code"], "biz_no_word")
+
+    def test_strict_policy_blocks_watch(self):
+        # 数据/词表补齐后切 strict：待补的那批按严格口径一起拦
+        r = B.recheck_real([("研发工程师", "研发工程师")], CHEM_KW, CHEM_FIELDS,
+                           "精密部件与精密结构件的加工与销售", policy="strict")
+        self.assertEqual(r["watch"], [])
+        self.assertEqual(r["blocked"], [("研发工程师", "研发工程师")])
+
+    def test_weak_only_is_watch(self):
+        # 主营只出现「分析/检测」这类宽泛词 → 证据太薄
+        r = B.recheck_real([("研发工程师", "研发工程师")], CHEM_KW, CHEM_FIELDS,
+                           "第三方检测分析与技术咨询服务",
+                           parts=self._parts(biz_scope="第三方检测分析与技术咨询服务"))
+        self.assertEqual(r["diag"][0]["code"], "biz_weak")
+
+    def test_filter_infer_records_diag(self):
+        diag = []
+        B.filter_infer([("物流专员", "物流专员")], LOG_FIELDS,
+                       "教育图书出版策划公司，以高考研究统领教育图书研发", diag=diag)
+        self.assertEqual(len(diag), 1)
+        self.assertEqual(diag[0]["code"], "biz_other")
+        self.assertEqual(diag[0]["verdict"], "drop_infer")
+
+
+
+    def test_detail_words_cover_materials(self):
+        """细分词（靶材/永磁/电解铝/印染…）补进词表后按对口处理。
+
+        这些词来自真实库里「主营有字、却没有本领域词」的企业：芯片厂之前
+        靠这些词被误判成「没有方向词」，补词之后 靶材/永磁/电解铝 都算
+        化学材料方向，不再需要人工核。
+        """
+        for biz in ("溅射靶材、永磁器件与离子束设备的设计与销售",
+                    "氧化铝、预焙阳极、电解铝的一体化铝产业链",
+                    "家纺面料的印染与染整加工"):
+            r = B.recheck_real([("研发工程师", "研发工程师")], CHEM_KW, CHEM_FIELDS,
+                               biz, "化学工程与工艺")
+            self.assertEqual(r["kept"], [("研发工程师", "研发工程师")], biz)
+            self.assertEqual(r["blocked"], [], biz)
+
 if __name__ == "__main__":
     unittest.main()
