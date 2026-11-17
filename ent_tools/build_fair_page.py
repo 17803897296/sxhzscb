@@ -112,7 +112,12 @@ def _companies_from_db(limit_req=300):
     岗位描述只截前 300 字（仅供关键词打分，避免页面体积暴涨）。
     """
     import sqlite3
-    db = ROOT / "ent_tools" / "data" / "careersafari.db"
+    # 活库不在（冷克隆/CI 只有只读种子）就退回种子库——种子里的 company_jobs
+    # 与活库同构（145 家），保证构建在干净检出上也能出完整页面。
+    data_dir = ROOT / "ent_tools" / "data"
+    db = data_dir / "careersafari.db"
+    if not db.exists():
+        db = data_dir / "careersafari.db.seed"
     if not db.exists():
         return "[]"
     out = []
