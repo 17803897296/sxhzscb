@@ -7,6 +7,11 @@
 为什么要有副本：现场断网、机房网络抽风、或对方只肯插 U 盘拷一个文件夹时，
 副本双击就能跑，不依赖 git、不依赖联网（采集端调大模型那一步除外）。
 
+页面产物不是镜像 demo/，而是**离线全量变体**（2026-11-17 拍板）：
+    同步前先跑 `build_fair_page.py --offline-full` 现场生成 demo_offline/，
+    副本里的 demo/fair.html、demo/match.html 用这份覆盖。正本 demo/ 今后
+    薄化（打分走服务端）不影响副本离线双击可跑——两种变体同一源码。
+
 用法：
     python -X utf8 ent_tools/sync_offline.py --init     # 第一次：建副本 + 写启动脚本
     python -X utf8 ent_tools/sync_offline.py            # 之后：增量同步（只拷变了的）
@@ -18,8 +23,8 @@
   由本脚本生成并保护；正本没有同名文件，镜像时不会被删。
 - `.git` 不进副本：副本是给人用的，不是第二个仓库。正本的 commit 号写进
   `同步记录.json`，出问题按这个号回正本查。
-- `_bak_*` / `__pycache__` / `*.pyc` 不进副本：历史备份和字节码对演示没用，
-  反而让「哪个文件是当前版本」变含糊。
+- `_bak_*` / `__pycache__` / `*.pyc` / `demo_offline` 不进副本：历史备份、
+  字节码和构建中间产物对演示没用，反而让「哪个文件是当前版本」变含糊。
 """
 
 import argparse
@@ -39,10 +44,18 @@ EXCLUDE_DIRS = {
     ".git", "__pycache__", ".pytest_cache", ".mypy_cache",
     "_bak_careersafari_20261116", "_backup_before_infer_fill_20261116",
     "node_modules", ".workbuddy", ".idea", ".vscode",
+    "demo_offline",   # 离线变体构建产物：现场生成、按 OVERLAY 叠进副本 demo/，不整体镜像
 }
 EXCLUDE_FILES = {"_page_check.js", ".DS_Store", "Thumbs.db",
                  ".env", ".env.local", ".env.production"}   # 密钥文件绝不进副本
 EXCLUDE_SUFFIX = (".pyc", ".pyo", ".tmp", ".swp", ".pem", ".key")
+
+# 副本页面走离线全量变体：这两个文件不从正本 demo/ 取，从 demo_offline/ 取
+# （见 sync() 开头的 _build_offline()）。键 = 副本路径，值 = 正本变体路径。
+OVERLAY = {
+    "demo/fair.html": "demo_offline/fair.html",
+    "demo/match.html": "demo_offline/match.html",
+}
 
 PROTECT = {"离线版说明.md", "启动离线版.bat", "启动离线版.sh", "同步记录.json"}
 
@@ -86,16 +99,29 @@ def _same(a, b):
     return sa.st_size == sb.st_size and int(sa.st_mtime) == int(sb.st_mtime)
 
 
+def _same_content(a, b):
+    """按内容比对（md5）。变体每次同步都重建、mtime 会变，字节相同就不算更新。"""
+    if not (a.exists() and b.exists()):
+        return False
+    if a.stat().st_size != b.stat().st_size:
+        return False
+    return _md5(a) == _md5(b)
+
+
 def plan():
     add, upd, same = [], [], []
     src_files = {}
     for rel, p in _walk(ROOT):
         key = rel.as_posix()
+        # 副本页面用离线全量变体：来源换成 demo_offline/ 下的同名产物
+        alt = OVERLAY.get(key)
+        if alt and (ROOT / alt).exists():
+            p = ROOT / alt
         src_files[key] = p
         dst = DEST / rel
         if not dst.exists():
             add.append(rel)
-        elif _same(p, dst):
+        elif _same_content(p, dst) if alt else _same(p, dst):
             same.append(rel)
         else:
             upd.append(rel)
@@ -106,7 +132,7 @@ def plan():
             if key in PROTECT or key in src_files:
                 continue
             dele.append(rel)
-    return add, upd, same, dele
+    return add, upd, same, dele, src_files
 
 
 def _md5(p):
@@ -196,9 +222,30 @@ def write_offline_scaffold(port=8103, nfiles=0):
         pass
 
 
+def _build_offline():
+    """现场跑一次离线全量构建（build_fair_page.py --offline-full）。成功返回 0。"""
+    print("构建离线全量变体（demo_offline/）…")
+    r = subprocess.run(
+        [sys.executable, "-X", "utf8", "build_fair_page.py", "--offline-full"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(ROOT / "ent_tools"), timeout=300)
+    out = (r.stdout or "").strip()
+    for line in out.splitlines()[-3:]:
+        print("  " + line)
+    if r.returncode != 0:
+        print("  [失败] 离线变体构建出错：")
+        print("  " + ((r.stderr or "").strip()[-500:]))
+        return 1
+    return 0
+
+
 def sync(init=False, check=False, diff=False, port=8103):
     t0 = time.time()
-    add, upd, same, dele = plan()
+    if not check and not diff:
+        # 副本页面来自 demo_offline/，先保证这份变体是刚构建的
+        if _build_offline() != 0:
+            return 1
+    add, upd, same, dele, src_files = plan()
     total = len(add) + len(upd) + len(same)
     print("正本 %s" % ROOT)
     print("副本 %s" % DEST)
@@ -220,7 +267,7 @@ def sync(init=False, check=False, diff=False, port=8103):
 
     n_copy = 0
     for rel in add + upd:
-        src, dst = ROOT / rel, DEST / rel
+        src, dst = src_files[rel.as_posix()], DEST / rel   # src 已按 OVERLAY 换成离线变体
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)          # 保留 mtime，下次比对才能判「没变」
         n_copy += 1
@@ -246,6 +293,7 @@ def sync(init=False, check=False, diff=False, port=8103):
         "branch": _git("rev-parse", "--abbrev-ref", "HEAD"),
         "commit": _git("rev-parse", "--short", "HEAD"),
         "dirty": bool(_git("status", "--porcelain")),
+        "variant": "demo/fair.html、demo/match.html 来自 demo_offline/（--offline-full）",
         "files": total,
         "copied": n_copy,
         "deleted": n_del,

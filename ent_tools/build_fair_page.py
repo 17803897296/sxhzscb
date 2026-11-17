@@ -30,7 +30,17 @@ def _js(name):
     """
     return (JS_DIR / name).read_bytes().decode("utf-8")
 HANDOFF = ROOT / "_handoff" / "shuangxuan" / "app" / "static"
-DEMO = ROOT / "demo"
+
+# 构建变体（2026-11-17 拍板：正本/副本从「镜像关系」改成「同一源码的两种产物」）：
+#   默认            -> demo/          正本页面。step 2 薄化后打分走服务端、前端只留渲染。
+#   --offline-full  -> demo_offline/  离线全量变体：内联完整打分引擎，断网双击可跑。
+#                                     本身不入 git（.gitignore），由 sync_offline.py
+#                                     同步时现场生成，只给离线副本消费。
+OFFLINE_FULL = "--offline-full" in sys.argv
+# 源素材（questionnaire.json、index.html 的 COMPANIES 等）永远来自 demo/；
+# 只有「写出的产物」跟着变体走（demo/ 或 demo_offline/）。
+DEMO_SRC = ROOT / "demo"
+DEMO = ROOT / ("demo_offline" if OFFLINE_FULL else "demo")
 
 # v10：把打分用的城市/企业类型/规模规则从 rules.py 生成成 JS 常量，注入页面端，
 # 保证服务端（fair_bridge.score_parts）与页面端（fair_report_js.calcOne）用同一套数据。
@@ -70,7 +80,7 @@ fair_css = (HANDOFF / "fair.css").read_text(encoding="utf-8")
 # 跑 _freeze_fair_js.py（会打印逐行差异，确认后 --write）。
 fair_js = _js("fair.js")
 PATCH_LOG = ["采集端 JS 读 js/fair.js（已固化，构建时零替换）"]
-questionnaire = json.loads((DEMO / "questionnaire.json").read_text(encoding="utf-8"))
+questionnaire = json.loads((DEMO_SRC / "questionnaire.json").read_text(encoding="utf-8"))
 
 # ⑤ 企业类型选项对齐匹配端的 nature 枚举
 questionnaire["fair"]["company_types"] = ["央企", "国企", "民企", "外企", "合资", "事业单位"]
@@ -141,7 +151,7 @@ def _companies_from_db(limit_req=300):
 
 
 # 从 index.html 里取真实企业数据；为空则直接用活库补齐（否则「开始匹配」是 0 家）
-index_html = (DEMO / "index.html").read_text(encoding="utf-8")
+index_html = (DEMO_SRC / "index.html").read_text(encoding="utf-8")
 m = re.search(r"const COMPANIES = (\[.*?\n\]);", index_html, re.S)
 COMPANIES_JSON = m.group(1) if m else "[]"
 if COMPANIES_JSON.count('"id"') == 0:
@@ -194,6 +204,7 @@ bundle = (SHIM + RECOMMEND_JS + "<script>\n" + fair_js + "\n</script>\n"
 html = html.replace("</body>", bundle, 1)
 
 out = DEMO / "fair.html"
+out.parent.mkdir(parents=True, exist_ok=True)   # demo_offline/ 变体首次构建时还不存在
 out.write_text(html, encoding="utf-8")
 
 # v12 匹配端独立页（2026-11-17 三端分工）：同一份页面、同一套内联 JS，
@@ -213,7 +224,12 @@ match_out.write_text(match_html, encoding="utf-8")
 # 只在正常构建时刷新；直接编辑 html 不会动这个文件，于是下次体检立刻露馅。
 _stamp_p = HERE / "data" / ".page_stamp.json"
 try:
-    _stamp = {}
+    if OFFLINE_FULL:
+        # 离线变体不记构建戳：health.py 只体检正本 demo/fair.html；
+        # 每次同步重建都写戳只会让 sync_offline 永远多拷一个文件。
+        pass
+    else:
+        _stamp = {}
     if _stamp_p.exists():
         _stamp = json.loads(_stamp_p.read_text(encoding="utf-8"))
     _stamp.setdefault("_note", "build_fair_page.py 自动维护。手改 demo/fair.html 会让 md5 对不上。")
@@ -227,7 +243,7 @@ try:
 except Exception as _e:      # 构建戳写不进去不该阻断页面生成
     print("  [warn] 构建戳写入失败：%s" % _e)
 
-print("生成", out)
+print("生成", out, "【离线全量变体】" if OFFLINE_FULL else "【正本】")
 print("  改动：" + "、".join(PATCH_LOG))
 print("  大小 %.1f KB；内置企业 %d 家；内置名单 %d 家" %
       (out.stat().st_size / 1024, COMPANIES_JSON.count('"id"'), len(NAMES)))
