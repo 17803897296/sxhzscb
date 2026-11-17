@@ -302,41 +302,45 @@ def sync_jobs_seed():
 
     只动 company_jobs 一张表（企业 + 岗位的公开业务数据，无 PII）；
     画像/命中的脱敏由 sync_profile_seed 负责。幂等：逐行比对，全一致不写。
+    走 repository.connect 出口，不新增裸连接（sqlite 预算守卫盯着）。
     """
-    import sqlite3
+    from repository import connect as db_connect
     src = DEV / "ent_tools/data/careersafari.db"
     seed = REPO / "ent_tools/data/careersafari.db.seed"
     if not (src.is_file() and seed.is_file()):
         return "跳过（活库或种子缺失）"
     try:
-        ro = sqlite3.connect(str(src))
-        rows = ro.execute(
-            "select name, item_json, updated_at from company_jobs order by name"
-        ).fetchall()
-        ro.close()
+        with db_connect(src, row_factory=False) as ro:
+            rows = ro.execute(
+                "select name, item_json, updated_at from company_jobs order by name"
+            ).fetchall()
         if not rows:
             return "跳过（活库 company_jobs 为空）"
-        db = sqlite3.connect(str(seed))
-        changed = 0
-        for name, ij, upd in rows:
-            row = db.execute("select item_json from company_jobs where name=?",
-                             (name,)).fetchone()
-            if row is None:
-                db.execute("insert into company_jobs(name, item_json, updated_at) "
-                           "values(?,?,?)", (name, ij, upd))
-                changed += 1
-            elif row[0] != ij:
-                db.execute("update company_jobs set item_json=?, updated_at=? "
-                           "where name=?", (ij, upd, name))
-                changed += 1
-        # 活库里删掉的公司从种子一并删除，保持同构
-        names = [r[0] for r in rows]
-        q = ",".join("?" * len(names))
-        changed += db.execute(
-            "delete from company_jobs where name not in (%s)" % q, names).rowcount
-        db.commit()
-        db.execute("vacuum")
-        db.close()
+        with db_connect(seed, row_factory=False) as db:
+            changed = 0
+            for name, ij, upd in rows:
+                row = db.execute("select item_json from company_jobs where name=?",
+                                 (name,)).fetchone()
+                if row is None:
+                    db.execute("insert into company_jobs(name, item_json, updated_at) "
+                               "values(?,?,?)", (name, ij, upd))
+                    changed += 1
+                elif row[0] != ij:
+                    db.execute("update company_jobs set item_json=?, updated_at=? "
+                               "where name=?", (ij, upd, name))
+                    changed += 1
+            # 活库里删掉的公司从种子一并删除，保持同构
+            names = [r[0] for r in rows]
+            q = ",".join("?" * len(names))
+            changed += db.execute(
+                "delete from company_jobs where name not in (%s)" % q, names).rowcount
+            if changed:
+                # vacuum 不能在事务里跑：先提交，再整理。零变更不 vacuum，
+                # 保证字节级幂等（发布流程反复跑不产生假 diff）。
+                db.commit()
+                db.execute("vacuum")
+        if not changed:
+            return "company_jobs 已配套（%d 家），无需改动" % len(rows)
         for suffix in ("-shm", "-wal"):
             f = Path(str(seed) + suffix)
             if f.exists():
