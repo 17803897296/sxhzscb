@@ -25,10 +25,11 @@ JS_DIR = HERE / "js"
 def _js(name):
     """读 ent_tools/js/ 下的前端源码。
 
-    用 bytes 读再用 utf-8 解，避免 Windows 上 read_text 把换行翻译成 \r\n ——
-    这几段 JS 是逐字内联进页面的，翻译了字节就变，页面 diff 会全是噪声。
+    用 bytes 读再用 utf-8 解（绕开平台默认编码差异），再统一换行成 LF：
+    Windows 工作区 autocrlf 检出是 CRLF、CI/克隆是 LF，逐字内联进页面时
+    必须归一，否则构建产物跨平台字节不一致，CI 的 git diff 对不上。
     """
-    return (JS_DIR / name).read_bytes().decode("utf-8")
+    return (JS_DIR / name).read_bytes().decode("utf-8").replace("\r\n", "\n")
 HANDOFF = ROOT / "_handoff" / "shuangxuan" / "app" / "static"
 
 # 构建变体（2026-11-17 拍板：正本/副本从「镜像关系」改成「同一源码的两种产物」）：
