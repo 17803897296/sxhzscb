@@ -215,6 +215,39 @@ PRO_MAP = {
              "edu": "edge", "design": "edge", "public": "edge"},
 }
 
+# 判定的三种结论。None（返回 None 而不是 'out'）专门留给「判不了」：
+# 专业识别不出族、或企业还没打码 —— 这两种情况必须退到旧的关键词复检，
+# 不能当成「不放」把人毙掉（数据缺口不是企业不符）。
+FIT_CORE, FIT_EDGE, FIT_OUT = "core", "edge", "out"
+
+
+def fit(families, code):
+    """专业族 × 行业码 → core / edge / out / None（判不了）。
+
+    这是匹配端唯一的准入判据：学生在库里是「专业族」，企业在库里是「行业码」，
+    两个离散值一查表就有结论，不跑关键词、不调模型、不联网。
+
+    为什么不再拿关键词判：同一份词表对两头是不对称的 —— 化学的窄词表把靶材、
+    永磁、涂布企业全卡在门外；物流/机械/电气的宽词表靠「制造/生产/设备」通吃，
+    连出版社都能过；土木因为「工程」二字全线放行。补词表只能补一头，查表
+    两头都是枚举值，谁松谁紧一眼看得见。
+
+    families 传多个族时取最宽松的那个（任一 core 即 core，否则任一 edge 即 edge），
+    与 biz_recheck 的「全局方向集兜底」口径一致。
+    """
+    fams = [f for f in (families or ()) if f]
+    c = normalize(code)
+    if not fams or c == UNKNOWN:
+        return None
+    edge = False
+    for fam in fams:
+        v = (PRO_MAP.get(fam) or {}).get(c)
+        if v == FIT_CORE:
+            return FIT_CORE
+        if v == FIT_EDGE:
+            edge = True
+    return FIT_EDGE if edge else FIT_OUT
+
 
 def load_override(path=None):
     """读人工确认表 -> {企业名: {"code", "why", "date"}}。

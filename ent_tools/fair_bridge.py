@@ -982,6 +982,11 @@ def _merge_sources(companies, enrich, v42):
                 c["industry"] = ind_new
             elif c.get("industry") != ind_new:
                 diff["industry(工商口径,仅展示)"] = [c.get("industry"), ind_new]
+        # 行业码跟着企业走：匹配端查表要用它，页面「为什么对/不对口」也念它。
+        # 只补空值，不覆盖活库里已有的码（人工确认优先）。
+        for k in ("ind_code", "ind_conf", "ind_why"):
+            if v.get(k) and not c.get(k):
+                c[k] = v[k]
         c["non_enterprise"] = int(v.get("non_enterprise") or 0)
         c["data_src"] = v.get("_src") or ("v4.2" if not e else "v4-enrich-20261115")
         if diff:
@@ -1422,9 +1427,13 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     # 保留的待补对）和 diag（每对「为什么没有方向词」）。被否决的对转现场
     # 待问；待补的对保留，但在报告里写明缺的是主营还是词表，不装成通过。
     _biz_diag = []
+    # 行业码：建库时打好的枚举（145 家已 100% 覆盖）。有码就查表定论，
+    # 没码（新进库还没跑 backfill）退回关键词口径 —— 不拿数据缺口当结论。
+    _ind_code = str(c.get("ind_code") or "").strip() or None
     _biz_r = biz_recheck.recheck_real(
         _real_pairs, _dom_kw, _dom_fields, _biz_text_rk,
-        (profile or {}).get("major") or "", parts=_biz_parts, diag=_biz_diag)
+        (profile or {}).get("major") or "", parts=_biz_parts, diag=_biz_diag,
+        code=_ind_code)
     _real_kept, _biz_blocked = _biz_r["kept"], _biz_r["blocked"]
     _biz_watch = _biz_r["watch"]
     real = [t for t, _it in _real_kept]
@@ -1434,7 +1443,8 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
         asks.append({"job": _bt, "intent": _bi, "kind": "biz",
                      "why": biz_recheck.blocked_why(
                          _bt, _bi, biz_text, (profile or {}).get("major") or "",
-                         (profile or {}).get("intended_jobs") or [])})
+                         (profile or {}).get("intended_jobs") or [],
+                         code=_ind_code)})
     trust0, _ = audit(c, m_al, by_title, by_title)
     guard = hallucination_guard(c, m_al, trust0, by_title)
     # 对外一律用脱敏后的岗位名（问句、命中列表、显著提示都不再念幻觉岗位）
@@ -1711,7 +1721,8 @@ def build():
             # 但「为什么没标的推断」正是要看的东西——主营没采到还是词表漏了。
             _infer_pairs = biz_recheck.filter_infer(
                 _infer_pairs, _dom_fields, ev["biz_text_rk"],
-                profile.get("major") or "", diag=_infer_diag, name=name)
+                profile.get("major") or "", diag=_infer_diag, name=name,
+                code=(str(c.get("ind_code") or "").strip() or None))
             _biz_diag_all.extend(_infer_diag)
 
         # 现场问句也念学生自己的意向岗位。llm_match 里的 verify_question 是
@@ -1871,6 +1882,11 @@ def build():
             # 画像×主营复检结论（2026-11-17）：{code,label,detail,n_watch,n_blocked}。
             # 前端只读不算，避免前端重算一套分类、两边各说各话。
             "biz_recheck": ev["biz_rk"],
+            # 行业码 + 中文名：前端查表（专业族 × 行业码）和「这家是什么行业」
+            # 的解释都读它。码本身来自建库流程，不在前端算。
+            "ind_code": str(c.get("ind_code") or ""),
+            "ind_name": (biz_recheck._code_name(c.get("ind_code"))
+                         if c.get("ind_code") else ""),
             "gaps": gaps, "questions": qs[:2],
             "score": sc["score"], "effective_weight": sc["effective_weight"],
             "parts": sc["parts"],

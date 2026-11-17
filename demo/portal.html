@@ -272,7 +272,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
       name: '企业端',
       need: function(s){ return !!s.sig; },
       why: function(){
-        return '企业端是<b>导入参会企业名单 + 岗位上传入口</b> —— 先完成画像采集，再来这边导入名单、把单位岗位信息交上去。';
+        return '企业端是<b>导入参会企业名单</b>的入口 —— 先完成画像采集，再来这边把名单交上去，系统按名单补齐企业档案与岗位。';
       },
       go: 'collect'
     },
@@ -282,7 +282,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
       need: function(s){ return !!(s.sig && s.ent); },
       why: function(s){
         if (!s.sig) return '还没有画像，排行无从算起。先做完采集。';
-        return '排行是<b>交上来的岗位 × 你的画像</b>算出来的。先去企业端过一眼岗位入口，回来才知道这个名次意味着什么。';
+        return '排行是<b>参会企业的岗位 × 你的画像</b>算出来的。先去企业端把参会名单交上来，回来才知道这个名次意味着什么。';
       },
       go: function(s){ return s.sig ? 'enterprises' : 'collect'; }
     },
@@ -477,7 +477,7 @@ iframe{flex:1;width:100%;border:0;background:#fff;display:block;min-width:0}
       document.getElementById('lock-ic').textContent = '👀';
       document.getElementById('lock-h').textContent = '企业端刚打开';
       document.getElementById('lock-p').innerHTML =
-        '排行是把交上来的岗位按你的方向排出来的。先在企业端过一眼岗位入口，<b>第几名才有意义</b> —— 就快好了，看两眼。';
+        '排行是把参会企业的岗位按你的方向排出来的。先在企业端把名单交上来，<b>第几名才有意义</b> —— 就快好了，看两眼。';
       var b = document.getElementById('lock-go');
       b.textContent = '继续查看';
       b.onclick = hideLock;

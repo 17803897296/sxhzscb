@@ -36,6 +36,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import ind_code               # noqa: E402  专业族 × 行业码 准入表（第一判据）
+
 # 通用词（从意向/岗位名里剥掉，剩下的才算方向核心）。长词在前，避免「管理培训生」
 # 被「培训生」先吃掉一半。
 GENERIC_TOKENS = (
@@ -164,7 +166,14 @@ FIELD_EXTRA = {
         "造纸", "制浆"),
 }
 
-_MAJOR_FIELD = {mk: f[0] for f in FIELDS for mk in f[1]}
+# 专业标记 → 族列表（**一对多**）。原来这里是 dict 推导，「药学」这种同时
+# 属于「化学化工材料」和「医学生物」的标记会被后一个覆盖掉，药学学生的化学
+# 方向整个消失（查表时代价更大：化学族直接不见了）。前端 BIZ_FIELDS 一直是
+# 一对多，后端才是outlier —— 这里对齐前端。
+_MAJOR_FIELD = {}
+for _f in FIELDS:
+    for _mk in _f[1]:
+        _MAJOR_FIELD.setdefault(_mk, []).append(_f[0])
 _INTENT_FIELD = {mk: f[0] for f in FIELDS for mk in f[2]}
 _STRONG_BY_FIELD = {f[0]: tuple(f[3]) for f in FIELDS}
 # 自家领域命中用的词表 = 强词 + 细分词；判「别的行业」仍只用强词（见下）
@@ -217,9 +226,9 @@ def student_domain(intended, major=""):
     kw: set = set()
     fields: set = set()
     m = str(major or "").strip()
-    for mk, field in _MAJOR_FIELD.items():
-        if mk in m:
-            fields.add(field)
+    for mk, fams in _MAJOR_FIELD.items():
+        if mk and mk in m:
+            fields.update(fams)
     for it in (intended or []):
         core = _strip_generic(str(it or ""))
         if len(core) < 2:
@@ -279,6 +288,51 @@ _GENERIC_JOB = re.compile(
     r"生产管理|生产计划|生产跟单")
 
 
+# ── 专业族 × 行业码 查表（2026-11-17 起成为第一判据）────────────────────
+# 旧判据是「学生方向词 ∩ 主营文本」，两头都是自由文本，词表宽窄不对称：
+# 化学的窄词表把靶材/永磁/涂布全卡掉，物流机械的宽词表靠「制造/生产」通吃，
+# 土木靠「工程」二字全线放行。查表两头都是枚举值，谁松谁紧在表里一眼可见。
+#
+# 判不了（None）就退回旧的关键词通路，不当成「不放」：
+#   - 专业识别不出族（数学/法学/外语…）；
+#   - 企业还没打码（新进库、外部交付包没跑 build）。
+def _code_name(code) -> str:
+    """行业码 → 中文名（给报告里的解释用；认不出就原样回显）。"""
+    c = ind_code.normalize(code)
+    return ind_code.CODE_NAMES.get(c, str(code or "未知"))
+
+
+def families_of_major(major) -> set:
+    """专业名 → 专业族集合（族名与 ind_code.PRO_MAP 的 key 同一套）。"""
+    m = str(major or "").strip()
+    if not m:
+        return set()
+    out = set()
+    for mk, fams in _MAJOR_FIELD.items():
+        if mk and mk in m:
+            out.update(fams)
+    return out
+
+
+def table_verdict(major, intent, code):
+    """(专业, 单个意向, 企业行业码) → core / edge / out / None。
+
+    族集合按「专业族 ∪ 这个意向的族」取，与 pair_fields 同源 ——
+    一个意向开门、全体意向受益是老问题（化工学生选了销售意向，化学分析岗
+    也跟着吃「贸易」的词），查表这边同样按对各算各的。
+    """
+    fams = families_of_major(major)
+    core = _strip_generic(intent)
+    if core:
+        for mk, field in _INTENT_FIELD.items():
+            if mk and mk in core:
+                fams.add(field)
+                break
+    if not fams:
+        return None
+    return ind_code.fit(fams, code)
+
+
 # ── 「为什么没有方向词」诊断（2026-11-17 用户定：开发期先查原因，不要直接毙）──
 # 一条对没通过主营复检，根因分四类，处理方式完全不同：
 #   name_dir     岗位名自己就写了方向词（「材料研发工程师」里的「材料」）→ 本该
@@ -296,12 +350,17 @@ DIAG_TEXT = {
     "biz_no_word": "主营无词表方向词",
     "biz_weak": "主营只有宽泛词",
     "biz_other": "主营是别的行业",
+    # 查表判据的三种结论（2026-11-17 起为第一判据，关键词退成兜底）
+    "code_core": "行业码对口",
+    "code_edge": "行业码有限对口（只放通用职能岗）",
+    "code_out": "行业码不是这个方向",
 }
-# 只有这一类算「企业真的不符」，降级为现场待问。其余三类是我们自己的缺口
+# 只有这两类算「企业真的不符」，降级为现场待问。其余是我们自己的缺口
 # （采集没采到 / 词表没覆盖 / 证据太薄），开发期一律保留待补——见 recheck_real。
-DROP_CODES = frozenset(["biz_other"])
+DROP_CODES = frozenset(["biz_other", "code_out"])
 # 一家企业有几条被问的对时，报告里展示最严重的那条。
-DIAG_ORDER = ("biz_other", "biz_no_word", "biz_missing", "biz_weak", "name_dir")
+DIAG_ORDER = ("code_out", "biz_other", "code_edge", "biz_no_word", "biz_missing",
+              "biz_weak", "name_dir")
 
 # 判「别的行业」时不算证据的通用词：制造/生产/科技/研发…几乎每家公司主营都有，
 # 拿它判行业会张冠李戴（机械厂会先命中「物流供应链」的「制造」）。
@@ -420,8 +479,17 @@ def dump_diag(rows, path=None) -> str:
     return p
 
 
+def name_dir_words(job, fields) -> list:
+    """岗位名里出现了哪些本领域强词（本家公告自证方向，比主营更硬）。"""
+    js = str(job or "")
+    if not js or not fields:
+        return []
+    return [w for f in sorted(fields) for w in (_HIT_BY_FIELD.get(f) or ())
+            if w and w in js]
+
+
 def recheck_real(real_pairs, kw, kw_fields, biz_text, major="", parts=None,
-                 policy=None, diag=None):
+                 policy=None, diag=None, code=None):
     """明确命中复检（三态）：通过 / 待补 / 不通过，并记下「为什么」。
 
     2026-11-17 用户定口径：开发期不要直接毙，先查「为什么没有方向词」。
@@ -430,6 +498,12 @@ def recheck_real(real_pairs, kw, kw_fields, biz_text, major="", parts=None,
     （data/_recheck_diag.json）；只有「主营明确落在别的行业」才降级为现场待问。
     数据与词表补齐后把 policy 设成 strict（或环境变量 FAIR_RECHECK_POLICY=strict），
     这批待补的对就按严格口径一起拦。
+
+    2026-11-17 起先查表（专业族 × 行业码，见 table_verdict）：
+      code 有值 → 查表即结论，不再读主营文本；
+        core 直放 / out 降级现场待问 / edge 只放通用职能岗与岗位名自带方向的对；
+      code 为 None（企业没打码）→ 退回下面的关键词通路，口径与之前完全一致。
+    这样「判据是枚举还是文本」可回退、可对比，不会一次性推倒重来。
 
     返回 {"kept", "blocked", "watch", "diag"}；kept 含 watch（开发期口径），
     strict 下 watch 并入 blocked。kw/kw_fields 都空 → 闸门不咬人，全部放行。
@@ -443,11 +517,53 @@ def recheck_real(real_pairs, kw, kw_fields, biz_text, major="", parts=None,
     for pair in pairs:
         t = str((pair[0] if isinstance(pair, (list, tuple)) else pair) or "")
         it = str((pair[1] if isinstance(pair, (list, tuple)) else "") or "")
-        # 跨行业通用职能/实验室岗：哪家公司都设，不依赖主营
+        # 跨行业通用职能/实验室岗：哪家公司都设，不依赖主营（也不依赖行业码）
         if _GENERIC_JOB.search(it) or _GENERIC_JOB.search(t):
             kept.append(pair)
             continue
         pf = pair_fields(it, major) or set(kw_fields or ())
+        v = table_verdict(major, it, code) if code else None
+        if v == ind_code.FIT_CORE:
+            kept.append(pair)
+            continue
+        # 码是 20 类粗粒度：一家企业只有一个码，多元业务会被压成一个
+        #（森一量子材料 = 法拉第旋光片 → elec；振华新云 = 电容器 → elec）。
+        # 所以码不是死判据：岗位名自己写了方向（「材料研发工程师」里的材料）
+        # 就是本家公告自证，比码硬，一律放行；edge 再放宽一层到意向名 ——
+        # 学生意向写着「材料研发工程师」，去电子材料公司做研发本就对口。
+        # 反面：「研发工程师」「工艺工程师」这种不带方向的岗，码不对口就不放。
+        if v == ind_code.FIT_OUT:
+            hitw = name_dir_words(t, pf)
+            if hitw:
+                kept.append(pair)
+                continue
+            rows.append({"job": t, "intent": it, "code": "code_out",
+                         "label": DIAG_TEXT["code_out"], "verdict": "blocked",
+                         "detail": ("这家按行业码是「%s」，与你的方向不是一条线（不是没查到主营，"
+                                    "是查到了也对不上）；岗位名也没写方向" % _code_name(code)),
+                         "biz": _clean_biz(biz_text)[:60],
+                         "name": (parts or {}).get("name") or ""})
+            blocked.append(pair)
+            continue
+        if v == ind_code.FIT_EDGE:
+            # 相邻行业要一条额外证据，三条里占一条就放：
+            #   ① 岗位名自带方向（材料研发工程师）；② 意向名自带方向；
+            #   ③ 主营文本里确实出现了本领域强词（森一量子材料：码是 elec，
+            #      主营「法拉第旋光片、光通信核心材料」——材料就是化学的方向）。
+            # 三条都没有，才是「只是行业沾边」的领域岗，不放。
+            hitw = name_dir_words(t, pf) or name_dir_words(it, pf)
+            if hitw or biz_hit(pf, biz_text):
+                kept.append(pair)
+                continue
+            rows.append({"job": t, "intent": it, "code": "code_edge",
+                         "label": DIAG_TEXT["code_edge"], "verdict": "blocked",
+                         "detail": ("这家是「%s」，跟你的方向只是相邻（行业码有限对口）："
+                                    "通用职能岗照放，但「%s」这种领域岗不在其列"
+                                    % (_code_name(code), t)),
+                         "biz": _clean_biz(biz_text)[:60],
+                         "name": (parts or {}).get("name") or ""})
+            blocked.append(pair)
+            continue
         if biz_hit(pf, biz_text):
             kept.append(pair)
             continue
@@ -485,8 +601,9 @@ def filter_real(real_pairs, kw, kw_fields, biz_text, major="", parts=None, polic
     return r["kept"], r["blocked"]
 
 
-def filter_infer(infer_pairs, kw_fields, biz_text, major="", diag=None, name=""):
-    """推断命中复检：岗位名是猜的不能自证，主营文本必须容纳方向。
+def filter_infer(infer_pairs, kw_fields, biz_text, major="", diag=None, name="",
+                 code=None):
+    """推断命中复检：岗位名是猜的不能自证，主营文本（或行业码）必须容纳方向。
 
     推断命中本来就是「猜的」，缺依据就不猜 —— 这里保持严格（主营为空/纯
     「未知」一律不保留），与 recheck_real 的「开发期不直接毙企业」不矛盾：
@@ -494,6 +611,9 @@ def filter_infer(infer_pairs, kw_fields, biz_text, major="", diag=None, name="")
     因为主营没采到 / 词表没覆盖才没标（那些是真该补的数据）。
     复检按意向对各算各的方向集（2026-11-17）：销售意向放行商贸类主营，
     不再连带给其他意向放行化学分析岗。
+
+    2026-11-17 起有行业码就先查表：core 直接标，edge/out 不标（推断岗本就
+    是猜的，行业码只沾边就不再往上加一对猜测）。code 为 None 走旧关键词口径。
     """
     pairs = list(infer_pairs)
     rows = diag if diag is not None else []
@@ -503,17 +623,30 @@ def filter_infer(infer_pairs, kw_fields, biz_text, major="", diag=None, name="")
     if not biz:
         # 主营没采到 → 不标推断对（猜的岗没有业务依据），但记下来：这就是
         # 「为什么这条推断没标」的答案，也是该补采集的地方。
+        # 例外：行业码判 core 的企业——码是建库时打好的，不依赖这段主营文本，
+        # 已经在库里的结论不必因为文案没采到就作废。
+        keep_core = []
         for p in pairs:
+            it = str((p[1] if isinstance(p, (list, tuple)) else "") or "")
+            if code and table_verdict(major, it, code) == ind_code.FIT_CORE:
+                keep_core.append(p)
+                continue
             rows.append({"job": str((p[0] if isinstance(p, (list, tuple)) else "") or ""),
-                         "intent": str((p[1] if isinstance(p, (list, tuple)) else "") or ""),
+                         "intent": it,
                          "code": "biz_missing", "label": DIAG_TEXT["biz_missing"],
                          "verdict": "drop_infer",
                          "detail": "这家主营没采到，推断岗没有业务依据、不标推断对", "biz": "",
                          "name": name})
-        return []
+        return keep_core
     out = []
     for p in pairs:
         it = str((p[1] if isinstance(p, (list, tuple)) else "") or "")
+        v = table_verdict(major, it, code) if code else None
+        if v == ind_code.FIT_CORE:
+            out.append(p)
+            continue
+        if v in (ind_code.FIT_EDGE, ind_code.FIT_OUT):
+            continue
         if biz_hit(pair_fields(it, major) or kw_fields, biz):
             out.append(p)
             continue
@@ -526,8 +659,13 @@ def filter_infer(infer_pairs, kw_fields, biz_text, major="", diag=None, name="")
     return out
 
 
-def blocked_why(job: str, intent: str, biz_text: str, major: str, intended) -> str:
-    """降级理由：主营是做什么的 vs 学生方向是什么，一句话讲清为什么对不上。"""
+def blocked_why(job: str, intent: str, biz_text: str, major: str, intended,
+                code=None) -> str:
+    """降级理由：主营是做什么的 vs 学生方向是什么，一句话讲清为什么对不上。
+
+    有行业码时用码说话（「这家是机械装备，跟你只是相邻方向」），比再念一遍
+    主营文本更好懂 —— 学生不需要读企业的经营范围。
+    """
     biz = _clean_biz(biz_text)
     head = (biz[:24] + "…") if len(biz) > 24 else (biz or "主营未知")
     dom = str(major or "").strip()
@@ -536,5 +674,15 @@ def blocked_why(job: str, intent: str, biz_text: str, major: str, intended) -> s
         dom += "专业"
     if its:
         dom += ("选的" + "、".join(its[:2])) if dom else ("、".join(its[:2]))
+    if code:
+        v = table_verdict(major, intent, code)
+        if v == ind_code.FIT_EDGE:
+            return ("「%s」与你的「%s」方向相邻但不对口：这家是「%s」，通用职能岗会"
+                    "放行，这个领域岗不在其列。想投就现场问一句培养方向。"
+                    % (job, intent, _code_name(code)))
+        if v == ind_code.FIT_OUT:
+            return ("「%s」与你的「%s」只是字面对得上：这家是「%s」，与你%s的方向"
+                    "不搭。是否按你的方向培养，现场问一句。"
+                    % (job, intent, _code_name(code), dom or "的"))
     return ("「%s」与你的「%s」只是字面对得上：这家主营是「%s」，与你%s的方向对不上。"
             "是否按你的方向培养，现场问一句。" % (job, intent, head, dom or "的"))
