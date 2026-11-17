@@ -56,4 +56,22 @@ if (d.rot) {
     console.log('   ' + x[0] + '  py=' + x[1] + ' js=' + x[2]));
   if (rdiff.length) process.exit(1);
 }
+/* 方向理由（_reason_by_direction vs miDirReason）也必须逐对同源：
+   2026-11-17 删「更细≠同岗」时，判定两份都改了，理由只改了 Python 那份，
+   前端对同一对 return ''，页面只能拿模型原句兜底，用户看到的还是旧口径。
+   比较用「空串 vs 空串」也算一致，但任一侧有句子就必须逐字相同。 */
+let sdiff = [];
+if (d.rs) {
+  for (const it of d.ints) {
+    for (const t of d.titles) {
+      const py = d.rs[it][t] || '', js = miDirReason(t, it) || '';
+      if (py !== js) sdiff.push([it, t, py, js]);
+    }
+  }
+  console.log('\n方向理由：' + (d.ints.length * d.titles.length) + ' 对，不一致 ' + sdiff.length);
+  sdiff.slice(0, 10).forEach(x =>
+    console.log('   ' + x[0] + ' × ' + x[1] + '\n      py=' + x[2] + '\n      js=' + x[3]));
+}
+
 if (vdiff.length) process.exit(1);
+if (sdiff.length) process.exit(1);

@@ -223,14 +223,19 @@ def step_fixtures():
     # 2026-11-15「电磁设计 × 机械设计」就是 verdict 层漏判——role/share 都对，
     # 但方向不同。这里把 verdict 也抽成夹具，前端 miPairVerdict 必须逐对一致。
     ver = {it: {t: IS.pair_verdict(t, it) for t in titles} for it in PARITY_INTENTS}
+    # 方向理由也必须同源：2026-11-17 删「更细≠同岗」时只改了 Python 的
+    # _reason_by_direction，前端 miDirReason 对同一对直接 return ''，页面只能
+    # 退回模型原句（还可能是「不是同一个岗位」），与 payload 说的相反。
+    # 判据一致但文案各写一套，用户看到的照样是旧口径，所以这里逐对抽理由。
+    rs = {it: {t: IS._reason_by_direction(t, it) for t in titles} for it in PARITY_INTENTS}
     # 轮岗类判定也做同源对拍：它决定「值得问一句」的范围，
     # 前后端一旦不一致，页面就会问出后端不会问的话。
     rot = {t: bool(IS.is_rotation_job(t)) for t in titles}
     json.dump({"ints": PARITY_INTENTS, "titles": titles, "mat": mat,
-               "ver": ver, "rot": rot},
+               "ver": ver, "rot": rot, "rs": rs},
               open(os.path.join(HERE, "data", "_parity.json"), "w", encoding="utf-8"),
               ensure_ascii=False)
-    print("   data/_parity.json    %d 意向 × %d 岗位 = %d 对（含 verdict）"
+    print("   data/_parity.json    %d 意向 × %d 岗位 = %d 对（含 verdict / 方向理由）"
           % (len(PARITY_INTENTS), len(titles), len(PARITY_INTENTS) * len(titles)))
 
 
