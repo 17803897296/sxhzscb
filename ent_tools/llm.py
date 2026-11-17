@@ -49,8 +49,17 @@ def load_env(base_dir=None):
 
 
 def resolve(cfg=None):
-    """(key, base, model)。优先级：环境变量 > 传入 cfg > 内置默认。"""
-    cfg = cfg or {}
+    """(key, base, model)。优先级：环境变量 > 传入 cfg > 内置默认。
+
+    `cfg=None` 时自动读同目录 `.env`（2026-11-17 修）。不传 cfg 原来会落到
+    「内置默认 base（智谱）+ 空 key」，打出去是 401 Unauthorized，看起来像
+    key 失效，实际只是调用方忘了 `load_env()`——新写的脚本一不留神就中招，
+    而且报错信息完全指错方向。生产四个模块都自己 load_env 后显式传 cfg，
+    所以这个坑一直没暴露；现在兜住它。
+
+    显式传 `{}` 仍是「什么都没配」（测试靠它钉内置默认值），语义不变。
+    """
+    cfg = load_env() if cfg is None else cfg
     key = os.environ.get("DEEPSEEK_API_KEY") or cfg.get("DEEPSEEK_API_KEY", "")
     base = (os.environ.get("DEEPSEEK_BASE_URL") or cfg.get("DEEPSEEK_BASE_URL")
             or DEFAULT_BASE)
@@ -71,7 +80,12 @@ def chat(prompt, cfg=None, timeout=60, temperature=0):
 
     调用方自己决定要不要 `parse_json`：`intent_semantics` 要 JSON、
     `biz_fit` 要文本自己再截，解析失败的处理各家不同，不在这一层做。
+
+    `cfg=None` 时先读一次 `.env` 再算 key/base/model（见 `resolve`），读完
+    缓存进局部变量传下去，避免 payload_of 二次读盘。
     """
+    if cfg is None:
+        cfg = load_env()
     key, base, _ = resolve(cfg)
     req = urllib.request.Request(
         base.rstrip("/") + "/chat/completions",

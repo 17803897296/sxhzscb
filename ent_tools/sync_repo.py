@@ -229,6 +229,68 @@ def sync_profile_seed():
         return "失败：%s: %s" % (type(exc).__name__, exc)
 
 
+def sync_ind_codes_to_seed():
+    """把活库的行业码抄进只读种子库。
+
+    为什么必须做：种子库原来是 145 家企业 0 个行业码，clone 下来跑 step_ind_code
+    只能靠规则兜底 —— 同一家企业在开发机上判 chem、在新同学机器上判 metal，
+    匹配结果就漂了，而且没人会想到是「码的来源不同」。码一旦定了就是建库资产，
+    要跟库一起走。
+
+    只抄 ind_code / ind_conf / ind_why 三个字段，不动其他列（别的列涉及脱敏，
+    由 sync_profile_seed 负责）。幂等：全一致就不写，避免每次发布都产生 diff。
+    """
+    import sqlite3
+    src = DEV / "ent_tools/data/careersafari.db"
+    seed = REPO / "ent_tools/data/careersafari.db.seed"
+    if not (src.is_file() and seed.is_file()):
+        return "跳过（活库或种子缺失）"
+    try:
+        ro = sqlite3.connect(str(src))
+        rows = {}
+        for name, ij in ro.execute("select name, item_json from company_jobs"):
+            try:
+                it = json.loads(ij or "{}")
+            except Exception:
+                continue
+            if it.get("ind_code"):
+                rows[name] = (it["ind_code"], it.get("ind_conf") or "",
+                              it.get("ind_why") or "")
+        ro.close()
+        if not rows:
+            return "跳过（活库还没有行业码）"
+        db = sqlite3.connect(str(seed))
+        changed = 0
+        for name, (code, conf, why) in rows.items():
+            row = db.execute("select item_json from company_jobs where name=?",
+                             (name,)).fetchone()
+            if not row:
+                continue
+            try:
+                it = json.loads(row[0] or "{}")
+            except Exception:
+                it = {}
+            if (it.get("ind_code"), it.get("ind_conf"), it.get("ind_why")) == (code, conf, why):
+                continue
+            it["ind_code"], it["ind_conf"], it["ind_why"] = code, conf, why
+            db.execute("update company_jobs set item_json=? where name=?",
+                       (json.dumps(it, ensure_ascii=False), name))
+            changed += 1
+        if not changed:
+            db.close()
+            return "行业码已配套（%d 家），无需改动" % len(rows)
+        db.commit()
+        db.execute("vacuum")
+        db.close()
+        for suffix in ("-shm", "-wal"):
+            f = Path(str(seed) + suffix)
+            if f.exists():
+                f.unlink()
+        return "行业码已抄入种子：%d 家（共 %d 家有码）" % (changed, len(rows))
+    except Exception as exc:
+        return "失败：%s: %s" % (type(exc).__name__, exc)
+
+
 def compare(target: Path, rels):
     same, diff, missing = [], [], []
     for rel in rels:
@@ -328,6 +390,7 @@ def main(argv=None):
         if not a.no_payload:
             print("== 种子库生效画像配套 ==")
             print("  " + sync_profile_seed())
+            print("  " + sync_ind_codes_to_seed())
 
     rels = source_files(not a.no_payload)
     # 数据同源是默认行为，但隐私优先：画像里出现姓名/学校/电话/邮箱就跳过 payload，

@@ -125,6 +125,23 @@ class ResolveTests(unittest.TestCase):
             self.assertEqual(base, "https://open.bigmodel.cn/api/paas/v4")
             self.assertEqual(model, "glm-4-flash")
 
+    def test_none_reads_dotenv(self):
+        """`cfg=None` 要自动读 .env，而不是落到「智谱 base + 空 key」。
+
+        2026-11-17：新写的批量打码脚本调 `llm.chat(prompt)` 没传 cfg，打到
+        智谱的 base 上返回 401，被误读成「key 失效」查了半天。这里钉住兜底
+        行为：不传 cfg = 用 .env；显式传 `{}` 才是「什么都没配」。
+        """
+        fake = {"DEEPSEEK_API_KEY": "sk-file", "DEEPSEEK_BASE_URL": "https://b",
+                "DEEPSEEK_MODEL": "m-x"}
+        with patch.object(llm, "load_env", return_value=fake):
+            with self._no_env():
+                for k in ("DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL"):
+                    os.environ.pop(k, None)
+                self.assertEqual(llm.resolve(), ("sk-file", "https://b", "m-x"))
+                # 显式空 dict 不受影响，仍是内置默认
+                self.assertEqual(llm.resolve({})[0], "")
+
     def test_temperature_is_the_only_difference_from_intent_semantics(self):
         """intent_semantics 用 0.2，其余用 0——这里显式钉住，别哪天被顺手改掉。"""
         self.assertEqual(llm.payload_of("x", {}, 0)["temperature"], 0)

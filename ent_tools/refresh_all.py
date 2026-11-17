@@ -10,13 +10,14 @@
 流程：
     1  缓存体检     指纹不符的旧缓存归档到 data/_stale_cache/（可回溯）
     2  重算方向     按主营/岗位重算方向提示（_dir_fill.py）
-    3  重建 payload  失效项在此自动重建（会调用模型，慢）
-    4  重建页面     demo/fair.html（内联 JS 与 payload 取数逻辑）
-    5  测试数据页   demo/test_users.html（三套随机画像，一键切换 / 提交入库）
-    6  测试夹具     _js_matchintent.js / data/_parity.json 从**当前源码**重新生成，
+    3  行业码       人工确认 > 采集时模型码 > 规则兜底，落 ind_code 列
+    4  重建 payload  失效项在此自动重建（会调用模型，慢）
+    5  重建页面     demo/fair.html（内联 JS 与 payload 取数逻辑）
+    6  测试数据页   demo/test_users.html（三套随机画像，一键切换 / 提交入库）
+    7  测试夹具     _js_matchintent.js / data/_parity.json 从**当前源码**重新生成，
                    不再维护手工副本（手工副本漂移过一次，等于拿旧规则给小抄打分）
-    7  JS 语法校验   页面内联 script + 夹具 JS 都过 node --check
-    8  一致性测试    前后端匹配 / 前后端矩阵 parity / 规则回归
+    8  JS 语法校验   页面内联 script + 夹具 JS 都过 node --check
+    9  一致性测试    前后端匹配 / 前后端矩阵 parity / 规则回归
 
 这里**没有**「代码体检」这一步。以前加过一个 gate.py（指标不许变差），
 跑了两天就发现它是在给写代码收手续费：加个函数、拆个文件都可能撞线。
@@ -24,7 +25,9 @@
 想看就自己跑，不想看它绝不会拦你。
 
 用法：
-    python refresh_all.py             # 全流程
+    python refresh_all.py             # 全流程（纯本地，断网可跑）
+    python refresh_all.py --llm       # 全流程 + 用模型给新进库企业打行业码（要联网）
+    python refresh_all.py --collect   # 全流程 + 联网采集（要联网）
     python refresh_all.py --skip-build  # 不重建 payload（只查缓存 + 页面 + 测试）
     python refresh_all.py --skip-tests  # 只重建，不跑测试
 """
@@ -67,7 +70,7 @@ def _run(label, cmd, cwd=HERE, allow_fail=False, timeout=None):
 
 
 def step_cache():
-    print("\n== 1/8 缓存体检 ==")
+    print("\n== 1/9 缓存体检 ==")
     # 活缓存不入库，clone 后第一次跑要先从只读种子复制出来（同 careersafari.db.seed）。
     restored = cache_guard.restore_seeds()
     if restored:
@@ -87,7 +90,7 @@ def step_infer_fill():
     必须在 dirfill / build 之前：方向表和 payload 都要看到补进去的推断岗标注。
     校招核实库认作校招的企业不碰（它们用真实 URL 岗）。FAIR_INFER_FILL=0 可关闭。
     """
-    print("\n== 1/8 画像推断岗补库（0岗+非校招）==")
+    print("\n== 1/9 画像推断岗补库（0岗+非校招）==")
     _run("fill_inferred_jobs.py",
          [sys.executable, "-X", "utf8", "fill_inferred_jobs.py"])
 
@@ -99,19 +102,68 @@ def step_dirfill():
     没跑这一步不会报错（会退回现算），但慢、而且 seed 库里的 hint 会缺，
     下次干净 clone 就丢；所以固定成流水线的一步。纯本地规则，秒级。
     """
-    print("\n== 2/8 重算岗位方向 ==")
+    print("\n== 2/9 重算岗位方向 ==")
     _run("_dir_fill.py", [sys.executable, "-X", "utf8", "_dir_fill.py"])
 
 
+def step_ind_code(use_llm=False):
+    """给企业打行业码（企业搜索建库时就该有，不是事后补的一锤子买卖）。
+
+    三个来源，按优先级落地，谁也不许覆盖谁：
+      1. 人工确认  data/_ind_code_override.json   —— 核过分歧清单的结论，最硬；
+      2. 模型打码  data/_ind_code_new.json        —— 采集时 enrich_by_llm 顺手给的
+                                                     （同一次调用多一个字段，零额外
+                                                     成本，有网才有）；
+      3. 规则兜底  ind_code.classify              —— 离线/外部交付包进库用这个，
+                                                     准头差些，但断网也能跑。
+
+    匹配端只查这一列（ind_code），不跑关键词、不调模型、不联网 —— 这正是
+    「换判据而不是接着补词表」的落点。覆盖率不满就报警，不静默放过。
+
+    `use_llm=True`（命令行 --llm）才多跑一步模型打码，而且只打「还没定论」的
+    企业（人工码、已有模型码都跳过）—— 新增一家企业时才会真正发请求。
+    默认不跑：断网现场、离线副本必须能走完整流程，联网不能是必经环节。
+    """
+    print("\n== 3/9 行业码 ==")
+    import ind_code
+    if use_llm:
+        # 失败不中断：没 key、网断了就退回规则兜底，流程照走（allow_fail）。
+        _run("_ind_code_llm.py（联网，只打未定论的企业）",
+             [sys.executable, "-X", "utf8", "_ind_code_llm.py", "--only-uncovered"],
+             allow_fail=True, timeout=1800)
+    newp = os.path.join(HERE, "data", "_ind_code_new.json")
+    merged = 0
+    if os.path.exists(newp):
+        try:
+            items = json.load(io.open(newp, encoding="utf-8"))
+        except Exception as exc:
+            print("   _ind_code_new.json 读不了（%s），跳过模型码" % exc)
+            items = []
+        merged = ind_code.apply_new_codes(items)
+        if merged:
+            print("   模型码落地 %d 家（采集时顺手打的）" % merged)
+    _, w = ind_code.backfill()
+    if w["live"] or w["enrich"]:
+        print("   规则兜底补码：活库 %d、增补档案 %d" % (w["live"], w["enrich"]))
+    stat = ind_code.report(verbose=False)
+    total, has = stat["total"], stat["has_code"]
+    print("   覆盖 %d/%d（%.0f%%），人工确认 %d 家"
+          % (has, total, 100.0 * has / max(1, total), stat["manual"]))
+    if has < total:
+        # 缺码的企业在匹配端只能转「现场待问」，是能看见的降级；这里明确喊出来
+        print("   [警告] 还有 %d 家没有行业码，匹配端会退成现场待问：%s"
+              % (total - has, "、".join(n for n, _ in stat["unknown"][:5])))
+
+
 def step_build():
-    print("\n== 3/8 重建 payload ==")
+    print("\n== 4/9 重建 payload ==")
     p = _run("fair_bridge.build()", [sys.executable, "-X", "utf8", "-c",
                                      "import fair_bridge;fair_bridge.build()"])
     return p
 
 
 def step_page():
-    print("\n== 4/8 重建页面 ==")
+    print("\n== 5/9 重建页面 ==")
     _run("build_fair_page.py", [sys.executable, "-X", "utf8", "build_fair_page.py"])
 
 
@@ -122,7 +174,7 @@ def step_test_users():
     结果后面重建时没人记得跑它，页面上就找不到入口了。
     现在每次 refresh 都重生成，并保证服务端能直接访问。
     """
-    print("\n== 5/8 重建测试数据页 ==")
+    print("\n== 6/9 重建测试数据页 ==")
     _run("build_test_users_page.py",
          [sys.executable, "-X", "utf8", "build_test_users_page.py"])
 
@@ -144,7 +196,7 @@ def step_fixtures():
     parity 测试就用旧规则算出「一致」，等于白跑。这里直接切页面源码里的
     `const MI_GEN=` … `function matchIntent(` 之间那段，测的就是线上跑的那份规则。
     """
-    print("\n== 6/8 生成测试夹具 ==")
+    print("\n== 7/9 生成测试夹具 ==")
     import json
 
     from fair_report_js import REPORT_JS
@@ -178,7 +230,7 @@ def step_fixtures():
 
 
 def step_js():
-    print("\n== 7/8 JS 语法校验 ==")
+    print("\n== 8/9 JS 语法校验 ==")
     if not os.path.isfile(PAGE):
         print("   [失败] 找不到 " + PAGE)
         sys.exit(1)
@@ -201,7 +253,7 @@ def step_js():
 
 
 def step_tests():
-    print("\n== 8/8 一致性测试 ==")
+    print("\n== 9/9 一致性测试 ==")
     _run("前后端匹配一致（_test_match.js）", ["node", "_test_match.js"])
     _run("24 意向 × 岗位前后端 parity（_test_parity.js）", ["node", "_test_parity.js"])
     # 规则回归脚本只打印退化数，没有退出码约定，从输出里抓关键行
@@ -241,7 +293,7 @@ def step_db():
         if os.path.exists(seed):
             import shutil
             shutil.copy2(seed, db)
-            print("\n== 0/8 活库初始化 ==\n   从只读种子复制 data/careersafari.db")
+            print("\n== 0/9 活库初始化 ==\n   从只读种子复制 data/careersafari.db")
 
 
 def main(argv):
@@ -254,6 +306,7 @@ def main(argv):
     step_cache()
     step_infer_fill()
     step_dirfill()
+    step_ind_code(use_llm="--llm" in argv)
     if not skip_build:
         step_build()
     step_page()

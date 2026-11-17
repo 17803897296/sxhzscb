@@ -17,6 +17,8 @@
 import argparse
 import json
 import os
+
+import ind_code
 import re
 import sys
 import time
@@ -30,6 +32,10 @@ NATURE = ["央企", "国企", "民企", "外企", "合资", "事业单位"]
 INDUSTRY = ["制造", "医药", "IT", "金融", "建筑", "能源", "消费", "物流", "教育", "政府事业", "其他"]
 JOB_SOURCE = ["校招公告", "社招信息", "websearch", "未知"]
 URGENCY = ["高", "中", "低", "未知"]
+
+# 行业码的码表文本：直接取自 ind_code.CODES（唯一真源），不在这里抄一遍——
+# 抄一份就会漂移，而漂移之后「企业搜索打码」和「匹配端查表」会各说各话。
+_CODE_TABLE = "\n".join("  %-10s %s" % (c[0], c[1]) for c in ind_code.CODES)
 
 PROMPT = """你在把一段企业公开资料整理成结构化字段。只输出 JSON，不要解释。
 
@@ -45,6 +51,10 @@ PROMPT = """你在把一段企业公开资料整理成结构化字段。只输�
   "city": "总部所在城市，查不到写 未知",
   "industry": "制造|医药|IT|金融|建筑|能源|消费|物流|教育|政府事业|其他|未知",
   "biz_scope": "这家靠什么挣钱：主营产品/服务 + 应用领域，40~70 字，如「汽车空调压缩机及热管理系统的研发生产，配套新能源整车厂」；原文没有业务介绍就写 未知",
+  "ind_code": "行业码，只能从下面码表里选一个；判不出写 unknown",
+
+【行业码表】
+{codes},
   "bizEvidence": "支撑 biz_scope 的原文片段，逐字复制，不改写",
   "jobSource": "校招公告|社招信息|websearch|未知",
   "evidence": "从原文中逐字复制的一句话，必须是原文片段，不能改写",
@@ -75,7 +85,12 @@ PROMPT = """你在把一段企业公开资料整理成结构化字段。只输�
    jobSource 优先级：校招公告 → "校招公告"；只有社招 → "社招信息"；
    联网搜到岗位记录 → "websearch"；只找到主营业务介绍 → **"未知" 且 jobs 写 []**，
    不许从业务描述里推测岗位（推测出来的不是事实，会让下游误判）。
-7. **biz_scope 与岗位无关，任何情况下都要填**：jobs 为空时 biz_scope 只能是唯一的业务
+7. **ind_code 只看主营，不看它招什么岗**：一家食品厂招「研发工程师」也还是
+   food，不许因为岗位名像就往别处写。同一段话列了很多方向时（「期刊覆盖生物、
+   化学、医药、机械」），取**它靠什么挣钱**的那一个，不要取列举词。
+   控股/投资平台按它实际经营的业务判；纯粹投资控股写 unknown。宁可写 unknown，
+   也不要凑一个不贴的码——码错了会让整个专业族的学生被误判。
+8. **biz_scope 与岗位无关，任何情况下都要填**：jobs 为空时 biz_scope 只能是唯一的业务
    线索，写空会让下游无法判断这家单位跟学生意向有没有交叉。只写原文说过的产品/服务，
    不写「行业领先」「技术先进」这类空话；bizEvidence 必须逐字出现在原文里，
    找不到可引的句子就 biz_scope 也写 "未知"（宁可空，不可编）。"""
@@ -191,7 +206,7 @@ def get_context(name):
 
 
 def call_model(name, page_text, key, base, model):
-    prompt = PROMPT.format(name=name, page_text=page_text)
+    prompt = PROMPT.format(name=name, page_text=page_text, codes=_CODE_TABLE)
     url = base.rstrip("/") + "/chat/completions"
 
     def post(payload):
@@ -352,6 +367,11 @@ def main(argv=None):
         names = names[:args.limit]
 
     entries, report, ok_jobs, ok_fields, ok_biz, no_biz, fail = [], [], 0, 0, 0, [], 0
+    # 行业码走旁路（2026-11-17）：research_cache 的 entry 结构被契约严格校验
+    # （多一个键就报错），所以码不进 entry，单独攒一份 data/_ind_code_new.json，
+    # 由 refresh_all 的 step_ind_code 合并落库。好处是这里「顺手打一次」不增加
+    # 任何调用成本，而落库口径仍由 ind_code 一条链统一（人工覆写 > 模型 > 规则）。
+    new_codes, code_ok = [], 0
     t0 = time.time()
     for i, name in enumerate(names, 1):
         try:
@@ -371,6 +391,12 @@ def main(argv=None):
                 ok_biz += 1
             else:
                 no_biz.append(name)
+            _code = ind_code.normalize(raw.get("ind_code"))
+            if _code != ind_code.UNKNOWN:
+                code_ok += 1
+                new_codes.append({"name": name, "code": _code,
+                                  "why": str(raw.get("ind_code_why") or "")[:40],
+                                  "date": time.strftime("%Y-%m-%d"), "src": "enrich"})
             if not entry["jobs"]:
                 report.append("%s：无岗位（%s）" % (name, entry["jobSource"]))
             print("%3d/%d %-28s %-5s %-8s jobs=%d 主营=%s" % (
@@ -389,10 +415,24 @@ def main(argv=None):
         time.sleep(args.sleep)
 
     Path(args.out).write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if new_codes:
+        _cp = Path(args.out).with_name("_ind_code_new.json")
+        _old = {}
+        if _cp.exists():
+            try:
+                _old = {x["name"]: x for x in json.loads(_cp.read_text(encoding="utf-8"))}
+            except Exception:
+                _old = {}
+        for x in new_codes:
+            _old[x["name"]] = x        # 同名覆盖：本次采集比历史记录新
+        _cp.write_text(json.dumps(sorted(_old.values(), key=lambda x: x["name"]),
+                                  ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("行业码：%d 家（累计 %d）-> %s" % (code_ok, len(_old), _cp))
     lines = ["# 采集报告", "",
              "- 企业数：%d" % len(entries),
              "- 拿到岗位：%d" % ok_jobs,
              "- 拿到主营：%d（缺 %d）" % (ok_biz, len(no_biz)),
+             "- 打出行业码：%d" % code_ok,
              "- 有来源：%d" % ok_fields,
              "- 失败：%d" % fail,
              "- 耗时：%.1f 秒" % (time.time() - t0), "", "## 明细", ""]

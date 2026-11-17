@@ -1,0 +1,727 @@
+{
+  "上海三问家居服饰有限公司": {
+    "code": "textile",
+    "why": "家居软品服装配饰面料",
+    "model": "deepseek-chat"
+  },
+  "上海世外智慧教育科技有限公司": {
+    "code": "edu",
+    "why": "AI教学平台与教师培训",
+    "model": "deepseek-chat"
+  },
+  "上海中镭新材料科技有限公司": {
+    "code": "chem",
+    "why": "改性工程塑料等新材料",
+    "model": "deepseek-chat"
+  },
+  "上海妙文创意科技有限公司": {
+    "code": "design",
+    "why": "展陈设计施工与品牌策划",
+    "model": "deepseek-chat"
+  },
+  "上海微宇天导技术有限责任公司": {
+    "code": "elec",
+    "why": "导航仿真测试与卫星通信",
+    "model": "deepseek-chat"
+  },
+  "上海我们方田科技有限公司": {
+    "code": "edu",
+    "why": "中小学学科与素质教育",
+    "model": "deepseek-chat"
+  },
+  "上海新舟投资管理有限公司": {
+    "code": "edu",
+    "why": "实际经营教育培训业务",
+    "model": "deepseek-chat"
+  },
+  "上海柏楚电子科技股份有限公司": {
+    "code": "ele",
+    "why": "激光切割控制系统与驱控",
+    "model": "deepseek-chat"
+  },
+  "上海照寰文化传播有限公司": {
+    "code": "edu",
+    "why": "中小学及语言职业培训",
+    "model": "deepseek-chat"
+  },
+  "上海航天科工电器研究院有限公司": {
+    "code": "elec",
+    "why": "微波光互连与高速传输器件",
+    "model": "deepseek-chat"
+  },
+  "上海长宁区乐读线上教育培训学校": {
+    "code": "edu",
+    "why": "中小学在线学科教育",
+    "model": "deepseek-chat"
+  },
+  "上海靖戈智能科技有限公司": {
+    "code": "finance",
+    "why": "股票量化投资与算法交易",
+    "model": "deepseek-chat"
+  },
+  "上海非凸智能科技有限公司": {
+    "code": "it",
+    "why": "智能算法与交易系统服务",
+    "model": "deepseek-chat"
+  },
+  "东方菱日锅炉有限公司": {
+    "code": "mech",
+    "why": "余热锅炉等锅炉装备制造",
+    "model": "deepseek-chat"
+  },
+  "中共呼和浩特市委组织部": {
+    "code": "public",
+    "why": "党委工作部门，无生产经营",
+    "model": "deepseek-chat"
+  },
+  "中化金茂物业管理（北京）有限公司杭州分公司": {
+    "code": "build",
+    "why": "物业管理服务",
+    "model": "deepseek-chat"
+  },
+  "中国太平洋财产保险股份有限公司江苏分公司": {
+    "code": "finance",
+    "why": "财产保险业务",
+    "model": "deepseek-chat"
+  },
+  "中国建筑第八工程局有限公司上海分公司": {
+    "code": "build",
+    "why": "房屋建筑施工总承包",
+    "model": "deepseek-chat"
+  },
+  "中国振华（集团）新云电子元器件有限责任公司": {
+    "code": "elec",
+    "why": "电容器等电子元器件制造",
+    "model": "deepseek-chat"
+  },
+  "中国电子科技集团公司第五十五研究所": {
+    "code": "semi",
+    "why": "微波毫米波器件与半导体材料",
+    "model": "deepseek-chat"
+  },
+  "中国节能环保集团有限公司": {
+    "code": "energy",
+    "why": "节能环保与新能源",
+    "model": "deepseek-chat"
+  },
+  "中国资源循环集团新能源科技有限公司": {
+    "code": "energy",
+    "why": "风光储设备循环利用与清洁供热",
+    "model": "deepseek-chat"
+  },
+  "中天科技集团有限公司": {
+    "code": "elec",
+    "why": "通信、电力、海洋等产业",
+    "model": "deepseek-chat"
+  },
+  "中建一局集团建设发展有限公司": {
+    "code": "build",
+    "why": "施工总承包与EPC工程",
+    "model": "deepseek-chat"
+  },
+  "中建三局城市投资运营有限公司": {
+    "code": "build",
+    "why": "综合投资与城市开发运营",
+    "model": "deepseek-chat"
+  },
+  "中建三局集团华东建设有限公司": {
+    "code": "build",
+    "why": "房建与基础设施建设",
+    "model": "deepseek-chat"
+  },
+  "中科开浦生物科技（湖北）有限公司": {
+    "code": "pharma",
+    "why": "疫苗药物及CRO服务",
+    "model": "deepseek-chat"
+  },
+  "优靓重工（武汉）有限公司": {
+    "code": "metal",
+    "why": "天窗金属制品制造",
+    "model": "deepseek-chat"
+  },
+  "佳兆业地产南京有限公司": {
+    "code": "build",
+    "why": "房地产开发经营",
+    "model": "deepseek-chat"
+  },
+  "全亿健康药房有限公司": {
+    "code": "pharma",
+    "why": "连锁药房医药零售",
+    "model": "deepseek-chat"
+  },
+  "凯瑞斯德生化（苏州）有限公司": {
+    "code": "pharma",
+    "why": "手性药物中间体CDMO",
+    "model": "deepseek-chat"
+  },
+  "北京中科腾越科技发展有限公司": {
+    "code": "elec",
+    "why": "嵌入式工控通信设备",
+    "model": "deepseek-chat"
+  },
+  "北京学而思教育科技有限公司": {
+    "code": "edu",
+    "why": "素养网校及教育硬件",
+    "model": "deepseek-chat"
+  },
+  "北京市平谷区国农港学校": {
+    "code": "edu",
+    "why": "十二年一体化公办学校",
+    "model": "deepseek-chat"
+  },
+  "北京平行线根源教育科技有限公司": {
+    "code": "edu",
+    "why": "理科培优线下线上培训",
+    "model": "deepseek-chat"
+  },
+  "北京掌上先机网络科技有限公司": {
+    "code": "it",
+    "why": "零售SaaS电商ERP系统",
+    "model": "deepseek-chat"
+  },
+  "北京比特大陆科技有限公司": {
+    "code": "semi",
+    "why": "算力芯片与区块链服务器",
+    "model": "deepseek-chat"
+  },
+  "北京海纳川汽车部件股份有限公司": {
+    "code": "mech",
+    "why": "汽车核心零部件制造",
+    "model": "deepseek-chat"
+  },
+  "北京第一实验学校": {
+    "code": "edu",
+    "why": "十五年一贯制公立学校",
+    "model": "deepseek-chat"
+  },
+  "北京趣加科技有限公司": {
+    "code": "design",
+    "why": "手游研发与全球发行",
+    "model": "deepseek-chat"
+  },
+  "华新（中国）投资有限公司": {
+    "code": "ele",
+    "why": "电线电缆为主营",
+    "model": "deepseek-chat"
+  },
+  "南京万达广场商业管理有限公司": {
+    "code": "trade",
+    "why": "商业综合体招商营运",
+    "model": "deepseek-chat"
+  },
+  "南京九洲会计咨询有限公司": {
+    "code": "finance",
+    "why": "会计服务与财务外包",
+    "model": "deepseek-chat"
+  },
+  "南京会心升学信息科技有限公司": {
+    "code": "edu",
+    "why": "中小学奥数竞赛辅导",
+    "model": "deepseek-chat"
+  },
+  "南京媛颂医疗美容诊所有限公司": {
+    "code": "pharma",
+    "why": "医疗美容服务",
+    "model": "deepseek-chat"
+  },
+  "南京市创新投资集团有限责任公司": {
+    "code": "finance",
+    "why": "政府投资基金与母基金",
+    "model": "deepseek-chat"
+  },
+  "南京新东方文化艺术发展有限公司": {
+    "code": "edu",
+    "why": "综合性教育服务",
+    "model": "deepseek-chat"
+  },
+  "南京昀光科技有限公司": {
+    "code": "ele",
+    "why": "硅基OLED微显示器件",
+    "model": "deepseek-chat"
+  },
+  "南京曙光新材料有限公司": {
+    "code": "chem",
+    "why": "硅烷偶联剂等精细化工制造",
+    "model": "deepseek-chat"
+  },
+  "南京泛成生物科技有限公司": {
+    "code": "chem",
+    "why": "生物化工原料生产销售",
+    "model": "deepseek-chat"
+  },
+  "南京牧镭激光科技股份有限公司": {
+    "code": "elec",
+    "why": "激光雷达与激光传感产品",
+    "model": "deepseek-chat"
+  },
+  "南京美之桥教育咨询有限公司": {
+    "code": "edu",
+    "why": "国际课程教学与留学咨询",
+    "model": "deepseek-chat"
+  },
+  "南京美华纺织品有限公司": {
+    "code": "textile",
+    "why": "家用纺织品研发生产出口",
+    "model": "deepseek-chat"
+  },
+  "南京自然之源生物科技有限公司": {
+    "code": "trade",
+    "why": "营养补充剂品牌运营与电商营销",
+    "model": "deepseek-chat"
+  },
+  "南京诺尔曼生物技术股份有限公司": {
+    "code": "pharma",
+    "why": "IVD检测试剂与医疗器械",
+    "model": "deepseek-chat"
+  },
+  "南昌大学": {
+    "code": "edu",
+    "why": "高等教育与科研人才培养",
+    "model": "deepseek-chat"
+  },
+  "南通海星电子股份有限公司": {
+    "code": "elec",
+    "why": "铝电解电容器用电极箔",
+    "model": "deepseek-chat"
+  },
+  "厦门森一量子材料股份有限公司": {
+    "code": "elec",
+    "why": "光通信核心材料法拉第旋光片",
+    "model": "deepseek-chat"
+  },
+  "古茗科技集团有限公司": {
+    "code": "food",
+    "why": "现制茶饮研发与门店运营",
+    "model": "deepseek-chat"
+  },
+  "呼和浩特市人事考试中心": {
+    "code": "public",
+    "why": "人事考试组织实施考务服务",
+    "model": "deepseek-chat"
+  },
+  "呼和浩特市人力资源和社会保障局": {
+    "code": "public",
+    "why": "就业社保人才公共服务",
+    "model": "deepseek-chat"
+  },
+  "呼和浩特市人民政府驻北京联络处": {
+    "code": "public",
+    "why": "政务联络协调服务",
+    "model": "deepseek-chat"
+  },
+  "呼和浩特市城市管理局": {
+    "code": "public",
+    "why": "市政市容综合执法管理",
+    "model": "deepseek-chat"
+  },
+  "呼和浩特市第二中学": {
+    "code": "edu",
+    "why": "全日制普通高中教育",
+    "model": "deepseek-chat"
+  },
+  "呼和浩特市职业技术大学": {
+    "code": "edu",
+    "why": "公办本科层次职业教育",
+    "model": "deepseek-chat"
+  },
+  "呼和浩特市行政审批和政务服务局": {
+    "code": "public",
+    "why": "行政审批政务服务",
+    "model": "deepseek-chat"
+  },
+  "嘉里粮油（天津）有限公司": {
+    "code": "food",
+    "why": "食用油及特种油脂生产",
+    "model": "deepseek-chat"
+  },
+  "四川科伦药业股份有限公司": {
+    "code": "pharma",
+    "why": "大输液及药品研发生产",
+    "model": "deepseek-chat"
+  },
+  "国动网络通信集团股份有限公司": {
+    "code": "elec",
+    "why": "通信塔类业务为主",
+    "model": "deepseek-chat"
+  },
+  "国家数据集团有限公司": {
+    "code": "it",
+    "why": "数据资源开发利用服务",
+    "model": "deepseek-chat"
+  },
+  "国核湛江核电有限公司": {
+    "code": "energy",
+    "why": "核电项目开发建设运营",
+    "model": "deepseek-chat"
+  },
+  "国泰海通证券股份有限公司江苏分公司": {
+    "code": "finance",
+    "why": "证券经纪与综合金融服务",
+    "model": "deepseek-chat"
+  },
+  "国联财务有限责任公司": {
+    "code": "finance",
+    "why": "集团内部资金管理与金融服务",
+    "model": "deepseek-chat"
+  },
+  "圣奥集团有限公司": {
+    "code": "design",
+    "why": "办公家具与空间解决方案",
+    "model": "deepseek-chat"
+  },
+  "多恩生物科技有限公司": {
+    "code": "chem",
+    "why": "纺织化学品印染助剂",
+    "model": "deepseek-chat"
+  },
+  "天山铝业集团股份有限公司": {
+    "code": "metal",
+    "why": "电解铝及铝深加工产业链",
+    "model": "deepseek-chat"
+  },
+  "天津南大通用数据技术股份有限公司": {
+    "code": "it",
+    "why": "国产数据库产品研发",
+    "model": "deepseek-chat"
+  },
+  "宁波金田铜业（集团）股份有限公司": {
+    "code": "metal",
+    "why": "铜产品及铜合金制造",
+    "model": "deepseek-chat"
+  },
+  "安盛天平保险销售有限公司": {
+    "code": "finance",
+    "why": "保险产品代理销售",
+    "model": "deepseek-chat"
+  },
+  "山东东明石化集团有限公司": {
+    "code": "chem",
+    "why": "炼油与高端化工",
+    "model": "deepseek-chat"
+  },
+  "常州市沃尔核材有限公司": {
+    "code": "elec",
+    "why": "热缩材料电缆附件电子材料",
+    "model": "deepseek-chat"
+  },
+  "常高新集团有限公司": {
+    "code": "build",
+    "why": "城市建设与产业园区开发",
+    "model": "deepseek-chat"
+  },
+  "广州市晓星火教育科技有限公司": {
+    "code": "edu",
+    "why": "中小学课外培训",
+    "model": "deepseek-chat"
+  },
+  "新城控股集团股份有限公司上海分公司": {
+    "code": "build",
+    "why": "房地产开发与商业综合体",
+    "model": "deepseek-chat"
+  },
+  "新毅东科技股份有限公司": {
+    "code": "semi",
+    "why": "光刻机设备及涂胶显影设备",
+    "model": "deepseek-chat"
+  },
+  "无锡信捷电气股份有限公司": {
+    "code": "ele",
+    "why": "PLC、伺服、变频等工业自动化",
+    "model": "deepseek-chat"
+  },
+  "无锡派克新材料科技股份有限公司": {
+    "code": "metal",
+    "why": "合金材料锻件辗制",
+    "model": "deepseek-chat"
+  },
+  "普洛药业股份有限公司": {
+    "code": "pharma",
+    "why": "原料药、CDMO、制剂",
+    "model": "deepseek-chat"
+  },
+  "曼迪匹艾（北京）科技服务有限公司": {
+    "code": "design",
+    "why": "学术期刊出版",
+    "model": "deepseek-chat"
+  },
+  "杭州小事做好教育科技有限公司": {
+    "code": "edu",
+    "why": "中小学素养课程教学",
+    "model": "deepseek-chat"
+  },
+  "杭州小凡教育科技有限公司": {
+    "code": "edu",
+    "why": "艺考高考文化课辅导",
+    "model": "deepseek-chat"
+  },
+  "杭州未来校教育科技有限公司": {
+    "code": "edu",
+    "why": "中小学在线双师直播课程",
+    "model": "deepseek-chat"
+  },
+  "杭州龙旗科技有限公司": {
+    "code": "finance",
+    "why": "量化对冲私募基金",
+    "model": "deepseek-chat"
+  },
+  "杰西圈（上海）科技有限公司": {
+    "code": "logistics",
+    "why": "国际物流B2B平台",
+    "model": "deepseek-chat"
+  },
+  "武汉上成生物科技有限公司": {
+    "code": "food",
+    "why": "食品安全快速检测试剂",
+    "model": "deepseek-chat"
+  },
+  "武汉久安药业有限公司": {
+    "code": "pharma",
+    "why": "注射剂仿制药研发生产",
+    "model": "deepseek-chat"
+  },
+  "武汉亿辰嘉环保科技有限公司": {
+    "code": "energy",
+    "why": "环保技术开发与环保工程",
+    "model": "deepseek-chat"
+  },
+  "武汉奕兴格商贸有限公司": {
+    "code": "trade",
+    "why": "中央空调销售安装维修",
+    "model": "deepseek-chat"
+  },
+  "武汉市江夏区人才": {
+    "code": "public",
+    "why": "区级人才公共服务机构",
+    "model": "deepseek-chat"
+  },
+  "武汉市铸源盛环境建设工程有限公司": {
+    "code": "build",
+    "why": "园林绿化与建设工程施工",
+    "model": "deepseek-chat"
+  },
+  "武汉智鼎诚科技有限公司": {
+    "code": "it",
+    "why": "信息技术咨询与软件开发",
+    "model": "deepseek-chat"
+  },
+  "武汉起点人力资源股份有限公司": {
+    "code": "it",
+    "why": "人力资源数字化平台服务",
+    "model": "deepseek-chat"
+  },
+  "武汉金盘智能科技有限公司": {
+    "code": "ele",
+    "why": "变压器储能等电力装备",
+    "model": "deepseek-chat"
+  },
+  "江中食疗科技有限公司": {
+    "code": "food",
+    "why": "猴姑饼干米稀等食品",
+    "model": "deepseek-chat"
+  },
+  "江苏东成机电工具有限公司": {
+    "code": "mech",
+    "why": "电动工具及配件制造",
+    "model": "deepseek-chat"
+  },
+  "江苏乔木教育科技有限公司": {
+    "code": "edu",
+    "why": "教育图书出版与发行",
+    "model": "deepseek-chat"
+  },
+  "江苏功成生物科技有限公司": {
+    "code": "pharma",
+    "why": "有害生物防治药剂研发销售",
+    "model": "deepseek-chat"
+  },
+  "江苏恒妤餐饮管理有限责任公司": {
+    "code": "food",
+    "why": "团膳食堂承包与快餐配送",
+    "model": "deepseek-chat"
+  },
+  "江苏昆仑互联新能源集团有限公司": {
+    "code": "energy",
+    "why": "AI能源管控与能效优化服务",
+    "model": "deepseek-chat"
+  },
+  "江苏汉邦科技股份有限公司": {
+    "code": "pharma",
+    "why": "生物制药分离纯化装备耗材",
+    "model": "deepseek-chat"
+  },
+  "江苏益丰大药房连锁有限公司": {
+    "code": "pharma",
+    "why": "药品零售连锁经营",
+    "model": "deepseek-chat"
+  },
+  "江苏省水文地质工程地质调查大队": {
+    "code": "public",
+    "why": "公益一类地质调查事业单位",
+    "model": "deepseek-chat"
+  },
+  "江苏菲沃泰纳米科技股份有限公司": {
+    "code": "chem",
+    "why": "纳米薄膜材料及镀膜服务",
+    "model": "deepseek-chat"
+  },
+  "江苏骏眉时代茶业有限公司": {
+    "code": "food",
+    "why": "红茶茶叶产品经营",
+    "model": "deepseek-chat"
+  },
+  "江苏鲁汶仪器股份有限公司": {
+    "code": "semi",
+    "why": "离子束刻蚀薄膜半导体设备",
+    "model": "deepseek-chat"
+  },
+  "沛顿科技（深圳）有限公司": {
+    "code": "semi",
+    "why": "存储芯片封装测试服务",
+    "model": "deepseek-chat"
+  },
+  "泰康之家经营管理有限公司": {
+    "code": "public",
+    "why": "养老护理康复医养社区运营",
+    "model": "deepseek-chat"
+  },
+  "浙江华海药业股份有限公司": {
+    "code": "pharma",
+    "why": "仿制药创新药原料药研发",
+    "model": "deepseek-chat"
+  },
+  "浙江奥翔药业股份有限公司": {
+    "code": "pharma",
+    "why": "原料药中间体制剂及CDMO",
+    "model": "deepseek-chat"
+  },
+  "浙江山爻科技有限公司": {
+    "code": "food",
+    "why": "养生茶饮等食养产品",
+    "model": "deepseek-chat"
+  },
+  "浙江爱旭太阳能科技有限公司": {
+    "code": "energy",
+    "why": "太阳能电池组件光储",
+    "model": "deepseek-chat"
+  },
+  "浙江省建工集团有限责任公司": {
+    "code": "build",
+    "why": "房屋建筑市政施工",
+    "model": "deepseek-chat"
+  },
+  "海亮教育科技服务集团有限公司": {
+    "code": "edu",
+    "why": "学校教育和教育服务",
+    "model": "deepseek-chat"
+  },
+  "深圳华润三九医药贸易有限公司": {
+    "code": "pharma",
+    "why": "OTC及处方药营销",
+    "model": "deepseek-chat"
+  },
+  "深圳市东方嘉盛供应链股份有限公司": {
+    "code": "logistics",
+    "why": "4PL供应链仓储物流",
+    "model": "deepseek-chat"
+  },
+  "深圳市通达致远科技有限公司": {
+    "code": "trade",
+    "why": "跨境电商平台运营",
+    "model": "deepseek-chat"
+  },
+  "深圳联塑艾博科工程设计有限公司": {
+    "code": "build",
+    "why": "建筑与BIM工程设计",
+    "model": "deepseek-chat"
+  },
+  "湖北东吴粮仓生态农业科技集团有限公司": {
+    "code": "agri",
+    "why": "农业技术与生产托管",
+    "model": "deepseek-chat"
+  },
+  "湖南虎家食品科技有限公司": {
+    "code": "food",
+    "why": "速冻小吃食品生产",
+    "model": "deepseek-chat"
+  },
+  "烟台睿创微纳技术股份有限公司": {
+    "code": "semi",
+    "why": "红外芯片探测器整机",
+    "model": "deepseek-chat"
+  },
+  "琥崧科技集团股份有限公司": {
+    "code": "mech",
+    "why": "智能产线与研磨设备",
+    "model": "deepseek-chat"
+  },
+  "石家庄精英中学": {
+    "code": "edu",
+    "why": "基础教育办学",
+    "model": "deepseek-chat"
+  },
+  "福建海创光电技术股份有限公司": {
+    "code": "elec",
+    "why": "激光光学元器件及模组",
+    "model": "deepseek-chat"
+  },
+  "科力普科技集团股份有限公司": {
+    "code": "trade",
+    "why": "办公用品MRO采购平台",
+    "model": "deepseek-chat"
+  },
+  "苏州外国语学校": {
+    "code": "edu",
+    "why": "民办K12学校",
+    "model": "deepseek-chat"
+  },
+  "苏州新东方教育咨询有限公司": {
+    "code": "edu",
+    "why": "素质与智慧教育",
+    "model": "deepseek-chat"
+  },
+  "苏州新区高新技术产业股份有限公司": {
+    "code": "build",
+    "why": "产业园区与产城开发",
+    "model": "deepseek-chat"
+  },
+  "苏州聚复科技股份有限公司": {
+    "code": "chem",
+    "why": "3D打印高分子材料",
+    "model": "deepseek-chat"
+  },
+  "苏州进阶派教育科技有限公司": {
+    "code": "edu",
+    "why": "学科培优与竞赛教育",
+    "model": "deepseek-chat"
+  },
+  "苏州青河科技有限公司": {
+    "code": "it",
+    "why": "互联网软件与大数据服务",
+    "model": "deepseek-chat"
+  },
+  "迈科维互创医疗科技（上海）有限公司": {
+    "code": "pharma",
+    "why": "神经调控医疗器械",
+    "model": "deepseek-chat"
+  },
+  "运达能源科技集团股份有限公司": {
+    "code": "energy",
+    "why": "风力发电机组制造",
+    "model": "deepseek-chat"
+  },
+  "银河航天科技（南通）有限公司": {
+    "code": "aero",
+    "why": "卫星研发与制造",
+    "model": "deepseek-chat"
+  },
+  "镇江市新东方教育培训有限公司": {
+    "code": "edu",
+    "why": "中小学学科培训",
+    "model": "deepseek-chat"
+  },
+  "高途教育科技集团有限公司": {
+    "code": "edu",
+    "why": "主营考研四六级等教育培训",
+    "model": "deepseek-chat"
+  }
+}
