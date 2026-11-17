@@ -31,6 +31,8 @@ desktop.ini
 
 # 一次性调试脚本 / 本地夹具（本机保留，永不入库）
 ent_tools/_*.py
+# 流水线第二步（refresh_all 2/8）直接调它，必须入库
+!ent_tools/_dir_fill.py
 ent_tools/_*.js
 ent_tools/_*.json
 # 例外：回归测试的旧规则基线模块，clone 跑 _rule_regress.py 必须有

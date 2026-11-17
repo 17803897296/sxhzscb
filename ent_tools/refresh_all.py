@@ -229,10 +229,26 @@ def step_collect(argv):
     _run("collect_roster.py", cmd, timeout=3600)
 
 
+def step_db():
+    """确保活库存在：仓库只放只读种子，clone 后第一次跑不依赖先起一次服务。
+
+    fair_server 启动时也会做同样的事，但流水线（refresh_all）不该依赖它先跑过
+    ——否则干净 clone 直接 refresh_all 会报 no such table（2026-11-17 复查修）。
+    """
+    db = os.path.join(HERE, "data", "careersafari.db")
+    seed = db + ".seed"
+    if not os.path.exists(db):
+        if os.path.exists(seed):
+            import shutil
+            shutil.copy2(seed, db)
+            print("\n== 0/8 活库初始化 ==\n   从只读种子复制 data/careersafari.db")
+
+
 def main(argv):
     skip_build = "--skip-build" in argv
     skip_tests = "--skip-tests" in argv
     t0 = time.time()
+    step_db()
     if "--collect" in argv:
         step_collect(argv)
     step_cache()
