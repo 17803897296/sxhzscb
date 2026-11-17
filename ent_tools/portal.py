@@ -82,11 +82,17 @@ def load_cache():
 
 
 def save_cache():
-    """原子写回 lookup 缓存；失败不阻塞请求。"""
+    """原子写回 lookup 缓存；失败不阻塞请求。
+
+    只落**抓到岗位**的企业。「没抓到页面」的负结果留在进程内存里就够——写进
+    文件既占地方，又会让下一次真的重搜时直接命中旧结论；更要紧的是批量试跑
+    （名单里一堆查不到的名字）会把缓存整份冲掉，把之前查好的企业挤出去。
+    """
     try:
         CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        keep = {k: v for k, v in CACHE.items() if (v or {}).get("jobs")}
         tmp = CACHE_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(CACHE, ensure_ascii=False, indent=2),
+        tmp.write_text(json.dumps(keep, ensure_ascii=False, indent=2),
                        encoding="utf-8")
         os.replace(tmp, CACHE_FILE)
     except Exception as exc:
@@ -771,6 +777,30 @@ def name_city(name):
     return ""
 
 
+def geo_mismatch(name, item):
+    """名字写着这个城市，档案却在另一个城市 → 认错公司了。
+
+    名字里没有城市（「华为技术有限公司」）或档案城市未知时不判——宁可放过，
+    不能把正常企业误杀成「没查到」。
+    """
+    want = name_city(name)
+    got = str((item or {}).get("city") or "").strip()
+    return bool(want and got not in ("", "未知") and want != got)
+
+
+def as_missed(name, item=None):
+    """把一条档案转成「没查到」，保留 id 与来源地址便于人工复核。"""
+    item = item or {}
+    got = str(item.get("city") or "").strip()
+    want = name_city(name)
+    note = ("搜到的公司在「%s」，与名单里的「%s」对不上，按没查到处理" % (got, want)
+            if want and got not in ("", "未知") else "没抓到可信页面")
+    return {"id": item.get("id") or ("web-" + str(abs(hash(name)) % 10 ** 8)),
+            "name": name, "nature": "未知", "city": "未知", "industry": "未知",
+            "jobs": [], "jobSource": "未知", "jobEvidence": "未知",
+            "source": item.get("source") or "未知", "date": "未知", "note": note}
+
+
 def guess_industry(text):
     table = [("金融", ("银行", "证券", "基金", "保险", "金融")),
              ("IT", ("软件", "信息技术", "互联网", "数据", "算法", "计算机")),
@@ -1295,10 +1325,15 @@ def api_filter(payload):
 
 
 def api_lookup(payload):
-    """补全企业画像：先查岗位库，再离线库，最后联网补。返回 companies/missed。"""
+    """补全企业画像：先查岗位库，再离线库，最后联网补。返回 companies/missed。
+
+    persist=False 是**试跑**：结果只回给调用方，库和缓存都不动。批量导入名单前
+    想先看看这 50 家能查到几家，用它，别把测试数据写进业务库。
+    """
     names = [str(n).strip() for n in (payload.get("names") or []) if str(n).strip()]
     if not names:
         return {"ok": True, "companies": [], "missed": []}
+    persist = payload.get("persist", True) is not False
     try:
         load_offline_companies()
     except Exception:
@@ -1353,16 +1388,10 @@ def api_lookup(payload):
                         "note": str(exc)[:80]}
             # 名称地理校验：名单写「成都中科集团」，搜出来却是北京的中科实业集团
             # （同音/同字号的不同公司）。这种档案宁可不给——把别家企业的岗位算到
-            # 这家头上，比「没查到」错得多。
-            _want = name_city(n)
-            _got = str(item.get("city") or "").strip()
-            if _want and _got not in ("", "未知") and _want != _got:
-                item = {"id": item.get("id") or ("web-" + str(abs(hash(n)) % 10 ** 8)),
-                        "name": n, "nature": "未知", "city": "未知", "industry": "未知",
-                        "jobs": [], "jobSource": "未知", "jobEvidence": "未知",
-                        "source": item.get("source") or "未知", "date": "未知",
-                        "note": "搜到的公司在「%s」，与名单里的「%s」对不上，按没查到处理"
-                                % (_got, _want)}
+            # 这家头上，比「没查到」错得多。这里先挡一次，省下落库与后续处理；
+            # 出口处还会再挡一次（库里已有的错档案不走 build）。
+            if geo_mismatch(n, item):
+                item = as_missed(n, item)
             base = LIB.get(n) or db_partial.get(n)
             if base:
                 # 主营只补不抹：这次没从页面找到业务介绍，不能把库里已有那句冲掉
@@ -1376,10 +1405,17 @@ def api_lookup(payload):
                 if item.get("note") in (None, "", "未知"):
                     item["note"] = "企业端离线资料兜底"
             CACHE[n] = item
-            try:
-                store.save(n, item)
-            except Exception as exc:
-                sys.stderr.write("  job_store.save fail %s: %s\n" % (n[:16], str(exc)[:80]))
+            # 只把**抓到岗位**的企业写进库：
+            #   ① 0 岗位的记录存下来只是占位，下次还得重搜，且会盖掉库里原有的
+            #      企业档案（模拟名单里的假名字撞上真实企业名时，真实档案就被
+            #      一条「没抓到页面」覆盖掉了）；
+            #   ② 试跑（persist=False）一个字节都不落，调试不污染业务数据。
+            if item.get("jobs") and persist:
+                try:
+                    store.save(n, item)
+                except Exception as exc:
+                    sys.stderr.write("  job_store.save fail %s: %s\n"
+                                     % (n[:16], str(exc)[:80]))
             return item
 
         workers = min(4, max(1, len(todo)))
@@ -1390,10 +1426,25 @@ def api_lookup(payload):
                 (out if item["jobs"] else missed).append(item)
                 sys.stderr.write("  lookup %-24s -> %s jobs=%d\n"
                                  % (item["name"][:22], item["city"], len(item["jobs"])))
-        try:
-            save_cache()
-        except Exception:
-            pass
+        if persist:
+            try:
+                save_cache()
+            except Exception:
+                pass
+    # 统一出口校验：档案来自库、内存缓存、离线库还是联网，都要过这一道。
+    # 只在 build 里校验不够——库里已经躺着一条错档案（成都中科配到北京那家），
+    # store.lookup 直接命中，根本没走 build，校验形同不存在。
+    clean = []
+    for it in out:
+        nm = str(it.get("name") or "").strip()
+        if geo_mismatch(nm, it):
+            bad = as_missed(nm, it)
+            CACHE[nm] = bad          # 本次会话内不再重复命中错档案
+            missed.append(bad)
+            sys.stderr.write("  lookup %-24s -> 城市对不上，弃用库里的档案\n" % nm[:22])
+        else:
+            clean.append(it)
+    out = clean
     return {"ok": True, "companies": out, "missed": missed, "cached": hit_cache}
 
 

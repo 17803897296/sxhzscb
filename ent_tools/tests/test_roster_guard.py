@@ -32,6 +32,33 @@ class NameCityTest(unittest.TestCase):
         self.assertEqual(portal.name_city("上海XX（北京）有限公司"), "上海")
 
 
+class GeoMismatchTest(unittest.TestCase):
+    def test_city_conflict_is_rejected(self):
+        self.assertTrue(portal.geo_mismatch(
+            "成都中科集团股份有限公司", {"city": "北京", "jobs": [{"title": "x"}]}))
+
+    def test_same_city_is_fine(self):
+        self.assertFalse(portal.geo_mismatch(
+            "南京晨曦电子股份有限公司", {"city": "南京"}))
+
+    def test_no_city_in_name_never_rejected(self):
+        # 名字里没写城市，档案在哪个城市都不能算错配
+        self.assertFalse(portal.geo_mismatch("华为技术有限公司", {"city": "深圳"}))
+        self.assertFalse(portal.geo_mismatch("中国节能环保集团有限公司", {"city": "北京"}))
+
+    def test_unknown_city_never_rejected(self):
+        self.assertFalse(portal.geo_mismatch("成都中科集团股份有限公司", {"city": "未知"}))
+
+    def test_as_missed_drops_jobs_and_keeps_source(self):
+        bad = portal.as_missed("成都中科集团股份有限公司",
+                               {"city": "北京", "jobs": [{"title": "总经理"}],
+                                "source": "https://example.com"})
+        self.assertEqual(bad["jobs"], [])
+        self.assertEqual(bad["city"], "未知")
+        self.assertEqual(bad["source"], "https://example.com")
+        self.assertIn("对不上", bad["note"])
+
+
 class ShortTitleTest(unittest.TestCase):
     def test_domain_word_is_not_a_job(self):
         for t in ("质量", "生产", "研发", "工艺", "销售", "采购", "行政"):
