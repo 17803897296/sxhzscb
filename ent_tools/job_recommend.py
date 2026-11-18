@@ -420,13 +420,32 @@ def near_jobs(major):
 
 
 def core_jobs(major):
-    """L1：本大类表里扣掉「本大类的相邻岗」和「通用职能岗」之后剩下的。"""
+    """L1 切合：专业专属岗优先，大类表补充。
+
+    2026-11-18 用户实测（本人工业工程本科）：审计报告里工业工程的 L1 是
+    「管培生/运营/商业分析」一堆泛管理岗，最对口的「工业工程师/质量工程师/
+    精益改善」一个没有。根因：本函数以前只读 category_pool（按大类取表），
+    工业工程被归进经管大类就继承整张泛管理表，而 MAJOR_BASE 里明明有精确的
+    专业专属岗（工业工程师/生产计划/质量工程师/精益改善/制造管培生）却没读。
+    全量诊断 17 个登记专业里 10 个对口岗大面积丢失（工业工程 0/5、运营与供应链
+    0/5、药学 1/5…），都是同一个根因。
+
+    修法：MAJOR_BASE 命中的专业，专属岗排在 L1 最前（它们才是「切合」的本意），
+    大类表里不重复、且不被闸门拦的岗追加在后作为补充；没登记的专业行为不变。
+    仍过邻专业核心岗闸门（材料不会因此拿回化工岗）。
+    """
     cat = major_category(major)
     drop = set(NEAR_JOBS.get(cat, [])) | _CORE_EXCLUDE
-    # 2026-11-18 全量大类审计：合并大类里「邻专业核心岗」也会混进本层
-    # （如动物医学拿到农艺师/育种/植保这些种植岗），过同一道邻专业闸门。
-    return [j for j in category_pool(major)
-            if j not in drop and not _neighbor_core_blocked(j, major)]
+    # 专属岗优先（base_jobs 的匹配逻辑：精确名 → 子串包含）
+    own = base_jobs(major) if major in MAJOR_BASE or any(
+        (k in (major or "")) or ((major or "") and (major or "") in k)
+        for k in MAJOR_BASE) else []
+    own = [j for j in own if not _neighbor_core_blocked(j, major)]
+    # 大类表补充：去掉已在专属岗里、被排除、被闸门拦的
+    generic = [j for j in category_pool(major)
+               if j not in drop and j not in own
+               and not _neighbor_core_blocked(j, major)]
+    return own + generic
 
 
 NO_MAJOR_JOBS = [

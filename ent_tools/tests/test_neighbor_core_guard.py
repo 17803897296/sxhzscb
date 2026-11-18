@@ -106,5 +106,44 @@ class TestNeighborCoreGuard(unittest.TestCase):
                     self.assertFalse(J._neighbor_core_blocked(title, major))
 
 
+class TestCoreJobsUsesMajorBase(unittest.TestCase):
+    """L1 切合层必须优先用 MAJOR_BASE 的专业专属岗。
+
+    2026-11-18 用户（工业工程本科）实测：工业工程 L1 全是「管培生/运营/
+    商业分析」泛管理岗，最对口的「工业工程师/质量工程师/精益改善」一个没有。
+    根因 core_jobs 只读大类表，从不读 MAJOR_BASE。
+    """
+
+    def test_all_registered_majors_keep_their_base_jobs(self):
+        # 所有登记专业的专属岗都必须出现在 L1（这是「切合」的本意）
+        for major, base in J.MAJOR_BASE.items():
+            core = J.core_jobs(major)
+            for title in base:
+                with self.subTest(major=major, title=title):
+                    self.assertIn(title, core)
+
+    def test_major_specific_jobs_come_first(self):
+        # 专属岗排在泛大类岗之前——用户一眼看到的就是最对口的
+        for major, base in J.MAJOR_BASE.items():
+            core = J.core_jobs(major)
+            positions = [core.index(t) for t in base if t in core]
+            if positions:
+                with self.subTest(major=major):
+                    self.assertEqual(min(positions), 0)
+
+    def test_industrial_engineering_not_flooded_by_generic(self):
+        # 工业工程专属岗在前 5，泛管理岗不许把对口岗挤出 L1
+        core = J.core_jobs("工业工程")
+        for title in ("工业工程师", "质量工程师", "精益改善岗", "生产计划岗"):
+            with self.subTest(title=title):
+                self.assertLess(core.index(title), 5)
+
+    def test_guard_still_blocks_after_base_merge(self):
+        # 合入专属岗后，邻专业核心岗闸门仍有效（材料不拿回化工岗）
+        for title in ("化工工艺工程师", "化工设备工程师", "中试/放大工程师"):
+            with self.subTest(title=title):
+                self.assertNotIn(title, J.core_jobs("材料"))
+
+
 if __name__ == "__main__":
     unittest.main()
