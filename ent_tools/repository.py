@@ -34,6 +34,47 @@ V42_DB = os.path.join(DATA, "fair2026_v42.db")           # v4.2 档案
 CAMPUS_DB = os.path.join(DATA, "campus_recheck.db")      # 校招来源核验
 CODEBOOK_DB = os.path.join(DATA, "codebook.db")          # 岗位层级/职能码表
 
+# 活库就绪标记：确认过一次就不再重复 stat（连接是高频路径）。
+_live_ready = False
+
+
+def ensure_live_db(path=None, quiet=True):
+    """活库缺席时，从只读种子复制一份出来。
+
+    为什么这件事必须在这里做（2026-11-18 冷克隆实测）：仓库只跟踪
+    `careersafari.db.seed`，活库不入库。原本「缺就复制」只写在
+    `fair_server` 的启动钩子里，于是只有**跑服务**这条路能自愈：
+    新同学 clone 下来直接 `pytest`，`fair_bridge` 走 `repository.connect(LIVE_DB)`
+    → 文件不存在 → sqlite 顺手建一个 0 字节空库 → `no such table: company_jobs`
+    → 两个复检展示行测试直接红，报错还指不到真正的原因。
+    `build_fair_page` 另有一套「按顺序探测含 company_jobs 的候选」，那是第三份
+    实现。现在统一到这里：谁走唯一出口，谁就自动拿到可用的库。
+
+    只认两种情况需要重建：文件不存在，或残留 0 字节空文件（历史探测留下的）。
+    正常活库（有内容）一律不动——这是冷克隆自愈，不是兜底覆盖。
+
+    `path` 可以传别的库（测试用）；只有活库会记忆「已就绪」，避免高频 stat。
+    """
+    global _live_ready
+    p = path or LIVE_DB
+    is_live = (p == LIVE_DB)
+    if is_live and _live_ready:
+        return False
+    seed = p + ".seed"
+    if os.path.isfile(p) and os.path.getsize(p) > 0:
+        if is_live:
+            _live_ready = True
+        return False
+    if not os.path.isfile(seed):
+        return False
+    import shutil
+    shutil.copy2(seed, p)
+    if is_live:
+        _live_ready = True
+    if not quiet:
+        print("  已从只读种子初始化本地库 %s" % os.path.basename(p))
+    return True
+
 
 @contextmanager
 def connect(path=None, row_factory=True):
@@ -41,8 +82,13 @@ def connect(path=None, row_factory=True):
 
     正常退出提交、抛异常回滚、无论如何关闭。读操作走这里也不会多花什么
     （提交空事务是 no-op），所以调用方不必区分读写。
+
+    连活库前先 `ensure_live_db()`：冷克隆第一次连接会自动从种子复制出库，
+    不会再出现「sqlite 建了 0 字节空库、下一条 SELECT 报 no such table」。
+    其他库（增补档案 / 校招核验）没有 `.seed` 伴随文件，这一步对它们是 no-op。
     """
     p = path or LIVE_DB
+    ensure_live_db(p)
     con = sqlite3.connect(p)
     if row_factory:
         con.row_factory = sqlite3.Row

@@ -653,12 +653,9 @@ def main():
     # 运行时活库不入库：仓库只放只读种子 careersafari.db.seed，
     # 首次启动复制出本地库。git pull / stash / checkout 永远不会再替换
     # 一个正在被 SQLite 写入的文件（2026-11-15 实测会写成 disk image is malformed）。
-    import shutil
-    db_path = os.path.join(HERE, "data", "careersafari.db")
-    seed = db_path + ".seed"
-    if not os.path.isfile(db_path) and os.path.isfile(seed):
-        shutil.copy2(seed, db_path)
-        print("  已从只读种子初始化本地库 data/careersafari.db")
+    # 复制的实现在 repository.ensure_live_db（连接层也调它），这里只负责提示。
+    import repository
+    repository.ensure_live_db(quiet=False)
     # 缓存同理：活缓存服务一跑就会被改写，跟踪它等于让 clone 出来的 git status
     # 永久是脏的。仓库只放 *.seed，缺活文件时在这里复制出来。
     try:
