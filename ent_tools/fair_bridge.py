@@ -1005,6 +1005,22 @@ def _drop_miss(companies, llm):
     return keep_matched, miss_names
 
 
+def _has_directed_jobs(jobs):
+    """真实岗里有没有一个带方向的（管培生 / 储备干部 / 见习不算方向）。
+
+    「校招公告里没有对口岗 → 这家不招这个方向」这条判断，前提是公告里
+    **确实列了方向性岗位**。只有「管培生」的公告不构成证据：清单里根本没有
+    方向可判，按这条整家排除等于把「信息缺失」当成「不招」。这种企业要留给
+    推断岗去比 —— 2026-11-18 用户实测古茗（9 个岗全是管培）补了推断岗之后
+    仍被 `campus_no_fit` 排掉，补库白做。
+    """
+    for j in (jobs or []):
+        t = str(j.get("title") or "").strip()
+        if t and not _is_generic_role(t):
+            return True
+    return False
+
+
 def _drop_campus_unfit(companies, llm):
     """v17：来源是完整校招公告、却没查到对口岗位的企业 → 判定不对口，直接排除。
 
@@ -1019,6 +1035,7 @@ def _drop_campus_unfit(companies, llm):
         # 企业会被误判「公告里没有对口岗」而整家排除（2026-11-16）。
         jobs = _clean_jobs(c.get("jobs"))
         if ((llm.get(name) or {}).get("state") == "inferred" and jobs
+                and _has_directed_jobs(jobs)
                 and source_class(c, jobs)[0] == "campus"):
             campus_names.append(name)
             continue
@@ -2067,6 +2084,7 @@ def match_rows(st):
         # 与「有就是有，没有就是没有」正好相反。
         # 现场已确认招（fbrow=yes）的企业不在此列：那是事实，不是推断。
         if (prep.state_final == "inferred" and prep.jobs
+                and _has_directed_jobs(prep.jobs)
                 and not (prep.fbrow and prep.fbrow["result"] == "yes")
                 and source_class(c, prep.jobs)[0] == "campus"):
             # 因主营复核被判「别的行业」而落地成 0 对的，把原因写进排除清单：

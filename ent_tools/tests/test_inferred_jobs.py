@@ -66,7 +66,7 @@ class ToJobsTests(unittest.TestCase):
 
 
 class SourceBoundaryTests(unittest.TestCase):
-    """补库口径：**只看 jobSource**，不再看校招名单。"""
+    """补库口径：**没有方向性岗位的一律补**，不再看校招名单。"""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -75,6 +75,7 @@ class SourceBoundaryTests(unittest.TestCase):
         con.execute("CREATE TABLE company_jobs(name TEXT PRIMARY KEY, item_json TEXT, updated_at TEXT)")
         for n, src, jobs in [("校招企业", "校招公告", [real("质量工程师")]),
                              ("校招0岗", "校招公告", []),
+                             ("校招只有管培", "校招公告", [real("管培生"), real("储备干部")]),
                              ("非校招0岗", "未知", []),
                              ("非校招有岗", "websearch", [real("质量工程师")]),
                              ("社招有岗", "社招信息", [real("工艺工程师")]),
@@ -89,13 +90,15 @@ class SourceBoundaryTests(unittest.TestCase):
         X.DB = self.old_db
         self.tmp.cleanup()
 
-    def test_only_non_campus_sources(self):
+    def test_no_directed_jobs_gets_filled(self):
         con = sqlite3.connect(self.db); con.row_factory = sqlite3.Row
         todo = dict((n, o) for n, o in X.targets(con))
         con.close()
-        # 校招公告来源一律不补，不论有几个岗
+        # 校招公告 + 有方向性真实岗：清单可信，不补
         self.assertNotIn("校招企业", todo)
-        self.assertNotIn("校招0岗", todo)
+        # 校招公告但 0 岗 / 只有管培生：等于没有方向性岗位，要补
+        self.assertIn("校招0岗", todo)
+        self.assertIn("校招只有管培", todo)
         # 非校招来源全补，哪怕已经有真实岗
         self.assertIn("非校招0岗", todo)
         self.assertIn("非校招有岗", todo)

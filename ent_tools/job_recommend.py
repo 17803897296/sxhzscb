@@ -687,6 +687,47 @@ _GENERIC_HEAD = {"运营", "管理", "工程", "技术", "信息", "科学", "�
                  "数据", "服务", "设计", "教育", "文化", "智能", "系统", "应用"}
 
 
+def _core_word(kw):
+    """岗位名剥成核心词：去括号限定、去通用岗位后缀。"""
+    c = re.sub(r"[（(][^)）]*[)）]", "", str(kw or ""))
+    return re.sub(r"(岗|专员|工程师|管培生|经理|助理|分析师|技术员|管理员|员|师)$", "", c)
+
+
+def _l1_rank(major, title):
+    """模型返回的岗位与「本专业 L1」的贴近度，用来把切合岗提到前面。
+
+    2026-11-18 用户定：模型给的顺序不能全信（实测化学 tier0 第一条是
+    「材料研发工程师」，而它在化学池子里只是 L2），但也**不能只认 93 类专业池**
+    ——那张表覆盖不了所有专业。所以判据全部是「判断」，不查专业池文件：
+      3 专业专属岗精确命中（base_jobs，MAJOR_BASE 里这个专业自己的岗）；
+      2 本专业 L1 精确命中（core_jobs，表外专业会走大类兜底）；
+      1 与某条 L1 共享核心词，或岗位名里直接带专业名头两字（「心理测评」）；
+      0 其它。
+    只做稳定排序：同分保持模型原顺序，不改内容、不删岗位。
+    """
+    t = _clean_title(title)
+    if not t:
+        return 0
+    base = set()
+    for x in base_jobs(major) or []:
+        base.add(_clean_title(x))
+    if t in base:
+        return 3
+    l1 = set()
+    for x in core_jobs(major) or []:
+        l1.add(_clean_title(x))
+    if t in l1:
+        return 2
+    head = (major or "").strip()[:2]
+    if len(head) == 2 and head not in _GENERIC_HEAD and head in t:
+        return 1
+    for kw in l1:
+        c = _core_word(kw)
+        if len(c) >= 2 and c not in _GENERIC_HEAD and c in t:
+            return 1
+    return 0
+
+
 def _pool_key(major, cats, tier, accept, model_tag="", use_llm=True, prev=None):
     """池子缓存的键。
 
@@ -1259,6 +1300,10 @@ def get_pool(major, cats, tier, accept, cfg, use_llm=True):
         items = seed + [c for c in items
                         if c["title"] not in seed_titles
                         and not _major_ish(c["title"], major)]
+    # 模型给的顺序不能全信：化学 tier0 实测第一条是「材料研发工程师」（对化学
+    # 只是 L2），学生一进来就被领到邻专业去。按「与本专业 L1 的贴近度」稳定
+    # 重排，切合岗前置；同分保持原顺序，内容一个不删。判据见 _l1_rank。
+    items = sorted(items, key=lambda c: -_l1_rank(major, c["title"]))
     with _LOCK:
         pools = _load_pools()
         pools[key] = {"tier": tier, "mode": mode, "items": items,

@@ -12818,5 +12818,344 @@
   ],
   "via": "llm",
   "biz": "聚焦新发突发传染病防控的科技型企业，核心业务为抗病毒/抗细菌等传染性病原的疫苗与药物及细胞基因治疗的临床前药效学评价（CRO）服务，并提供病原检测诊断原料及一体化解决方案；建有BSL-2/ABSL-2生物安全实验室平台。"
+ },
+ "杰西圈（上海）科技有限公司": {
+  "chain": "全球物流B2B平台，连接货代供需，经平台研发、运营、销售、客户服务环节",
+  "jobs": [
+   {
+    "title": "软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "算法工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "前端工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "产品经理",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "运营专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "销售专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客户成功专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "数据分析师",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "全球物流B2B平台，为货代提供商机链接服务，拥有注册用户、付费企业及全球活跃会员"
+ },
+ "古茗科技集团有限公司": {
+  "chain": "现制茶饮连锁加盟：产品研发、原料供应、门店营运、品牌营销、加盟拓展",
+  "jobs": [
+   {
+    "title": "产品研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "食品工艺工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "供应商质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储管理专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "门店营运专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "区域督导",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "加盟拓展专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "线上运营专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "用户增长专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "品牌策划专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "数据分析师",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "现制茶饮连锁经营，以加盟模式销售奶茶、果茶等现制饮品及配套小料"
+ },
+ "中化金茂物业管理（北京）有限公司杭州分公司": {
+  "chain": "物业管理服务：住宅与商业物业的秩序维护、保洁绿化、设施设备运维",
+  "jobs": [
+   {
+    "title": "物业项目经理",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "秩序维护主管",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "保洁主管",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "绿化养护主管",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "弱电工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "消防工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "安全工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "环境工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "客户服务专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场拓展专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "采购专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储管理员",
+    "strength": "weak",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "物业管理服务，包括住宅与商业物业的秩序维护、保洁绿化、设施设备运维"
  }
 }
