@@ -1,5 +1,6 @@
 {
  "pid": 14076,
  "port": 8102,
- "log": "C:\\Users\\Lenovo\\WorkBuddy\\2026-11-16-00-10-08\\careersafari-fair\\ent_tools\\data\\fair_server_8102.log"
+ "log": "C:\\Users\\Lenovo\\WorkBuddy\\2026-11-16-00-10-08\\careersafari-fair\\ent_tools\\data\\fair_server_8102.log",
+ "note": "由计划任务 FairDemo8102 托管（pid 由调度器分配）"
 }

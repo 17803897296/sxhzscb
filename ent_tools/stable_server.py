@@ -173,10 +173,12 @@ def stop(port):
 
 
 def ensure_task():
-    """校正开机自启计划任务的 python 路径（版本升级后必须跑一次）。
+    """校正开机自启任务的 python 路径，并让调度器立刻拉起一次服务。
 
-    用 PowerShell 的 Set-ScheduledTask 更新现有任务的操作路径为当前解释器。
-    任务不存在或权限不足时给出明确指引，不静默失败。
+    python 版本升级后路径会变（3.12.3 → 3.13.12），任务还指旧路径就会秒退。
+    另外在强 job object 会话里手动 Start-ScheduledTask 会卡 Queued，所以这里
+    用「20 秒后的一次性触发器」让系统调度器自己到点拉起——进程归属系统会话，
+    不会被工具会话清理（已实测跨调用存活）。
     """
     if os.name != "nt":
         print("仅 Windows 需要计划任务；当前系统用 start 即可")
@@ -186,8 +188,13 @@ def ensure_task():
         "$t=Get-ScheduledTask -TaskName 'FairDemo8102';"
         "$a=$t.Actions[0];$a.Execute='%s';"
         "Set-ScheduledTask -TaskName 'FairDemo8102' -Action $a | Out-Null;"
-        "Start-ScheduledTask -TaskName 'FairDemo8102';"
-        "'OK path=' + (Get-ScheduledTask -TaskName FairDemo8102).Actions[0].Execute"
+        "$when=(Get-Date).AddSeconds(20);"
+        "$trg=New-ScheduledTaskTrigger -Once -At $when;"
+        "Set-ScheduledTask -TaskName 'FairDemo8102' -Trigger $trg | Out-Null;"
+        # 关键：不调 Start-ScheduledTask —— 在强 job object 会话里它会卡在 Queued。
+        # 改用一次性定时器，让系统调度器自己到点拉起进程，进程归属系统会话、
+        # 不受工具会话清理。
+        "'scheduled at ' + $when"
         % sys.executable.replace("'", "''")
     )
     try:

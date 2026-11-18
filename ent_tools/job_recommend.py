@@ -409,8 +409,14 @@ _CORE_EXCLUDE = set(BROAD_JOBS)
 
 
 def near_jobs(major):
-    """L2：相邻方向（有专业门槛、方向偏离）。"""
-    return NEAR_JOBS.get(major_category(major), NEAR_JOBS[UNKNOWN_CAT])
+    """L2：相邻方向（有专业门槛、方向偏离）。
+
+    2026-11-18：材料与化学化工共用一个大类池，池里「化工设备/中试放大」是
+    化学工程的核心岗、材料投不进。按具体专业过一道邻专业核心岗闸门（与
+    _major_ok 同一套规则），化工专业的学生不受影响。
+    """
+    jobs = NEAR_JOBS.get(major_category(major), NEAR_JOBS[UNKNOWN_CAT])
+    return [j for j in jobs if not _neighbor_core_blocked(j, major)]
 
 
 def core_jobs(major):
@@ -820,11 +826,41 @@ _NOT_MAJOR_MARK = re.compile(
     r"美工|平面设计|平面|插画|原画|UI设计|视频剪辑|剪辑师|主播|配音|"
     r"翻译|导游|护士|护理|化妆|造型师|摄影师")
 
+# 邻专业核心岗拦截（2026-11-18 用户实测：材料专业第 3 层被混进化学化工核心岗）。
+# 根因：student_domain 把「材料 / 化学 / 化工」并进同一个 field（化学化工材料），
+# kw 三家的词全在里面，_major_ok 光看 kw 就分不清「材料的相邻岗」和「化工的核心岗」。
+# tier2 的 prompt 明明举的是「化工专业→化工设备/中试放大」，闸门却把同一批岗放给了
+# 材料专业——等于把隔壁专业的核心岗当放宽推给学生，投了必被筛。
+# 这里按「具体专业 → 不许出现的邻专业核心岗」精确拦截；词表只收**别家核心岗**，
+# 材料可投的通用检测/分析岗（金相、材料检测、理化检验）不动。
+_NEIGHBOR_CORE = [
+    # 学生具体专业含这些词 → 拦这些岗位核心词
+    (("材料",), re.compile(r"化工工艺|化工设备|化工设计|中试/?放大|催化研发|"
+                           r"危化品")),
+]
+
+
+def _neighbor_core_blocked(title, major):
+    """学生是材料（非化工）时，拦掉化学工程的核心岗。返回是否被拦。"""
+    m = str(major or "")
+    t = str(title or "")
+    for own_words, pat in _NEIGHBOR_CORE:
+        if any(w in m for w in own_words):
+            # 学生自己就是化工/化学工程，这些是本专业核心岗，不能拦
+            if any(x in m for x in ("化工", "化学工程")):
+                continue
+            if pat.search(t):
+                return True
+    return False
+
 
 def _major_ok(title, major, tier):
     if tier is None or tier >= 4:
         return True
     t = title or ""
+    # 邻专业核心岗：先于 kw 判定，避免合并大类词表把它放行
+    if _neighbor_core_blocked(t, major):
+        return False
     # 先挡「名字里带领域词、但干的明显是别的活」的岗位：
     # 物流域有「电商」，但「电商美工」是设计岗不是物流岗。
     if _NOT_MAJOR_MARK.search(t):
