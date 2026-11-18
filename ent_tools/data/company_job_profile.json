@@ -115,7 +115,7 @@
   "biz": "美国YEAHER INC中国分公司，主营跨境电商B2C运营（Amazon、eBay、Walmart、TikTok、Shopify），品类为3C数码与玩具，团队约30人，经营范围另含软件开发与仓储物流。"
  },
  "江苏汉邦科技股份有限公司": {
-  "chain": "色谱分离纯化装备研发制造，经研发设计、生产装配、质量检测、供应链、销售服务",
+  "chain": "色谱分离纯化设备制造：研发设计→机加工与焊接→装配调试→质量检验→销售服务",
   "jobs": [
    {
     "title": "机械设计工程师",
@@ -142,19 +142,7 @@
     "suspect": false
    },
    {
-    "title": "控制工程师",
-    "strength": "medium",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
     "title": "软件工程师",
-    "strength": "medium",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "嵌入式工程师",
     "strength": "medium",
     "stage": "研发",
     "suspect": false
@@ -166,27 +154,33 @@
     "suspect": false
    },
    {
+    "title": "数控工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "焊接工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
     "title": "装配工程师",
     "strength": "strong",
     "stage": "生产",
     "suspect": false
    },
    {
+    "title": "设备安装技师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
     "title": "设备维护工程师",
     "strength": "medium",
     "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "测试工程师",
-    "strength": "strong",
-    "stage": "质量",
-    "suspect": false
-   },
-   {
-    "title": "试验工程师",
-    "strength": "medium",
-    "stage": "质量",
     "suspect": false
    },
    {
@@ -196,7 +190,7 @@
     "suspect": false
    },
    {
-    "title": "供应商质量工程师",
+    "title": "测试工程师",
     "strength": "medium",
     "stage": "质量",
     "suspect": false
@@ -221,13 +215,13 @@
    },
    {
     "title": "售后服务工程师",
-    "strength": "strong",
+    "strength": "medium",
     "stage": "销售",
     "suspect": false
    },
    {
     "title": "市场专员",
-    "strength": "medium",
+    "strength": "weak",
     "stage": "销售",
     "suspect": false
    },
@@ -245,7 +239,7 @@
    }
   ],
   "via": "llm",
-  "biz": "以色谱技术为核心的制药装备企业（科创板688755），主营小分子/大分子药物分离纯化装备（液相色谱、模拟移动床、层析与超滤系统）及耗材、分离纯化整体解决方案。"
+  "biz": "致力于为全球客户提供以先进色谱分离纯化技术为核心的解决方案，公司的产品线全面覆盖了从实验室阶段的工艺探索，到中试规模的技术放大，直至工业化大生产的全过程"
  },
  "北京海纳川汽车部件股份有限公司": {
   "chain": "汽车零部件集团，覆盖内外饰、电子、底盘、动力总成、车身系统，研发生产配套整车厂",
@@ -375,7 +369,7 @@
   "biz": "北汽集团旗下汽车零部件集团，产品覆盖汽车内外饰、汽车电子、底盘、动力总成、车身系统五大系列，为全球40余家整车厂配套，2025年位列全球汽车零部件百强第34位。"
  },
  "南京牧镭激光科技股份有限公司": {
-  "chain": "激光雷达与激光传感设备研发、生产、测试、销售及技术服务",
+  "chain": "激光雷达与激光传感设备研发制造，经研发、生产、质量、供应链、销售服务环节",
   "jobs": [
    {
     "title": "光学工程师",
@@ -384,25 +378,13 @@
     "suspect": false
    },
    {
-    "title": "机械设计工程师",
+    "title": "激光工程师",
     "strength": "strong",
     "stage": "研发",
-    "suspect": false
+    "suspect": true
    },
    {
-    "title": "结构工程师",
-    "strength": "strong",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "电气工程师",
-    "strength": "strong",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "自动化工程师",
+    "title": "电子工程师",
     "strength": "strong",
     "stage": "研发",
     "suspect": false
@@ -426,9 +408,21 @@
     "suspect": false
    },
    {
+    "title": "机械设计工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "结构工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
     "title": "测试工程师",
     "strength": "strong",
-    "stage": "质量",
+    "stage": "研发",
     "suspect": false
    },
    {
@@ -438,7 +432,25 @@
     "suspect": false
    },
    {
+    "title": "装配工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
     "title": "设备维护工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
     "strength": "medium",
     "stage": "生产",
     "suspect": false
@@ -450,8 +462,8 @@
     "suspect": false
    },
    {
-    "title": "供应商质量管理工程师",
-    "strength": "medium",
+    "title": "供应商质量工程师",
+    "strength": "strong",
     "stage": "质量",
     "suspect": false
    },
@@ -474,7 +486,7 @@
     "suspect": false
    },
    {
-    "title": "销售经理",
+    "title": "销售工程师",
     "strength": "strong",
     "stage": "销售",
     "suspect": false
@@ -493,6 +505,18 @@
    },
    {
     "title": "EHS安全工程师",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
     "strength": "medium",
     "stage": "职能",
     "suspect": false
@@ -756,16 +780,10 @@
   "biz": "专注纺织印染行业的中高端印染助剂及整体解决方案高新技术企业（国家级专精特新），主营节能环保型化学品、有机硅、表面活性剂、蜡乳液等印染助剂与功能性膜材料的研发生产销售，年产能2.8万吨，产品销往国内及东南亚。"
  },
  "上海微宇天导技术有限责任公司": {
-  "chain": "卫星导航仿真测试设备研发生产，经研发、生产、质量、供应链、销售服务环节",
+  "chain": "卫星导航测试技术：PNT仿真测试与导航电磁环境测试，产品研发、生产、测试、销售服务",
   "jobs": [
    {
     "title": "软件工程师",
-    "strength": "strong",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "算法工程师",
     "strength": "strong",
     "stage": "研发",
     "suspect": false
@@ -777,7 +795,7 @@
     "suspect": false
    },
    {
-    "title": "硬件工程师",
+    "title": "算法工程师",
     "strength": "strong",
     "stage": "研发",
     "suspect": false
@@ -787,6 +805,12 @@
     "strength": "strong",
     "stage": "研发",
     "suspect": true
+   },
+   {
+    "title": "硬件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
    },
    {
     "title": "结构工程师",
@@ -838,7 +862,7 @@
    },
    {
     "title": "采购专员",
-    "strength": "strong",
+    "strength": "medium",
     "stage": "供应链",
     "suspect": false
    },
@@ -862,19 +886,19 @@
    },
    {
     "title": "财务主管",
-    "strength": "strong",
+    "strength": "medium",
     "stage": "职能",
     "suspect": false
    },
    {
     "title": "人力资源专员",
-    "strength": "strong",
+    "strength": "medium",
     "stage": "职能",
     "suspect": false
    },
    {
     "title": "行政专员",
-    "strength": "medium",
+    "strength": "weak",
     "stage": "职能",
     "suspect": false
    }
@@ -883,16 +907,10 @@
   "biz": "专注卫星导航测试技术的创新企业，主营PNT（定位导航授时）仿真测试、导航电磁环境测试两大方向，产品包括卫星导航模拟器、低轨卫星模拟器、卫星信号采集回放仪、干扰信号发生器等，服务航空航天、北斗、低空经济等。"
  },
  "东方菱日锅炉有限公司": {
-  "chain": "高端能源装备制造：锅炉设计研发→焊接制造→质量检验→供应链→销售",
+  "chain": "高端能源装备制造：锅炉设计研发→工艺与焊接→生产制造→质量检验→销售与项目交付",
   "jobs": [
    {
     "title": "锅炉设计工程师",
-    "strength": "strong",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "机械设计工程师",
     "strength": "strong",
     "stage": "研发",
     "suspect": false
@@ -908,6 +926,12 @@
     "strength": "strong",
     "stage": "研发",
     "suspect": true
+   },
+   {
+    "title": "机械设计工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
    },
    {
     "title": "焊接工程师",
@@ -976,20 +1000,26 @@
     "suspect": false
    },
    {
-    "title": "销售员",
-    "strength": "strong",
+    "title": "项目工程师",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "售后服务工程师",
+    "strength": "medium",
     "stage": "销售",
     "suspect": false
    },
    {
     "title": "财务主管",
-    "strength": "medium",
+    "strength": "strong",
     "stage": "职能",
     "suspect": false
    },
    {
     "title": "人力资源专员",
-    "strength": "medium",
+    "strength": "strong",
     "stage": "职能",
     "suspect": false
    }
@@ -1141,8 +1171,14 @@
    },
    {
     "title": "建筑设计师",
-    "strength": "strong",
+    "strength": "medium",
     "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "机电工程师",
+    "strength": "strong",
+    "stage": "生产",
     "suspect": false
    },
    {
@@ -1170,25 +1206,13 @@
     "suspect": false
    },
    {
-    "title": "钢结构工程师",
-    "strength": "strong",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
     "title": "幕墙工程师",
     "strength": "medium",
     "stage": "生产",
     "suspect": true
    },
    {
-    "title": "装饰装修工程师",
-    "strength": "medium",
-    "stage": "生产",
-    "suspect": true
-   },
-   {
-    "title": "市政工程师",
+    "title": "钢结构工程师",
     "strength": "medium",
     "stage": "生产",
     "suspect": false
@@ -1215,6 +1239,12 @@
     "title": "试验工程师",
     "strength": "medium",
     "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "测量工程师",
+    "strength": "medium",
+    "stage": "生产",
     "suspect": false
    },
    {
@@ -1248,6 +1278,12 @@
     "suspect": false
    },
    {
+    "title": "市场专员",
+    "strength": "weak",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
     "title": "财务主管",
     "strength": "strong",
     "stage": "职能",
@@ -1261,6 +1297,12 @@
    },
    {
     "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
     "strength": "medium",
     "stage": "职能",
     "suspect": false
@@ -1310,6 +1352,12 @@
    },
    {
     "title": "嵌入式工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
     "strength": "medium",
     "stage": "研发",
     "suspect": false
@@ -1369,12 +1417,6 @@
     "suspect": false
    },
    {
-    "title": "供应商质量工程师",
-    "strength": "medium",
-    "stage": "供应链",
-    "suspect": false
-   },
-   {
     "title": "销售工程师",
     "strength": "strong",
     "stage": "销售",
@@ -1403,7 +1445,7 @@
   "biz": "航天科工集团旗下专业研制单位，主营航天级高可靠电连接器、射频微波器件、光纤连接器、线缆组件及高速数据传输器件（SMA/BNC/2.92mm等，DC-110GHz），应用于航天、航空、军工、卫星通信等领域。"
  },
  "中国建筑第八工程局有限公司上海分公司": {
-  "chain": "房屋建筑施工总承包：投标承接→设计深化→施工建造→质量安全管控→竣工交付与运维",
+  "chain": "房屋建筑施工总承包：投标经营→设计研发→施工建造→质量安全→物资供应链→交付运维",
   "jobs": [
    {
     "title": "土木工程师",
@@ -1419,30 +1461,48 @@
    },
    {
     "title": "建筑工程师",
-    "strength": "medium",
+    "strength": "strong",
     "stage": "研发",
     "suspect": false
    },
    {
     "title": "电气工程师",
     "strength": "strong",
-    "stage": "生产",
+    "stage": "研发",
     "suspect": false
    },
    {
     "title": "给排水工程师",
     "strength": "medium",
-    "stage": "生产",
+    "stage": "研发",
     "suspect": false
    },
    {
     "title": "暖通工程师",
     "strength": "medium",
-    "stage": "生产",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
     "suspect": false
    },
    {
     "title": "施工员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "土建工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "机电工程师",
     "strength": "strong",
     "stage": "生产",
     "suspect": false
@@ -1472,7 +1532,7 @@
     "suspect": false
    },
    {
-    "title": "造价工程师",
+    "title": "材料员",
     "strength": "strong",
     "stage": "供应链",
     "suspect": false
@@ -1484,34 +1544,16 @@
     "suspect": false
    },
    {
-    "title": "设备维护工程师",
-    "strength": "medium",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "机械设计工程师",
-    "strength": "medium",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "软件工程师",
-    "strength": "medium",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "新能源工程师",
-    "strength": "medium",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "销售工程师",
-    "strength": "medium",
+    "title": "商务造价工程师",
+    "strength": "strong",
     "stage": "销售",
     "suspect": false
+   },
+   {
+    "title": "合同管理专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
    },
    {
     "title": "财务主管",
@@ -1778,7 +1820,7 @@
   "biz": "房地产开发经营、环保、投资与资产管理、物业管理等多产业布局的集团企业"
  },
  "江苏菲沃泰纳米科技股份有限公司": {
-  "chain": "纳米薄膜材料与镀膜设备研发、镀膜工艺开发、设备制造、镀膜加工服务、销售",
+  "chain": "纳米薄膜研发制备、镀膜设备与材料配方开发、定制化防护方案交付",
   "jobs": [
    {
     "title": "材料研发工程师",
@@ -1817,7 +1859,7 @@
     "suspect": false
    },
    {
-    "title": "算法工程师",
+    "title": "嵌入式工程师",
     "strength": "medium",
     "stage": "研发",
     "suspect": false
@@ -1835,20 +1877,26 @@
     "suspect": false
    },
    {
+    "title": "化工工艺工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
     "title": "质量工程师",
     "strength": "strong",
     "stage": "质量",
     "suspect": false
    },
    {
-    "title": "采购专员",
-    "strength": "strong",
-    "stage": "供应链",
+    "title": "供应商质量工程师",
+    "strength": "medium",
+    "stage": "质量",
     "suspect": false
    },
    {
-    "title": "生产计划专员",
-    "strength": "medium",
+    "title": "采购专员",
+    "strength": "strong",
     "stage": "供应链",
     "suspect": false
    },
@@ -1871,12 +1919,6 @@
     "suspect": false
    },
    {
-    "title": "客户服务专员",
-    "strength": "medium",
-    "stage": "销售",
-    "suspect": false
-   },
-   {
     "title": "财务主管",
     "strength": "strong",
     "stage": "职能",
@@ -1885,18 +1927,6 @@
    {
     "title": "人力资源专员",
     "strength": "strong",
-    "stage": "职能",
-    "suspect": false
-   },
-   {
-    "title": "法务专员",
-    "strength": "medium",
-    "stage": "职能",
-    "suspect": false
-   },
-   {
-    "title": "行政专员",
-    "strength": "medium",
     "stage": "职能",
     "suspect": false
    }
@@ -2265,22 +2295,22 @@
     "suspect": true
    },
    {
-    "title": "工艺工程师",
+    "title": "分析检测工程师",
     "strength": "strong",
-    "stage": "生产",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
     "suspect": false
    },
    {
     "title": "化工工艺工程师",
-    "strength": "medium",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "生产操作员",
     "strength": "strong",
     "stage": "生产",
-    "suspect": true
+    "suspect": false
    },
    {
     "title": "设备维护工程师",
@@ -2301,19 +2331,134 @@
     "suspect": false
    },
    {
+    "title": "安全环保工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "生产计划专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "技术服务工程师",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "国家定点农药原药及制剂生产企业（江苏省高新技术企业），主营卫生杀虫剂、白蚁/红火蚁防治、灭鼠、驱蚊、园林杀虫剂、农药原药及制剂，提供有害生物防治整体解决方案。"
+ },
+ "苏州聚复科技股份有限公司": {
+  "chain": "3D打印材料研发→配方与工艺开发→挤出造粒生产→质量检测→销售与供应链",
+  "jobs": [
+   {
+    "title": "材料研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "高分子材料工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "配方工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "工艺工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "挤出工艺工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "生产操作员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
     "title": "质量工程师",
     "strength": "strong",
     "stage": "质量",
     "suspect": false
    },
    {
-    "title": "分析检测工程师",
-    "strength": "strong",
-    "stage": "质量",
-    "suspect": true
-   },
-   {
-    "title": "安全环保工程师",
+    "title": "供应商质量工程师",
     "strength": "medium",
     "stage": "质量",
     "suspect": false
@@ -2337,122 +2482,7 @@
     "suspect": false
    },
    {
-    "title": "区域销售经理",
-    "strength": "strong",
-    "stage": "销售",
-    "suspect": false
-   },
-   {
-    "title": "市场推广专员",
-    "strength": "medium",
-    "stage": "销售",
-    "suspect": false
-   },
-   {
-    "title": "有害生物防治技术员",
-    "strength": "medium",
-    "stage": "销售",
-    "suspect": true
-   },
-   {
-    "title": "财务主管",
-    "strength": "strong",
-    "stage": "职能",
-    "suspect": false
-   },
-   {
-    "title": "人力资源专员",
-    "strength": "strong",
-    "stage": "职能",
-    "suspect": false
-   }
-  ],
-  "via": "llm",
-  "biz": "国家定点农药原药及制剂生产企业（江苏省高新技术企业），主营卫生杀虫剂、白蚁/红火蚁防治、灭鼠、驱蚊、园林杀虫剂、农药原药及制剂，提供有害生物防治整体解决方案。"
- },
- "苏州聚复科技股份有限公司": {
-  "chain": "高分子材料配方研发→挤出造粒/拉丝生产→质量检测→全球销售",
-  "jobs": [
-   {
-    "title": "材料研发工程师",
-    "strength": "strong",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "高分子材料工程师",
-    "strength": "strong",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "工艺工程师",
-    "strength": "strong",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "挤出工程师",
-    "strength": "medium",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "设备维护工程师",
-    "strength": "strong",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "电气工程师",
-    "strength": "strong",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "自动化工程师",
-    "strength": "strong",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "质量工程师",
-    "strength": "strong",
-    "stage": "质量",
-    "suspect": false
-   },
-   {
-    "title": "测试工程师",
-    "strength": "medium",
-    "stage": "质量",
-    "suspect": false
-   },
-   {
-    "title": "采购专员",
-    "strength": "strong",
-    "stage": "供应链",
-    "suspect": false
-   },
-   {
-    "title": "物流专员",
-    "strength": "medium",
-    "stage": "供应链",
-    "suspect": false
-   },
-   {
-    "title": "销售工程师",
-    "strength": "strong",
-    "stage": "销售",
-    "suspect": false
-   },
-   {
-    "title": "外贸业务员",
-    "strength": "strong",
-    "stage": "销售",
-    "suspect": false
-   },
-   {
-    "title": "市场推广专员",
+    "title": "市场专员",
     "strength": "medium",
     "stage": "销售",
     "suspect": false
@@ -2471,10 +2501,10 @@
    }
   ],
   "via": "llm",
-  "biz": "国内挤出式3D打印高分子材料领军企业（品牌Polymaker，Pre-IPO瞪羚企业），主营FDM/FFF 3D打印全品类高端耗材（PLA、PETG、尼龙、碳纤维增强、柔性、环保再生等），应用于工业智造、汽车轻量化、航空航天、医疗耗材、消费电子；江苏常熟设研发生产基地，销售覆盖全球。"
+  "biz": "专注于挤出式3D打印（FDM/FFF）材料的研发与生产，在该细分领域持续积累技术与产品优势"
  },
  "武汉金盘智能科技有限公司": {
-  "chain": "高端电力装备（变压器、储能装备）研发生产，及智能输配电、光伏设备与数字化工厂方案",
+  "chain": "高端电力装备（变压器、储能装备）研发生产，及智能输配电与数字化工厂方案，经研发、生产、质量、供应链、销售、职能环节",
   "jobs": [
    {
     "title": "变压器设计工程师",
@@ -2489,14 +2519,20 @@
     "suspect": false
    },
    {
-    "title": "机械结构设计工程师",
+    "title": "机械设计工程师",
     "strength": "strong",
     "stage": "研发",
     "suspect": false
    },
    {
-    "title": "储能系统工程师",
-    "strength": "medium",
+    "title": "结构工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "电气研发工程师",
+    "strength": "strong",
     "stage": "研发",
     "suspect": false
    },
@@ -2507,15 +2543,27 @@
     "suspect": false
    },
    {
-    "title": "嵌入式软件工程师",
+    "title": "软件工程师",
     "strength": "medium",
     "stage": "研发",
     "suspect": false
    },
    {
-    "title": "电气工程师",
+    "title": "嵌入式工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "试验工程师",
     "strength": "strong",
-    "stage": "生产",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "medium",
+    "stage": "质量",
     "suspect": false
    },
    {
@@ -2525,7 +2573,7 @@
     "suspect": false
    },
    {
-    "title": "设备维护工程师",
+    "title": "电气工程师",
     "strength": "strong",
     "stage": "生产",
     "suspect": false
@@ -2537,9 +2585,9 @@
     "suspect": false
    },
    {
-    "title": "试验工程师",
+    "title": "设备维护工程师",
     "strength": "strong",
-    "stage": "质量",
+    "stage": "生产",
     "suspect": false
    },
    {
@@ -2573,12 +2621,6 @@
     "suspect": false
    },
    {
-    "title": "市场专员",
-    "strength": "medium",
-    "stage": "销售",
-    "suspect": false
-   },
-   {
     "title": "财务主管",
     "strength": "strong",
     "stage": "职能",
@@ -2587,12 +2629,6 @@
    {
     "title": "人力资源专员",
     "strength": "strong",
-    "stage": "职能",
-    "suspect": false
-   },
-   {
-    "title": "行政专员",
-    "strength": "medium",
     "stage": "职能",
     "suspect": false
    }
@@ -3194,7 +3230,7 @@
   "biz": "北京市教委直属的十二年一体化（小学、初中、高中）公办学校，由北京市育英学校承办，紧邻国家农业科技创新港，主打“以农业的理念办教育”特色课程，2027年起招生。"
  },
  "南通海星电子股份有限公司": {
-  "chain": "电极箔研发生产：腐蚀箔→化成箔→检测→销售",
+  "chain": "电极箔基础功能材料研发、腐蚀化成生产、质量检测、供应链与销售",
   "jobs": [
    {
     "title": "研发工程师",
@@ -3209,19 +3245,13 @@
     "suspect": false
    },
    {
-    "title": "化学工程师",
-    "strength": "strong",
-    "stage": "研发",
-    "suspect": false
-   },
-   {
-    "title": "工艺工程师",
+    "title": "化工工艺工程师",
     "strength": "strong",
     "stage": "生产",
     "suspect": false
    },
    {
-    "title": "化工工艺工程师",
+    "title": "工艺工程师",
     "strength": "strong",
     "stage": "生产",
     "suspect": false
@@ -3303,16 +3333,10 @@
     "strength": "medium",
     "stage": "职能",
     "suspect": false
-   },
-   {
-    "title": "安全环保工程师",
-    "strength": "medium",
-    "stage": "职能",
-    "suspect": false
    }
   ],
   "via": "llm",
-  "biz": "铝电解电容器用电极箔研发生产企业（603115），化成箔约占营收96%、腐蚀箔约3%，全球市占率前三，南通、雅安、石嘴山三大生产基地。"
+  "biz": "主营电极箔等基础功能材料，为全球铝电解电容器客户提供全系列电极箔产品，应用于消费电子、智能终端、工业控制、5G与工业互联网、新能源发电、新能源汽车等领域"
  },
  "呼和浩特市第二中学": {
   "chain": "高中升学教学，围绕课程教学、教研备课、学生管理、教务考务、后勤保障运行",
@@ -3442,26 +3466,8 @@
   "biz": "内蒙古自治区首批示范性普通高级中学（公立），呼伦、如意、金川三校区共124个教学班、在校生5900余人，办学以高中升学教学为主。"
  },
  "南京泛成生物科技有限公司": {
-  "chain": "食品与保健功能性原料分销与制造：原料采购、生产加工、质量控制、仓储物流、国内外销售",
+  "chain": "功能性食品原料（瓜尔胶、鱼油、天然色素等）的研发、生产、质控与全球分销",
   "jobs": [
-   {
-    "title": "销售工程师",
-    "strength": "strong",
-    "stage": "销售",
-    "suspect": false
-   },
-   {
-    "title": "采购专员",
-    "strength": "strong",
-    "stage": "供应链",
-    "suspect": false
-   },
-   {
-    "title": "物流专员",
-    "strength": "strong",
-    "stage": "供应链",
-    "suspect": false
-   },
    {
     "title": "食品研发工程师",
     "strength": "strong",
@@ -3469,7 +3475,7 @@
     "suspect": false
    },
    {
-    "title": "工艺工程师",
+    "title": "化工工艺工程师",
     "strength": "strong",
     "stage": "生产",
     "suspect": false
@@ -3487,44 +3493,26 @@
     "suspect": false
    },
    {
-    "title": "化验员",
+    "title": "采购专员",
     "strength": "strong",
-    "stage": "质量",
+    "stage": "供应链",
     "suspect": false
    },
    {
-    "title": "设备维护工程师",
-    "strength": "strong",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "电气工程师",
-    "strength": "medium",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "自动化工程师",
-    "strength": "medium",
-    "stage": "生产",
-    "suspect": false
-   },
-   {
-    "title": "生产操作员",
-    "strength": "strong",
-    "stage": "生产",
-    "suspect": true
-   },
-   {
-    "title": "仓储管理员",
+    "title": "物流专员",
     "strength": "medium",
     "stage": "供应链",
     "suspect": false
    },
    {
-    "title": "外贸业务员",
+    "title": "销售工程师",
     "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "海外销售经理",
+    "strength": "medium",
     "stage": "销售",
     "suspect": false
    },
@@ -3562,6 +3550,42 @@
     "title": "法务专员",
     "strength": "weak",
     "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "分析检测工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "食品工艺工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "仓储管理员",
+    "strength": "weak",
+    "stage": "供应链",
     "suspect": false
    }
   ],
@@ -4670,7 +4694,7 @@
   "biz": "国内电动工具行业龙头企业（始创1995年），主营各类电动工具及转子/定子等零配件，产品覆盖钻孔紧固、砂磨、锤镐、切割、园林等700余款整机，出口80多国。"
  },
  "嘉里粮油（天津）有限公司": {
-  "chain": "食用植物油精炼、特种油脂加工、小包装分装，经原料采购、精炼加工、灌装包装、仓储物流到品牌销售",
+  "chain": "食用植物油精炼、特种油脂加工、小包装分装，经原料采购、精炼加工、灌装包装、仓储物流、品牌销售",
   "jobs": [
    {
     "title": "食品研发工程师",
@@ -4692,7 +4716,7 @@
    },
    {
     "title": "灌装工艺工程师",
-    "strength": "strong",
+    "strength": "medium",
     "stage": "生产",
     "suspect": true
    },
@@ -4728,7 +4752,7 @@
    },
    {
     "title": "食品安全工程师",
-    "strength": "strong",
+    "strength": "medium",
     "stage": "质量",
     "suspect": false
    },
@@ -4751,8 +4775,8 @@
     "suspect": false
    },
    {
-    "title": "仓储管理员",
-    "strength": "strong",
+    "title": "仓储主管",
+    "strength": "medium",
     "stage": "供应链",
     "suspect": false
    },
@@ -4770,7 +4794,7 @@
    },
    {
     "title": "客户服务专员",
-    "strength": "medium",
+    "strength": "weak",
     "stage": "销售",
     "suspect": false
    },
@@ -4930,7 +4954,7 @@
   "biz": "特大型民营石油化工集团（山东第一大炼厂），主营基础炼油、高端化工，产品涵盖高标号汽油、柴油、石油液化气、聚丙烯、高等级道路沥青、各类烯烃与芳烃等，集国际贸易、国际物流、终端销售于一体；原油一次加工能力1050万吨/年。"
  },
  "优靓重工（武汉）有限公司": {
-  "chain": "天窗系统研发设计、金属结构制造、现场安装施工、销售与工程服务",
+  "chain": "天窗系统研发设计、金属结构制造、安装施工与销售",
   "jobs": [
    {
     "title": "机械设计工程师",
@@ -4987,7 +5011,7 @@
     "suspect": false
    },
    {
-    "title": "物流专员",
+    "title": "仓储物流专员",
     "strength": "medium",
     "stage": "供应链",
     "suspect": false
@@ -5007,13 +5031,13 @@
    {
     "title": "安装工程师",
     "strength": "strong",
-    "stage": "生产",
+    "stage": "销售",
     "suspect": false
    },
    {
-    "title": "施工管理员",
+    "title": "项目经理",
     "strength": "medium",
-    "stage": "生产",
+    "stage": "销售",
     "suspect": false
    },
    {
@@ -5029,10 +5053,10 @@
     "suspect": false
    },
    {
-    "title": "办公室文员",
+    "title": "行政专员",
     "strength": "medium",
     "stage": "职能",
-    "suspect": true
+    "suspect": false
    }
   ],
   "via": "llm",
@@ -8118,5 +8142,4681 @@
   ],
   "via": "llm",
   "biz": "行政审批事项办理与政务便民服务"
+ },
+ "江苏昆仑互联新能源集团有限公司": {
+  "chain": "分布式光伏与储能项目开发、设计、建设、运营及能源管理",
+  "jobs": [
+   {
+    "title": "光伏系统工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "储能系统工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "结构工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "算法工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "项目经理",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "施工管理工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "安全工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "供应链专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客户经理",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "分布式光伏、储能、综合能源服务、虚拟电厂等新能源综合服务，覆盖项目开发、设计、建设、运营到能源管理全链条"
+ },
+ "北京中科腾越科技发展有限公司": {
+  "chain": "嵌入式工控设备研发制造：硬件设计、软件开发、测试验证、生产制造、销售服务",
+  "jobs": [
+   {
+    "title": "硬件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "硬件测试工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "工艺工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "生产操作员",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "供应链专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "技术支持工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "产品经理",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "深耕电力行业工业控制与工业物联网的高新技术企业，主营通讯管理机、网络分析记录仪、故障录波器、特高压直流机、工业以太网交换机等嵌入式工控设备，应用于电网、变电站及轨道交通。"
+ },
+ "四川科伦药业股份有限公司": {
+  "chain": "大容量注射剂、抗生素中间体及仿制药的研发、生产、质量、供应链与销售",
+  "jobs": [
+   {
+    "title": "药品研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "制剂研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "分析研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "合成研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "生物制药工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "工艺工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "化工工艺工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "QA专员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "QC检验员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "供应商质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "医药代表",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "国际注册专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": true
+   },
+   {
+    "title": "财务主管",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "大容量注射剂、抗生素中间体及仿制药的研发生产与销售"
+ },
+ "普洛药业股份有限公司": {
+  "chain": "医药研发与生产服务：原料药及中间体研发、工艺开发、生产制造、质量分析、销售",
+  "jobs": [
+   {
+    "title": "药品研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "有机合成研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "分析研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "制剂研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "工艺研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "化工工艺工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "生产操作员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "质量控制工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "质量保证工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "致力于成为全球科技型医药制造服务领军企业"
+ },
+ "江苏益丰大药房连锁有限公司": {
+  "chain": "药品保健品医疗器械连锁零售：采购仓储→门店运营→电商O2O→慢病健康服务",
+  "jobs": [
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储物流主管",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "商品企划专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": true
+   },
+   {
+    "title": "门店店长",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "健康顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "销售代表",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "加盟拓展专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "电商运营专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "质量管理员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "执业药师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "药学服务专员",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "数据分析师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "益丰药房（603939）旗下江苏子公司，主营药品、保健品、医疗器械及健康日用品的连锁零售（直营+加盟），门店超万家、药品SKU 7万+，并拓展医药电商（B2C/O2O）、慢病管理与健康管理服务。"
+ },
+ "全亿健康药房有限公司": {
+  "chain": "医药零售连锁：采购仓储→门店运营→全渠道销售→慢病服务→职能支撑",
+  "jobs": [
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储物流专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "商品专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": true
+   },
+   {
+    "title": "门店店长",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "药店营业员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "执业药师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "慢病管理专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "电商运营专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "O2O运营专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "B2B销售专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "数据分析师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "质量管理员",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "总部苏州的全国性医药零售健康产业平台，以线下连锁药房为基石，布局B2C/O2O/B2B全渠道零售、自有品牌、慢病管理、医药批发与加盟并购，直营+联盟门店近万家、药品SKU超6.5万、会员超3000万。"
+ },
+ "泰康之家经营管理有限公司": {
+  "chain": "养老社区投资建设与运营，经项目开发、社区运营、医疗护理、康复服务、后勤保障环节",
+  "jobs": [
+   {
+    "title": "养老社区运营经理",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "生活管家",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "社工",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "文娱活动师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "运动指导师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "护士",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "医生",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "康复治疗师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "营养师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "护理员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "餐饮服务主管",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "物业工程主管",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "土建工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "室内设计师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "采购专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "市场营销专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客户经理",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "泰康保险集团旗下专注养老、护理、康复、生命关怀实体运营的专业子公司，主营高品质连锁医养社区（CCRC）、康复医院、居家社区养老（养联体）及商用不动产，全国37城布局近50个养医项目。"
+ },
+ "迈科维互创医疗科技（上海）有限公司": {
+  "chain": "非侵入式神经调控与智能神经监测，穿戴式神经刺激器研发、生产、注册、销售",
+  "jobs": [
+   {
+    "title": "硬件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "算法工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "机械设计工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "结构工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "电子工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "工艺工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "生产操作员",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "供应商质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "物流专员",
+    "strength": "weak",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "临床经理",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "医学专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "产品转化经理",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "注册专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": true
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "创新型医疗科技企业（2024年成立），专注非侵入式神经调控与智能神经监测，以穿戴式神经刺激器为核心，覆盖耳迷走神经刺激（TVNS）、多模态生理参数监测等产品，应用于帕金森病、特发性震颤、癫痫、睡眠障碍等神经疾病，融合神经工程、AI算法与可穿戴硬件。"
+ },
+ "南京自然之源生物科技有限公司": {
+  "chain": "植物提取物研发→生产→质量→销售",
+  "jobs": [
+   {
+    "title": "研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "化工工艺工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "生产操作员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "化验员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "外贸业务员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "新媒体运营",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "电商运营",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "主营天然活性物质的研发生产与销售：植物甾醇、天然维生素E、植物角鲨烯等植物提取物饲料添加剂（大华归生命科学旗下国家高新技术企业），是全球植物甾醇主要生产商之一，并为动物生产提供安全高效环保的功能性饲料添加剂。"
+ },
+ "中建三局城市投资运营有限公司": {
+  "chain": "城市综合投资运营：投资拓展、开发建设、产业招商、运营管理",
+  "jobs": [
+   {
+    "title": "投资拓展岗",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "投资管理岗",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "资金管理岗",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "产品策划岗",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "建筑设计师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "结构工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "给排水工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "暖通工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "工程管理岗",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "土建工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "机电工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "造价工程师",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "安全工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "商业运营岗",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "商办运营岗",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "招商专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "综合能源岗",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "物业工程岗",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "中建三局旗下城市综合投资运营高端平台，聚焦城市开发、城市运营、产业发展、基础设施投建运一体化“4条航道”，以“投资引领+以运定投”双核驱动，业务涵盖高端人居、产业园（如葛店双创谷）、城市更新、生态环保与分布式能源等。"
+ },
+ "北京学而思教育科技有限公司": {
+  "chain": "教育科技：内容研发→课程教学→硬件研发生产→销售运营→职能支撑",
+  "jobs": [
+   {
+    "title": "素养教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "高中主讲教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "学科教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "竞赛教练",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "课程研发专员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "教研员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "教育产品经理",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "算法工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "硬件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "内容编辑",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "图书编辑",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客户服务专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "供应链专员",
+    "strength": "weak",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "好未来旗下教育科技品牌，主营K12及素质教育（学而思素养/高中/网校）、教育智能硬件（学习机）、九章大模型与图书出版。"
+ },
+ "高途教育科技集团有限公司": {
+  "chain": "中小学辅导与成人留学培训为主，内容研发、线上平台开发、课程销售与运营",
+  "jobs": [
+   {
+    "title": "教研老师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "学科教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "学习顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "主讲老师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "线上班课主讲",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "线下班课主讲",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "算法工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "后端开发工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "前端开发工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "产品经理",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "内容运营",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "用户运营",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "课程研发专员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "教务管理专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "业务涵盖了面向中小学生成长和学习的产品和服务、面向大学生与成人成长和学习的产品和服务，面向出国留学人群咨询和学习的产品和服务，以及以内容和文化为内核的直播电商等"
+ },
+ "南京新东方文化艺术发展有限公司": {
+  "chain": "农产品产销：生产端组织货源、品控分级，经仓储物流到线上线下销售与客户服务",
+  "jobs": [
+   {
+    "title": "农产品采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": true
+   },
+   {
+    "title": "农产品品控专员",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "仓储物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "电商运营专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "渠道销售经理",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客户服务专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "食品研发工程师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "包装设计工程师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "供应链计划专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "高中数学教师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "高中语文教师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "高中英语教师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "学习管理师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "素质教师",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   }
+  ],
+  "via": "llm",
+  "biz": "致力于链接生产者、消费者，持续提供高品质农品好物"
+ },
+ "浙江省建工集团有限责任公司": {
+  "chain": "房屋建筑与市政路桥施工总承包，经投标承接、设计深化、施工建造、安装装饰、验收交付",
+  "jobs": [
+   {
+    "title": "土木工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "结构工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "建筑设计师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "给排水工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "暖通工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "施工员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "安全员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "测量工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "试验工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "材料员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "造价工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "商务经理",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "党群管理岗",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "浙江省建设投资集团（浙建集团，浙江国资）全资子公司，大型国有建筑企业，主营房屋建筑、市政路桥、轨道交通、水利水电、钢结构、机电安装、装饰装修及工程设计、投融资（EPC/PPP）；年产值约300亿，施工辐射全国及海外。"
+ },
+ "苏州新东方教育咨询有限公司": {
+  "chain": "教育咨询与培训：课程研发、教学交付、招生销售、教务运营、职能支持",
+  "jobs": [
+   {
+    "title": "课程研发专员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "教研员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "学科教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "英语教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "数学教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "物理教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "语文教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "素质类教师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "学习管理师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "招生专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "教务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "新媒体运营专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "新东方旗下教育咨询与培训机构，主营教育咨询、语言/留学/考研/职业考试培训、少儿素质课程、游学研学、智慧学习软硬件及招生辅助服务。"
+ },
+ "上海世外智慧教育科技有限公司": {
+  "chain": "教育科技服务：教学研究→AI平台研发→产品化→学校服务与培训",
+  "jobs": [
+   {
+    "title": "学科研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "教学技术与教学设计师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "AI应用研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "AI大模型技术研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "算法工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "全栈工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "AI产品经理",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "学科专家",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "课程顾问",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "教师培训师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "教学服务专员",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "客户成功专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "均瑶集团旗下世外教育集团全资科技子公司，聚焦“高质量教学×AI”，以认知科学与人工智能为支撑，提供学校咨询指导、教师培训与教学智能平台（如“智教耘”AI教学全链路平台、智慧课堂、智学通），并运营“AI创生学校共同体”与“芯耘未来”教育公益，服务0-18岁AI教育生态。"
+ },
+ "镇江市新东方教育培训有限公司": {
+  "chain": "中小学学科培训与语言留学课程，经教研、教学、招生、服务环节",
+  "jobs": [
+   {
+    "title": "学科教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "英语教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "数学教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "语文教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "物理教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "化学教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "教研员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "课程研发专员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "学习管理师",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": true
+   },
+   {
+    "title": "教务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "新媒体运营",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "校区运营专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": true
+   }
+  ],
+  "via": "llm",
+  "biz": "新东方教育科技集团旗下分校，主营中小学学科培训、语言/留学/考研/四六级等课程，以及教育咨询、托管服务。"
+ },
+ "上海新舟投资管理有限公司": {
+  "chain": "投资管理与资产管理：项目筛选、投资决策、投后管理、资产运营、退出",
+  "jobs": [
+   {
+    "title": "投资经理",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "风控专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行业研究员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "投资分析师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "资产管理专员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "投后管理专员",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客户经理",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "小学数学教师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "初中数学教师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "初中英语教师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "幼儿教师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "竞赛教练",
+    "strength": "weak",
+    "stage": "生产",
+    "suspect": true
+   }
+  ],
+  "via": "llm",
+  "biz": "投资与资产管理公司，主营投资管理、实业投资、资产管理、投资/财务/管理咨询、企业兼并重组策划、市场营销策划及计算机技术开发。"
+ },
+ "广州市晓星火教育科技有限公司": {
+  "chain": "中小学课外辅导：教研开发→课程教学→招生咨询→校区运营",
+  "jobs": [
+   {
+    "title": "教研员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "课程研发专员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "学科教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "学习管理师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "校区运营专员",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "教务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "新媒体运营专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "培训师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "数据分析师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "晓教育集团旗下中小学教育品牌“星火教育”运营公司，主营6-18岁中小学生全科诊断及课外辅导（一对一、精品课堂、小学课堂等），课程覆盖小初高全阶段，自主研发MCE学能测评系统，已在全国15省40余城市开设超200所校区。"
+ },
+ "北京平行线根源教育科技有限公司": {
+  "chain": "K12理科培优：课程研发→教学授课→教研培训→招生销售→教务运营→职能支撑",
+  "jobs": [
+   {
+    "title": "学科教师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "课程研发专员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "教研员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "竞赛教练",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "教学设计师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "销售主管",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "教务专员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "班主任",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "学习管理师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "图书编辑",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "新媒体运营",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "平行线教育（2009年创立），专注K12理科培优，主营线下班课、在线大班/小班、VIP全科、高端竞赛培训、图书出版与教育软件开发。"
+ },
+ "上海我们方田科技有限公司": {
+  "chain": "中小学理科竞赛培训：教研开发→课程教学→招生销售→教务服务",
+  "jobs": [
+   {
+    "title": "教研员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "课程研发专员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "学科教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "竞赛教练",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "教务专员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "图书编辑",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "方田教育（2014年创立），主营中小学理科/竞赛培训（班课、VIP、竞赛教练）、素质教育、软件研发与图书出版，覆盖合肥、上海、南京等多城市。"
+ },
+ "杭州未来校教育科技有限公司": {
+  "chain": "中小学在线双师直播课程与学情分析：课程研发、直播教学、辅导督学、平台研发、市场推广",
+  "jobs": [
+   {
+    "title": "教研员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "辅导老师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "直播运营专员",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "算法工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "产品经理",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "数据分析师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "运维工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "销售专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客户服务专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "在线教育科技公司（曾用名“开课啦教育”），主营中小学在线双师直播课程与大数据学情分析，旗下“未来校”APP服务教育局、学校、教师、学生、家长，提供教学教研、辅导督学与一体化管理。"
+ },
+ "杭州小凡教育科技有限公司": {
+  "chain": "艺术生文化课培训：内容研发→教学交付→招生销售→教务服务",
+  "jobs": [
+   {
+    "title": "学科教师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "助教老师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "课程研发专员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "教研专员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "销售专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "教务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "班主任",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "学习管理师",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": true
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "算法工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式工程师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "新媒体运营专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "K12学习内容培训机构及教学方案服务商（品牌“非凡教育”），核心业务为艺术生文化课全日制培训（25-30人班课），并设“1605实验室”研发AI教育算法与脑科学、 “小凡私塾”高端定制教育；年服务超万名艺术生，配套自研智能教学管理系统。"
+ },
+ "苏州进阶派教育科技有限公司": {
+  "chain": "素质教育与培优竞赛培训，招生—教研—授课—服务—校区运营",
+  "jobs": [
+   {
+    "title": "学科教师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "课程顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "教研员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "教务专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "班主任",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "校区运营专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": true
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "新媒体运营专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客服专员",
+    "strength": "weak",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "教学主管",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "培训师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "平面设计师",
+    "strength": "weak",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "后勤专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "初创教培机构（品牌“小黑老师名师团”，曾用名进小阶/笃慧），主营素质教育与培优竞赛教育，提供小学至高中各科班课、一对一及托管服务，师资以985高校为主，立足苏州多校区，学员遍布全国。"
+ },
+ "安盛天平保险销售有限公司": {
+  "chain": "保险销售：产品培训→客户开发→方案设计→投保承保→理赔服务",
+  "jobs": [
+   {
+    "title": "销售顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "保险代理人",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "客户经理",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "理财顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "电话销售专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "渠道销售专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "保险产品经理",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "核保专员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "理赔专员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "客服专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "培训讲师",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "运营专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "健康险、商业险以及财产和意外伤害险领域的产品与服务，为个体及商业客户提供保障"
+ },
+ "上海妙文创意科技有限公司": {
+  "chain": "展陈设计施工一体化总包：策划设计→多媒体内容制作→施工深化→现场实施→交付运维",
+  "jobs": [
+   {
+    "title": "策划师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "空间设计师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "平面设计师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "深化设计师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "多媒体互动策划",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "影视策划",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "UI设计师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "影视后期制作",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "Unity3d程序开发工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "施工图设计师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "项目经理",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "工程监理",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "物流专员",
+    "strength": "weak",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "商务专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "科技文创产业集团（妙文国际），主营博物馆、科技馆、规划馆、企业展厅等展陈设计施工一体化总包，以及全球会展、品牌公关活动的策划与实施，服务政府与世界500强。"
+ },
+ "武汉起点人力资源股份有限公司": {
+  "chain": "人力资源服务：客户开发、招聘外包、劳务派遣、灵活用工、驻场管理",
+  "jobs": [
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "招聘专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "客户经理",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "薪酬绩效专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "培训专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "劳务派遣专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": true
+   },
+   {
+    "title": "驻场管理专员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "项目运营专员",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "数据运营专员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "产品经理",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "农业技术员",
+    "strength": "weak",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "生产操作工",
+    "strength": "weak",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "weak",
+    "stage": "生产",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "人力资源服务，含劳务外包、灵活用工及招聘服务，服务企业客户与国央企，并招聘农业技术、生产操作等岗位"
+ },
+ "上海靖戈智能科技有限公司": {
+  "chain": "量化私募：策略研发→算法交易系统开发→交易执行与风控→客户服务",
+  "jobs": [
+   {
+    "title": "量化研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "算法工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "机器学习工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "C++工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "数据分析师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "策略研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "测试工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "交易员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "风控专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "合规专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "客户经理",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "运营专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "IT运维工程师",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "私募证券投资基金管理人（2018年成立），主营股票二级市场量化交易，提供日内T0、算法交易、指数增强、对冲中性等量化策略与靖戈智能交易系统，深度服务50+家私募及10+家券商，IT研发人员占比超80%。"
+ },
+ "上海非凸智能科技有限公司": {
+  "chain": "金融科技：算法交易系统研发、AI/大模型应用、金融数据服务、客户交付",
+  "jobs": [
+   {
+    "title": "算法工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "机器学习工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "大模型应用开发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "量化研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "策略研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "测试工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "数据工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "系统运维工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "技术支持工程师",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客户成功专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "产品经理",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "weak",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "国内领先的智能算法和交易系统服务商（金融科技），基于Rust与AI/大模型，为券商、量化私募等金融机构提供智能算法交易、底仓增强、智能拆单、智能交易终端及金融数据服务。"
+ },
+ "深圳市东方嘉盛供应链股份有限公司": {
+  "chain": "综合供应链服务：报关、仓储、国际运输、海外仓履约、供应链金融、4PL控制塔",
+  "jobs": [
+   {
+    "title": "供应链管理专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "报关员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "单证员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储主管",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "物流运营专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "国际货运操作员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": true
+   },
+   {
+    "title": "海外仓运营专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": true
+   },
+   {
+    "title": "供应链金融专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": true
+   },
+   {
+    "title": "物流方案设计工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "供应链系统实施工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "数据分析师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "客户经理",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "商务拓展专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "会计",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "深交所主板上市（002889）的4PL一体化供应链服务商，主营综合供应链管理服务：一体化供应链、进出口报关、保税/非保税仓储、国际运输与包机、海外仓履约、供应链金融、4PL控制塔，重点服务半导体、医疗器械、消费品、汽车等行业；2025年营收37.34亿元。"
+ },
+ "天津南大通用数据技术股份有限公司": {
+  "chain": "国产数据库软件研发，经内核开发、测试验证、产品化、销售与技术支持交付客户",
+  "jobs": [
+   {
+    "title": "数据库内核开发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "软件工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "算法工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式工程师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "测试工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "数据库测试工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "试验工程师",
+    "strength": "weak",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "产品工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "数据库产品工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "解决方案工程师",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "技术支持工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "实施工程师",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "供应链专员",
+    "strength": "weak",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "国产数据库领军企业（GBASE），主营GBase 8a分析型、8s事务型、8c分布式、云数据仓库等数据库软件与数据服务，服务金融、电信、政务、能源等行业。"
+ },
+ "佳兆业地产南京有限公司": {
+  "chain": "房地产开发：投资拓展→设计→施工建造→成本管控→营销销售→交付物业",
+  "jobs": [
+   {
+    "title": "投资拓展专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "建筑设计师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "结构工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "给排水工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "土建工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "工程监理",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "土建成本工程师",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "安装成本工程师",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "安全工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "销售经理",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "置业顾问",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "佳兆业集团（港股）旗下的城市地产开发平台（南京），主营房地产开发经营及进出口业务，为集团在长三角的综合开发（住宅、城市综合体等）区域公司。"
+ },
+ "圣奥集团有限公司": {
+  "chain": "办公家具研发制造，经研发设计、生产制造、质量管控、供应链、销售服务",
+  "jobs": [
+   {
+    "title": "结构工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "机械设计工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "软件工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "嵌入式工程师",
+    "strength": "weak",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "工艺工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "生产计划专员",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "供应商质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "外贸业务员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "跨境电商运营",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "售后服务专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "办公家具研发制造，含办公桌、座椅、文件柜及整体办公空间解决方案"
+ },
+ "江苏恒妤餐饮管理有限责任公司": {
+  "chain": "团膳餐饮：食材采购配送→中央厨房加工→配送→食堂运营服务",
+  "jobs": [
+   {
+    "title": "餐饮运营经理",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "厨师长",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "面点师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "食品工艺工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "食品安全管理员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "质量检验员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "物流配送专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储管理员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "客户服务专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "物业工程主管",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "营养师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   }
+  ],
+  "via": "llm",
+  "biz": "恒业集团旗下团膳餐饮公司，主营单位团膳、快餐配送、酒店管理与食品（蔬菜/干调/冻货等）配送，依托HACCP体系实行“精细化管理+标准化生产+规范化服务”，兼营劳务外包与物业管理。"
+ },
+ "江苏骏眉时代茶业有限公司": {
+  "chain": "茶叶加工技术研发、茶叶及茶具销售、茶文化推广、进出口贸易",
+  "jobs": [
+   {
+    "title": "茶叶审评研发",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "食品研发工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "工艺工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "供应商质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储管理员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售代表",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "渠道销售经理",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "电商运营专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "茶艺培训师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "客服专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "外贸业务员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "摄影",
+    "strength": "weak",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "法务专员",
+    "strength": "weak",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "正山堂“骏眉”体系茶业公司（南京），主营茶叶（袋装/散装）、茶具、日用百货的销售，茶叶加工技术研发与文化艺术交流策划，并开展食品及货物进出口业务。"
+ },
+ "上海三问家居服饰有限公司": {
+  "chain": "家纺与服装配饰ODM出口：面料研发→设计打样→生产制造→质量检验→全球供应链→外贸销售",
+  "jobs": [
+   {
+    "title": "面料研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "花型设计师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "服装设计师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "结构工程师",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "工艺工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "缝纫工艺工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "面料检验员",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "供应商质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "供应链专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "外贸业务员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "跨境电商运营专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "国内电商运营专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场推广专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "IT支持工程师",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": true
+   }
+  ],
+  "via": "llm",
+  "biz": "三问家居（ODM+B2B出口），主营特色家居软品（披巾、毛毯、靠垫等家纺）、服装配饰及高科技功能面料，以“材料创新×原创设计×全球供应链管理”为核心向欧美大型百货零售商供货，是Target、Macy’s等核心供应商，被誉为“世界披巾之王”。"
+ },
+ "武汉久安药业有限公司": {
+  "chain": "化学药制剂研发、原料采购、制剂生产、质量检验、销售",
+  "jobs": [
+   {
+    "title": "药品研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "制剂研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "分析研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "工艺工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "生产操作员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "体系QA",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "现场QA",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "化验员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "供应商质量工程师",
+    "strength": "medium",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "strong",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "仓储物流专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "strong",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "行政专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "始建于1951年的药品生产企业（原武汉第二制药厂），主营化学药制剂（仿制药）研发、生产与销售，重点为急抢救用药（盐酸多巴胺、地塞米松磷酸钠、硫酸镁注射液等），持有140个药品批准文号，具GMP认证与小针/输液/预灌封产线。"
+ },
+ "中科开浦生物科技（湖北）有限公司": {
+  "chain": "传染病防控CRO：药效学评价、检测诊断原料研发生产、实验室平台运行",
+  "jobs": [
+   {
+    "title": "生物研发工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": false
+   },
+   {
+    "title": "细胞培养工程师",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "分子生物学研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "药效评价研究员",
+    "strength": "strong",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "病理技术员",
+    "strength": "medium",
+    "stage": "研发",
+    "suspect": true
+   },
+   {
+    "title": "分析检测工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": true
+   },
+   {
+    "title": "质量工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "QA工程师",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "QC检验员",
+    "strength": "strong",
+    "stage": "质量",
+    "suspect": false
+   },
+   {
+    "title": "实验动物技术员",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "发酵工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "纯化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "试剂生产工艺工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": true
+   },
+   {
+    "title": "设备维护工程师",
+    "strength": "strong",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "电气工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "自动化工程师",
+    "strength": "medium",
+    "stage": "生产",
+    "suspect": false
+   },
+   {
+    "title": "采购专员",
+    "strength": "medium",
+    "stage": "供应链",
+    "suspect": false
+   },
+   {
+    "title": "商务拓展专员",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": true
+   },
+   {
+    "title": "销售工程师",
+    "strength": "strong",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "市场专员",
+    "strength": "medium",
+    "stage": "销售",
+    "suspect": false
+   },
+   {
+    "title": "人力资源专员",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   },
+   {
+    "title": "财务主管",
+    "strength": "medium",
+    "stage": "职能",
+    "suspect": false
+   }
+  ],
+  "via": "llm",
+  "biz": "聚焦新发突发传染病防控的科技型企业，核心业务为抗病毒/抗细菌等传染性病原的疫苗与药物及细胞基因治疗的临床前药效学评价（CRO）服务，并提供病原检测诊断原料及一体化解决方案；建有BSL-2/ABSL-2生物安全实验室平台。"
  }
 }

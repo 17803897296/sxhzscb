@@ -25,9 +25,10 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import job_profile  # noqa: E402
+import job_level    # noqa: E402
 
 DB = os.environ.get("FAIR_DB") or os.path.join(HERE, "data", "careersafari.db")
-CAMPUS = os.path.join(HERE, "data", "campus_recheck.db")
+ENRICH = os.path.join(HERE, "data", "fair2026_enrich.db")
 BEFORE = os.path.join(HERE, "data", "infer_fill_before.db")
 AFTER = os.path.join(HERE, "data", "infer_fill_after.db")
 NO_JOB_SOURCES = ("未知", "未知1", "未知2", "", "websearch", "社招信息")
@@ -38,34 +39,73 @@ def enabled():
     return (os.environ.get("FAIR_INFER_FILL") or "1").strip() != "0"
 
 
-def _campus_names():
-    """校招核实库认作校招的企业：这些用真实 URL 岗，绝不补推断岗。"""
-    if not os.path.exists(CAMPUS):
-        return set()
-    rc = sqlite3.connect(CAMPUS)
-    try:
-        return {r[0] for r in rc.execute("SELECT name FROM campus_company WHERE is_campus=1")}
-    except Exception as exc:
-        # 库在却读不出来必须报错，不能静默当成空名单——那样会把推断岗灌进校招企业。
-        raise RuntimeError("校招核实库读取失败：%s" % exc)
-    finally:
-        rc.close()
+def usable_real(o):
+    """这家企业「清洗之后还剩几个能用的真实岗位名」。
 
-
-def targets(con, campus):
-    """返回需要补推断岗的 [(name, item)]：0 岗或非校招来源，且不在校招名单。"""
+    岗位字段里有东西 ≠ 有岗位。批次名（「27届秋招」）、专业类目名、招考名目
+    都会被 payload 侧的 `_clean_jobs` 滤掉；补库判定必须用同一把尺子，
+    否则这类企业被当成「有岗企业」，永远轮不到补推断岗 —— 报告里就成了
+    「企业有 145 家、点开一个岗位名都没有，只能按行业瞎猜」。
+    """
     out = []
-    for name, raw in con.execute("SELECT name,item_json FROM company_jobs"):
-        if name in campus:
+    for j in (o.get("jobs") or []):
+        if not isinstance(j, dict):
             continue
+        if str(j.get("job_source_kind") or "") == KIND:
+            continue
+        t = str(j.get("title") or "").strip()
+        if t and job_level.is_job_title(t):
+            out.append(t)
+    return out
+
+
+def _non_enterprise():
+    """增补档案里标成「非企业主体」的单位（学校 / 政府 / 研究所 / 人才中心）。
+
+    给它们补推断岗没有意义：这些单位不按企业招聘逻辑设岗，一条「工艺工程师」
+    推出来纯属噪声。读不到就返回空集，不影响补库（只是少一层过滤）。
+    """
+    if not os.path.exists(ENRICH) or os.path.getsize(ENRICH) == 0:
+        return set()
+    con = sqlite3.connect(ENRICH)
+    try:
+        return {r[0] for r in con.execute(
+            "SELECT name FROM companies WHERE non_enterprise=1")}
+    except Exception:
+        return set()
+    finally:
+        con.close()
+
+
+def targets(con):
+    """需要补推断岗的 [(name, item)]：**来源是「非校招」的全部补**。
+
+    2026-11-18 用户第二次定口径：
+      · 判据只看 jobSource 是不是校招渠道。websearch / 社招信息 / 未知 这三种
+        都不是校招公告，岗位清单注定不全（要么只抓到社招零头，要么一条没抓到），
+        所以一律补一份「按主营通常设哪些岗」的编制进去；
+      · 有 20 个对口真实岗也照补 —— 推断岗只是补缺口，`_merge` 同名跳过，
+        真实岗一个字段都不动，不会两者打架；
+      · 校招名单不再作为排除依据。名单只能说明「这家来过双选会」，
+        跟「岗位是否采到」是两件事，以前拿名单整家挡掉，正是烟台那类企业
+        （校招公告来源、岗位名却是「半导体研发 & 工艺」这种方向名）一条
+        推断岗都没有的原因。
+      · 仍然排除：非企业主体（学校/政府/研究所）、已补过的（可重复执行）。
+    """
+    out = []
+    ne = _non_enterprise()
+    for name, raw in con.execute("SELECT name,item_json FROM company_jobs"):
         try:
             o = json.loads(raw)
         except Exception:
             continue
+        if name in ne:
+            continue                      # 学校 / 政府 / 研究所：不按企业招聘设岗
+        if str(o.get("jobSource") or "").strip() not in NO_JOB_SOURCES:
+            continue                      # 校招公告来源：岗位可信，不补
         jobs = [j for j in (o.get("jobs") or []) if isinstance(j, dict)]
-        src = str(o.get("jobSource") or "").strip()
-        if jobs and src not in NO_JOB_SOURCES:
-            continue                      # 有真实岗且来源是校招类，不补
+        if any(str(j.get("job_source_kind") or "") == KIND for j in jobs):
+            continue                      # 已经补过，不重复补（保证可重复执行）
         out.append((name, o))
     return out
 
@@ -129,9 +169,8 @@ def main(argv=None):
         return 0
     con = sqlite3.connect(DB)
     con.row_factory = sqlite3.Row
-    campus = _campus_names()
-    todo = targets(con, campus)
-    print("补库目标 %d 家（排除校招名单 %d 家）" % (len(todo), len(campus)))
+    todo = targets(con)
+    print("补库目标 %d 家（非校招来源全补；已排除非企业主体与补过的）" % len(todo))
     if not todo:
         con.close()
         return 0

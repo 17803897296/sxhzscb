@@ -4,7 +4,8 @@
 守住三条线：
   1. 推断岗带标注、source_url 为空、不冒充真实 JD；
   2. 判定链把推断岗从真实岗里排除（_clean_jobs），不会把 inferred 误升成明确命中；
-  3. 校招核实库认作校招的企业绝不补推断岗。
+  3. 补库只看来源：校招公告来源不补，websearch / 社招 / 未知一律补（2026-11-18
+     用户定口径，校招核实库同日停用，不再按名单挡）。
 """
 import json
 import os
@@ -64,39 +65,43 @@ class ToJobsTests(unittest.TestCase):
         self.assertEqual(merged[0]["source_url"], "https://hr.example.com/job/1")  # 真实岗没被改
 
 
-class CampusBoundaryTests(unittest.TestCase):
+class SourceBoundaryTests(unittest.TestCase):
+    """补库口径：**只看 jobSource**，不再看校招名单。"""
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.db = os.path.join(self.tmp.name, "t.db")
-        self.campus = os.path.join(self.tmp.name, "campus.db")
         con = sqlite3.connect(self.db)
         con.execute("CREATE TABLE company_jobs(name TEXT PRIMARY KEY, item_json TEXT, updated_at TEXT)")
-        for n, src, jobs in [("校招企业", "校招公告", []),
+        for n, src, jobs in [("校招企业", "校招公告", [real("质量工程师")]),
+                             ("校招0岗", "校招公告", []),
                              ("非校招0岗", "未知", []),
-                             ("非校招有岗", "websearch", [real("质量工程师")])]:
+                             ("非校招有岗", "websearch", [real("质量工程师")]),
+                             ("社招有岗", "社招信息", [real("工艺工程师")]),
+                             ("已补过", "websearch", [real("质检员"), inferred("工艺工程师")])]:
             con.execute("INSERT INTO company_jobs VALUES(?,?,?)",
                         (n, json.dumps({"name": n, "jobSource": src, "jobs": jobs}), ""))
         con.commit(); con.close()
-        rc = sqlite3.connect(self.campus)
-        rc.execute("CREATE TABLE campus_company(name TEXT, is_campus INT)")
-        rc.execute("INSERT INTO campus_company VALUES('校招企业',1)")
-        rc.commit(); rc.close()
-        self.old_db, self.old_campus = X.DB, X.CAMPUS
-        X.DB, X.CAMPUS = self.db, self.campus
+        self.old_db = X.DB
+        X.DB = self.db
 
     def tearDown(self):
-        X.DB, X.CAMPUS = self.old_db, self.old_campus
+        X.DB = self.old_db
         self.tmp.cleanup()
 
-    def test_campus_company_excluded(self):
-        campus = X._campus_names()
-        self.assertEqual(campus, {"校招企业"})
+    def test_only_non_campus_sources(self):
         con = sqlite3.connect(self.db); con.row_factory = sqlite3.Row
-        todo = dict((n, o) for n, o in X.targets(con, campus))
+        todo = dict((n, o) for n, o in X.targets(con))
         con.close()
+        # 校招公告来源一律不补，不论有几个岗
         self.assertNotIn("校招企业", todo)
+        self.assertNotIn("校招0岗", todo)
+        # 非校招来源全补，哪怕已经有真实岗
         self.assertIn("非校招0岗", todo)
         self.assertIn("非校招有岗", todo)
+        self.assertIn("社招有岗", todo)
+        # 已补过的不重复补
+        self.assertNotIn("已补过", todo)
 
 
 if __name__ == "__main__":

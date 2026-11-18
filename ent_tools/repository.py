@@ -56,8 +56,11 @@ def ensure_live_db(path=None, quiet=True):
     `path` 可以传别的库（测试用）；只有活库会记忆「已就绪」，避免高频 stat。
     """
     global _live_ready
-    p = path or LIVE_DB
-    is_live = (p == LIVE_DB)
+    # path 可能是 str 也可能是 Path（sync_repo 传的就是 Path）。统一成 str 再拼
+    # ".seed"：Path + str 会直接抛 TypeError，而这里在 try 外层、报错只会变成
+    # 一句「种子同步失败」，看不出真因（2026-11-18 就是这么卡住的）。
+    p = str(path or LIVE_DB)
+    is_live = (p == str(LIVE_DB))
     if is_live and _live_ready:
         return False
     seed = p + ".seed"

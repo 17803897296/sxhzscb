@@ -27,7 +27,6 @@ BUDGET = {
     "_dir_fill.py": 2,
     "_ind_code_llm.py": 2,
     "pipeline/_js_ab.py": 1,
-    "pipeline/build_campus_recheck.py": 2,
     "pipeline/build_enterprises_page.py": 1,
     "build_fair_page.py": 1,
     "collect_roster.py": 3,
