@@ -44,6 +44,7 @@ sys.path.insert(0, HERE)
 import fair_ingest          # noqa: E402
 import fair_bridge          # noqa: E402
 import payload_contract
+import cache_guard           # noqa: E402  代码指纹：判断盘上 payload 是否由当前代码生成
 import job_recommend        # noqa: E402
 import resume_parse         # noqa: E402
 import test_sessions        # noqa: E402  v12 测试数据库（只追加的实验日志）
@@ -366,7 +367,9 @@ class Handler(BaseHTTPRequestHandler):
                                  "text/html; charset=utf-8")
                 return
             if p == "/api/fair/health":
+                # code_fp 让「跑的是哪版代码」可被外部看见；version 保留给旧探测兼容。
                 self._json({"ok": True, "service": "fair_server", "version": 7,
+                            "code_fp": cache_guard.build_fp(),
                             "db": fair_ingest.DB,
                             "active": fair_ingest.stats().get("active")})
                 return
@@ -419,7 +422,11 @@ class Handler(BaseHTTPRequestHandler):
                         _active = fair_ingest.stats().get("active") or {}
                         with open(PAYLOAD, encoding="utf-8") as _f:
                             _cached = json.load(_f)
-                        if _cached.get("active_fair_id") != _active.get("fair_id"):
+                        # 两道闸：画像换了，或生成 payload 的代码不是当前代码。
+                        # 只比 fair_id 会漏掉「代码改了但画像没变」这种最难察觉的陈旧
+                        # （历史事故：改了推荐/复检逻辑，页面还是旧结论）。
+                        if (_cached.get("active_fair_id") != _active.get("fair_id")
+                                or _cached.get("code_fp") != cache_guard.build_fp()):
                             fair_bridge.build()
                     except Exception:
                         fair_bridge.build()

@@ -92,12 +92,50 @@ def _start_flags():
     return {"creationflags": flags, "close_fds": True}, {}
 
 
+def _port_pids(port):
+    """按端口找实际监听进程（state 里的 pid 可能过期，不能只信它）。"""
+    pids = set()
+    try:
+        if os.name == "nt":
+            out = subprocess.run(["netstat", "-ano"], capture_output=True,
+                                 timeout=8).stdout.decode("gbk", errors="replace")
+            for line in out.splitlines():
+                up = line.upper()
+                if (":%d " % port) in line and "LISTENING" in up:
+                    tail = line.split()
+                    if tail and tail[-1].isdigit():
+                        pids.add(int(tail[-1]))
+        else:
+            out = subprocess.run(["lsof", "-ti:%d" % port], capture_output=True,
+                                 timeout=8).stdout.decode("utf-8", errors="replace")
+            for tok in out.split():
+                if tok.isdigit():
+                    pids.add(int(tok))
+    except Exception:
+        pass
+    return pids
+
+
+def _wait_port_free(port, timeout=10.0):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if not _http_ok(port) and not _port_pids(port):
+            return True
+        time.sleep(0.2)
+    return not _http_ok(port) and not _port_pids(port)
+
+
 def start(port, force=False):
-    if _http_ok(port):
+    # 重启语义：必须先把端口上的旧进程真正停掉，否则新代码永远进不了内存。
+    # （旧实现把 force 写在 _http_ok 早返回之后，服务活着时 restart 是空操作。）
+    if force:
+        stop(port, hard=True)
+        if not _wait_port_free(port):
+            print("旧进程仍占用端口 %d，重启中止（可稍后重试）" % port)
+            return 1
+    elif _http_ok(port):
         print("已在运行：http://127.0.0.1:%d/enterprises.html" % port)
         return 0
-    if force:
-        stop(port)
 
     log_path = os.path.join(HERE, "data", "fair_server_%d.log" % port)
     log = open(log_path, "a", encoding="utf-8")
@@ -145,30 +183,61 @@ def start(port, force=False):
 def status(port):
     st = _load()
     pid = st.get("pid") if st.get("port") == port else None
-    print("端口 %d：%s | 记录 pid=%s（%s）"
-          % (port, "UP" if _http_ok(port) else "DOWN", pid,
-             "存活" if _alive(pid) else "已退出"))
-    return 0 if _http_ok(port) else 1
+    real = _port_pids(port)
+    up = _http_ok(port)
+    hint = ""
+    if real and (not pid or pid not in real):
+        # state 里记的 pid 和实际监听者不一致——多半是旧记录，提示出来免得又停错进程。
+        hint = "（实际监听 pid=%s，state 记录已过期）" % ",".join(
+            map(str, sorted(real)))
+    print("端口 %d：%s | 记录 pid=%s（%s）%s"
+          % (port, "UP" if up else "DOWN", pid,
+             "存活" if _alive(pid) else "已退出", hint))
+    return 0 if up else 1
 
 
-def stop(port):
+def stop(port, hard=False):
     st = _load()
     pid = st.get("pid") if st.get("port") == port else None
+    # state 记录的 pid 可能已过期（历史上就停错过进程），按端口再找一遍实际监听者。
+    targets = set(_port_pids(port))
     if _alive(pid):
-        try:
-            os.kill(pid, signal.SIGTERM if os.name != "nt" else signal.CTRL_BREAK_EVENT)
-        except Exception:
+        targets.add(pid)
+    if targets:
+        for p in targets:
             try:
-                os.kill(pid, signal.SIGTERM)
+                os.kill(p, signal.SIGTERM if os.name != "nt"
+                        else signal.CTRL_BREAK_EVENT)
             except Exception:
-                pass
+                try:
+                    os.kill(p, signal.SIGTERM)
+                except Exception:
+                    pass
         for _ in range(20):
-            if not _alive(pid):
+            if not any(_alive(p) for p in targets):
+                break
+            time.sleep(0.2)
+    # 温和信号对 DETACHED 进程常常无效，重启场景直接强杀，保证新代码能加载。
+    if hard:
+        for p in targets:
+            if _alive(p):
+                try:
+                    if os.name == "nt":
+                        subprocess.run(["taskkill", "/PID", str(p), "/F", "/T"],
+                                       capture_output=True, timeout=8)
+                    else:
+                        os.kill(p, signal.SIGKILL)
+                except Exception:
+                    pass
+        for _ in range(25):
+            if not _http_ok(port) and not _port_pids(port):
                 break
             time.sleep(0.2)
     if _load().get("port") == port:
         _save({})
-    print("已停止" if not _alive(pid) else "进程仍在，可能需要手动结束 pid=%s" % pid)
+    left = {p for p in targets if _alive(p)} | _port_pids(port)
+    print("已停止" if not left else "进程仍在，可能需要手动结束 pid=%s"
+          % ",".join(map(str, sorted(left))))
     return 0
 
 

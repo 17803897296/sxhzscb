@@ -50,12 +50,19 @@ DB = os.path.join(DATA, "careersafari.db")
 REGISTRY = {
     "intent_semantics": {
         "path": "intent_semantics_cache.json", "kind": "derived",
-        "deps": ["intent_semantics.py", "job_level.py", "demo_v2/rules.py"],
+        # 2026-11-18：pair_verdict / same_dir / 方向升级都直接调 job_family
+        # 与 job_direction，族表或方向表一改，缓存里的判定就可能翻，必须跟着失效。
+        "deps": ["intent_semantics.py", "job_level.py",
+                 "job_family.py", "job_direction.py", "demo_v2/rules.py"],
         "desc": "意向岗位 ↔ 企业岗位名的语义判定",
     },
     "job_recommend_pool": {
         "path": "job_recommend_pool.json", "kind": "derived",
-        "deps": ["job_recommend.py"],
+        # 2026-11-18：池内容由三处共同决定——job_recommend 的分层规则、
+        # major_l1_authority 的专属对口岗表（base_jobs / has_own_jobs 直接查它）、
+        # biz_recheck 的邻专业闸门词表。之前只登 job_recommend.py，
+        # 改权威表后指纹不变、旧池继续命中——这是「改了代码没生效」的根因之一。
+        "deps": ["job_recommend.py", "major_l1_authority.py", "biz_recheck.py"],
         "desc": "按专业/经历生成的校招岗位推荐池",
     },
     "unknown_infer": {
@@ -157,11 +164,35 @@ def file_fp(rel: str) -> str:
 
 
 def code_fp(deps=None, name: str = "") -> str:
-    """依赖模块的组合指纹。deps 省略时按缓存名取登记表。"""
+    """依赖模块的组合指纹。deps 省略时按缓存名取登记表。
+
+    注意第一个位置参数是 deps、不是 name。历史上有人写成 code_fp("xxx")，
+    于是字符串被逐字符当成文件名、全部 missing，指纹退化成常量、缓存永不失效。
+    这里把「字符串 deps」宽容地当成 name，避免再踩同一个静默坑。
+    """
+    if isinstance(deps, str) and not name:
+        deps, name = None, deps
     if deps is None:
         deps = (REGISTRY.get(name) or {}).get("deps") or []
     raw = GUARD_VER + "|" + "|".join("%s:%s" % (d, file_fp(d)) for d in deps)
     return hashlib.md5(raw.encode("utf-8")).hexdigest()[:12]
+
+
+# 影响「一次 build 产出的 payload」的全部上游模块。payload 顶层记一份该指纹，
+# 服务端据此判断盘上 payload 是否由当前代码生成——只比 active_fair_id 会漏掉
+# 「代码改了但画像没换」这种最常见、也最难察觉的陈旧场景。
+BUILD_DEPS = [
+    "fair_bridge.py", "payload_contract.py",
+    "job_recommend.py", "major_l1_authority.py", "biz_recheck.py",
+    "intent_semantics.py", "hit_verify.py", "ind_code.py", "job_profile.py",
+    "hard_filter.py", "biz_fit.py", "job_family.py", "job_direction.py",
+    "job_level.py", "unknown_infer.py",
+]
+
+
+def build_fp() -> str:
+    """一次 build 全部上游模块的组合指纹（payload 里记一份，供陈旧判定）。"""
+    return code_fp(BUILD_DEPS)
 
 
 def key(name: str, *parts, deps=None) -> str:
@@ -210,11 +241,18 @@ def check_file(name: str) -> tuple[bool, str]:
     note = ""
     if not cg and isinstance(obj, dict):
         # 容器型缓存：顶层是 {业务key: 条目}，指纹记在各条目里（如推荐池）。
+        # 必须逐条比对——只取时间戳最新的一条会放过混合代际文件：
+        # 实测曾出现同一份池里 18 种不同 fp，只要最新那条匹配就整份判可信。
         subs = [v.get("_cg") for v in obj.values()
                 if isinstance(v, dict) and v.get("_cg")]
         if subs:
+            want = code_fp(name=name)
+            stale = [s for s in subs if s.get("fp") != want]
+            note = "，%d/%d 条为本版生成" % (len(subs) - len(stale), len(obj))
+            if stale:
+                return False, ("容器内 %d/%d 条不是本版生成（混合代际），"
+                               "应归档后重算" % (len(stale), len(obj)))
             cg = max(subs, key=lambda x: x.get("ts") or "")
-            note = "，%d/%d 条为本版生成" % (len(subs), len(obj))
     if not cg:
         return False, "旧格式（无指纹），无法确认是否本版代码生成"
     want = code_fp(name=name)
@@ -292,6 +330,29 @@ SEEDS = [
 ]
 
 
+def _seed_fp_ok(seed_path: str, name: str) -> bool:
+    """种子里的指纹是否就是当前代码生成的那一版。
+
+    无指纹的旧格式一律判 False —— 宁可首次构建重算，也不把来历不明的
+    旧结论当成「本版结果」塞给用户（历史上旧推荐池就是这么「复活」的）。
+    """
+    try:
+        with open(seed_path, encoding="utf-8") as f:
+            obj = json.load(f)
+    except Exception:
+        return False
+    want = code_fp(name=name)
+    cg = obj.get("_cg") if isinstance(obj, dict) else None
+    if cg:
+        return cg.get("fp") == want
+    if isinstance(obj, dict):
+        subs = [v.get("_cg") for v in obj.values()
+                if isinstance(v, dict) and v.get("_cg")]
+        if subs:
+            return all(s.get("fp") == want for s in subs)
+    return False
+
+
 def restore_seeds() -> list:
     """活缓存缺失时从只读种子复制（与 careersafari.db.seed 同一套做法）。
 
@@ -305,10 +366,15 @@ def restore_seeds() -> list:
 
     只在活文件**不存在**时复制：已存在的活文件不会被种子覆盖，所以本地跑出来
     的新结论不会因为重启被回滚到旧快照。
+
+    2026-11-18：恢复前先验指纹。种子由旧代码生成时（fp 对不上当前代码）
+    直接跳过——否则 clone 后第一次启动就把旧结论当本版结果用，正是
+    「改了代码仍看到旧推荐」的复现路径。
     """
     out = []
     if not os.path.isdir(DATA):
         return out
+    by_file = {v.get("path"): n for n, v in REGISTRY.items() if v.get("path")}
     for fn in sorted(os.listdir(DATA)):
         if not fn.endswith(".seed") or fn.endswith(".db.seed"):
             continue          # 数据库的初始化在 fair_server 里单独做（有 malformed 防护）
@@ -316,6 +382,12 @@ def restore_seeds() -> list:
         live = seed[:-len(".seed")]
         if os.path.exists(live):
             continue
+        name = by_file.get(fn[:-len(".seed")])
+        if name:
+            kind = (REGISTRY.get(name) or {}).get("kind")
+            # snapshot 是外部快照，代码变不作废；其余派生缓存必须指纹对得上。
+            if kind != "snapshot" and not _seed_fp_ok(seed, name):
+                continue      # 旧代码生成的种子：不恢复，让首次构建按当前代码重算
         try:
             shutil.copy2(seed, live)
             out.append(fn[:-len(".seed")])

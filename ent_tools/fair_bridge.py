@@ -2333,6 +2333,9 @@ def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
         },
         "rows": rows,
         "schema_version": payload_contract.SCHEMA_VERSION,
+        # 生成这份 payload 的代码指纹。服务端拿它和当前代码比对，代码变了就重建，
+        # 不再只靠 active_fair_id ——「同 ID 改内容 / 改了推荐或复检代码」都会漏判。
+        "code_fp": cache_guard.build_fp(),
     }
     # 契约校验（评审 2026-11-18 Step 1）：违约即炸，不让坏 payload 出门。
     # 预览链路同样过校验——前后端读的是同一份接口承诺。
