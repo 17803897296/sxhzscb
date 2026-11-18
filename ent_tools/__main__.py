@@ -20,6 +20,7 @@ HERE = Path(__file__).resolve().parent
 
 COMMANDS = {
     "serve": "fair_server",
+    "serve-stable": "stable_server",  # 脱离会话的常驻启动（start/status/stop/ensure-task）
     "build": "build_fair_page",
     "offline": "sync_offline",
     "pipeline": "refresh_all",
