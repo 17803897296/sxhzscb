@@ -210,7 +210,12 @@ MATCH = MATCH.replace("__COMPANIES__", COMPANIES_JSON) \
 html = html.replace('<link rel="stylesheet" href="/static/style.css">', "<style>\n" + style + "\n</style>")
 html = html.replace('<link rel="stylesheet" href="/static/fair.css">', "<style>\n" + fair_css + "\n</style>")
 html = re.sub(r'<script src="/static/fair\.js"[^>]*></script>', "", html)
-html = html.replace('<a class="toplink" href="/">完整版 →</a>', "")
+# 顶栏的「完整版 →」原来指向交接包的 /（单页版），本仓库里 / 已经是四端工作台，
+# 链接语义反过来：从采集端单页回到四端工作台。不能直接删——删了采集端就是死胡同，
+# 学生答完问卷找不到企业端/匹配端。离线变体（file:// 双击）没有服务，仍删掉。
+PORTAL_LINK = '<a class="toplink" href="/" title="回到四端工作台（采集 / 企业 / 匹配）">← 四端工作台</a>'
+html = html.replace('<a class="toplink" href="/">完整版 →</a>',
+                    "" if OFFLINE_FULL else PORTAL_LINK)
 html = html.replace(
     '<p class="muted small">点下面的选项，或者直接打字。只问 4 个问题，一分钟左右，最后给你一份可以下载的 JSON。</p>',
     '<p class="muted small">面向研三 / 大四：按校招画像生成。点选项或直接打字，一分钟左右，最后给你一份可以下载的 JSON。</p>')

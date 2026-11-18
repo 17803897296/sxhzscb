@@ -25,7 +25,7 @@ job object 连同会话一起终止（表现为「刚起时 200，下一条命�
      强 job object（部分 CI/工具宿主），进程仍可能随会话被清理 —— 那种环境
      请用方式 1。
 
-网址：http://127.0.0.1:8102/enterprises.html
+网址：http://127.0.0.1:8102/   （四端工作台；采集端单页是 /fair.html）
 """
 import argparse
 import json
@@ -134,7 +134,7 @@ def start(port, force=False):
             print("旧进程仍占用端口 %d，重启中止（可稍后重试）" % port)
             return 1
     elif _http_ok(port):
-        print("已在运行：http://127.0.0.1:%d/enterprises.html" % port)
+        print("已在运行：http://127.0.0.1:%d/   （四端工作台）" % port)
         return 0
 
     log_path = os.path.join(HERE, "data", "fair_server_%d.log" % port)
@@ -170,7 +170,7 @@ def start(port, force=False):
     _save({"pid": p.pid, "port": port, "log": log_path})
     for _ in range(40):
         if _http_ok(port):
-            print("已启动 pid=%d：http://127.0.0.1:%d/enterprises.html"
+            print("已启动 pid=%d：http://127.0.0.1:%d/   （四端工作台）"
                   % (p.pid, port))
             return 0
         if not _alive(p.pid):

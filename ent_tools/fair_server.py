@@ -2,13 +2,15 @@
 """
 v6 · 双选会助手同源服务（标准库，无第三方依赖）。
 
-一条命令同时提供：原 fair.html 页面 + 采集端写库 + 在线岗位推荐 + 最新报告数据。
+一条命令同时提供：四端工作台 + 采集端单页 + 采集端写库 + 在线岗位推荐 + 最新报告数据。
 
     python -X utf8 fair_server.py --port 8102
-    浏览器打开 http://127.0.0.1:8102/fair.html
+    浏览器打开 http://127.0.0.1:8102/          （四端工作台：采集 / 企业 / 匹配 / 测试）
+    单独进采集端 http://127.0.0.1:8102/fair.html
 
 接口：
-    GET  /fair.html                     原页面（形式不变）
+    GET  /                              四端工作台（portal.html，默认入口）
+    GET  /fair.html                     采集端单页（形式不变）
     GET  /api/fair/active-profile      当前生效的学生画像
     GET  /api/fair/payload             最新三端 payload（报告实时取它）
     POST /api/fair/profile             写画像进 fair_profiles + 重建 payload
@@ -675,8 +677,9 @@ def main():
             print("  模型：未配置 key，/api/filter 走关键词规则")
     except Exception as exc:
         print("  模型初始化失败：%s（/api/filter 走关键词规则）" % exc)
-    print("双选会助手 v6 同源服务  http://%s:%d/fair.html" % (a.host, a.port))
-    print("  写库端点 POST /api/fair/profile ｜ 报告数据 GET /api/fair/payload")
+    print("双选会助手 v6 同源服务  http://%s:%d/   （四端工作台：采集 / 企业 / 匹配）"
+          % (a.host, a.port))
+    print("  采集端单页 /fair.html ｜ 报告数据 GET /api/fair/payload")
     ThreadingHTTPServer((a.host, a.port), Handler).serve_forever()
 
 
