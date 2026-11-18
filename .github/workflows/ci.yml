@@ -25,5 +25,19 @@ jobs:
         run: pytest
       - name: 重建正本薄页（python -m ent_tools build）
         run: python -m ent_tools build
+      # 原来只有一句 `git diff --exit-code`：红了只给一个退出码，得自己猜是
+      # 源码没重建、还是手工改过 demo/、还是换行符被平台转成了 CRLF（2026-11-18
+      # 就踩了这个：构建写 CRLF，这条断言从加进来起就不可能通过）。现在把
+      # 不一致的文件逐个打出来，并附带 diff 摘要。
       - name: 构建产物必须与提交一致
-        run: git diff --exit-code
+        shell: pwsh
+        run: |
+          $d = git status --porcelain -- demo ent_tools/data/fair_payload.json
+          if ($d) {
+            Write-Host "::error::构建产物与提交不一致：改了源码/画像没重建，或手工改过 demo/"
+            $d | ForEach-Object { Write-Host "  不一致：$_" }
+            git --no-pager diff --stat -- demo ent_tools/data/fair_payload.json
+            Write-Host "修复：python -m ent_tools build 后把 demo/ 一起提交"
+            exit 1
+          }
+          Write-Host "构建产物与提交一致。"

@@ -75,6 +75,23 @@ DEEPSEEK_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 
 不配也能跑：语义匹配退回字面匹配，岗位推荐退回词表规则，简历解析退回正则。
 
+### 克隆后自检（新同学三条命令）
+
+刚 clone 下来还没有活库（仓库只跟踪只读种子 `ent_tools/data/careersafari.db.seed`），
+第一次连库会自动从种子复制出 `careersafari.db`，不用手工准备。三条命令确认环境正常：
+
+```bash
+pytest                  # 期望：288 passed（首次跑会顺手把活库建出来）
+python -m ent_tools build   # 期望：生成 demo/fair.html，内置企业 145 家
+git status --porcelain -- demo ent_tools/data/fair_payload.json   # 期望：无输出
+```
+
+第三条是 CI 的核心断言：`demo/` 是构建产物，改完源码或 payload 必须重建并一起提交，
+否则提交上去页面还是旧的。**无输出才算对**——有输出就 `python -m ent_tools build` 再提交。
+
+> 2026-11-18 补：这条断言此前一直是红的（构建写 CRLF、仓库存 LF），
+> 新同学看到红 CI 会以为是自己的问题。现在构建显式写 LF，两边对得上了。
+
 ---
 
 ## 目录结构
