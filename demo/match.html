@@ -945,16 +945,21 @@ function jobRecommendStep() {
         const whyBox = root.querySelector('#job-why');
         const relaxBtn = root.querySelector('[data-act="relax"]');
         const refreshBtn = root.querySelector('[data-act="refresh"]');
+        /* 选中与去重一律用 title（提交给匹配端的取值），display 只用于展示：
+           「研发工程师（化工/医药）」里的括号是给学生的解释，不是岗位名。 */
+        function shownName(c) { return (c && (c.display || c.title)) || ''; }
         function paint() {
           chipsBox.innerHTML = cands.map(function(c, i) {
             /* v15：推荐池与岗位库解耦，不再有 db_level / 校招标——候选就是
                通用校招岗位名，不带任何「库里有/没有」的来源信息。
-               v17：跨专业层的岗位必须自带角标，否则学生分不清哪些是按专业给的。 */
+               v17：跨专业层的岗位必须自带角标，否则学生分不清哪些是按专业给的。
+               v18：跨行业通用岗（研发工程师这类）带「（化工/医药）」后缀，
+                    否则学生不知道这个「研发」是在哪类企业里做。 */
             var _why = (c.why || '');
             var _badge = crossMajor
               ? ' <span style="font-size:11px;color:#b45309;border:1px solid #f0c68a;border-radius:4px;padding:0 3px;margin-left:4px">跨专业</span>'
               : '';
-            return '<button type="button" class="chip" data-i="' + i + '" title="' + esc(_why) + '">' + esc(c.title) + _badge + '</button>';
+            return '<button type="button" class="chip" data-i="' + i + '" title="' + esc(_why) + '">' + esc(shownName(c)) + _badge + '</button>';
           }).join('') || (blocked
             ? '<span class="muted">没有专业，就没有推荐。回上一步填专业。</span>'
             : '<span class="muted">这一层看完了；想看更宽的岗位，点下面「放宽一档」，或直接手写。</span>');
@@ -977,7 +982,7 @@ function jobRecommendStep() {
               if (!c) return;
               if (selTitles.has(c.title)) { selTitles.delete(c.title); b.style.background = ''; b.style.color = ''; }
               else { selTitles.add(c.title); b.style.background = 'var(--accent, #2563eb)'; b.style.color = '#fff'; }
-              whyBox.textContent = c.title + '：' + (c.why || '') + _srcNote(c)
+              whyBox.textContent = shownName(c) + '：' + (c.why || '') + _srcNote(c)
                 + (crossMajor ? '（这一层是跨专业岗位，投之前先确认它要不要求你的专业。）' : '');
             };
           });

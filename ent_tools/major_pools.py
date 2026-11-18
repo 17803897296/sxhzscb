@@ -9,9 +9,9 @@
   3. **契约**：顶层 catalog_version 必须匹配目录文件；每个类 L1/L2 是
      [{title, why}] 列表；过一遍邻专业闸门（数据文件可能被人工改错）。
 
-接入方式（在 job_recommend 里，后续做）：
-    if major_pools.enabled() and major_pools.has(name):
-        return major_pools.pool_for(name, tier)  # 直接返回，跳过生成
+状态（2026-11-18）：采集端已接线，但**直接读文件**（job_recommend._class_table），
+不走本模块的 enabled 开关——本模块保留为数据契约校验、统计与回退判断工具。
+接线口径见 job_recommend.table_l1 / _table_trust：只收证据来自校招公告的 L1。
 """
 import io
 import json

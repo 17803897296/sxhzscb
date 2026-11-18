@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import os
 import re
@@ -558,6 +559,122 @@ def major_category(major: str) -> str:
     return UNKNOWN_CAT
 
 
+# ── 展示名后缀：跨行业通用岗要说清「在哪类企业里做」 ────────────────────
+# 「研发工程师」化工有、电子有、互联网也有，学生只看到四个字没法判断这是
+# 干什么的。**后缀只进展示名，不进提交值**：岗位名（title）仍是学生选中后
+# 传给匹配端的取值，带上括号会和企业库里的岗位名对不上。
+# 行业词按「专业所在大类」推，不让模型写——模型自己写会又冒出「（AI医疗）」
+# 这种企业定制词。
+MAJOR_TAG = [
+    # 专业级覆盖在前：同一个大类里方向差得远的，先按专业名细化
+    (["材料", "高分子", "冶金", "无机非金属"], "材料/新能源"),
+    (["化学工程", "化工"], "化工/医药"),
+    (["法学", "法律"], "律所/企业法务"),
+    (["新闻", "传播"], "传媒/内容"),
+    (["外语", "英语", "翻译", "商务英语"], "外贸/翻译"),
+    (["心理"], "人力资源/教育"),
+    (["体育"], "体育/健身"),
+    (["食品", "粮食", "乳品"], "食品/快消"),
+    (["车辆", "汽车"], "汽车/零部件"),
+    (["土木", "建筑", "给排水", "城乡规划"], "建筑/地产"),
+    (["纺织", "服装"], "纺织/消费品"),
+]
+
+INDUSTRY_TAG = {
+    "管理学（经管大类）": "不限行业",
+    "经济学（经管大类）": "金融/咨询",
+    "农学·食品大类": "食品/快消",
+    "农学·农林牧渔大类": "农业/食品",
+    "理学·化学化工大类": "化工/医药",
+    "理学·数理大类": "数据/金融",
+    "工学·计算机与信息类": "互联网/软件",
+    "工学·机械与运载": "机械/汽车",
+    "工学·电气信息": "电子/电气",
+    "工学·土木建筑": "建筑/地产",
+    "工学·资源环境与安全": "环保/能源",
+    "轻工·纺织大类": "纺织/消费品",
+    "理学 / 医学大类": "医药/医疗",
+    "人文社科大类": "传媒/教育",
+    "工学大类": "制造业/工程",
+}
+
+# 岗位名里已经写明行业方向的，后缀是废话（「电气工程师（电子/电气）」）。
+_INDUSTRY_WORDS = (
+    "化工", "化学", "材料", "医药", "制药", "药物", "食品", "机械", "汽车",
+    "车辆", "电子", "电气", "软件", "算法", "互联网", "建筑", "土木", "纺织",
+    "环保", "能源", "农业", "农艺", "医疗", "临床", "护理", "金融", "法律",
+    "法务", "传媒", "教育", "翻译", "外贸",
+)
+
+
+def industry_tag(major: str) -> str:
+    """该专业对应的企业类型词（用于展示名后缀）；判不出就不加。"""
+    major = major or ""
+    for keys, tag in MAJOR_TAG:
+        if any(k in major for k in keys):
+            return tag
+    return INDUSTRY_TAG.get(major_category(major), "")
+
+
+_CROSS_INDUSTRY = None
+
+
+def _cross_industries():
+    """{岗位名: 出现在几个大类}——只在用到时算一次。
+
+    覆盖大类泛岗表 + 各专业基线岗。同一个岗位名横跨 3 个大类以上，说明它
+    不是某个专业的方向岗，而是「什么行业都设」的职能岗，展示时才需要后缀。
+    """
+    global _CROSS_INDUSTRY
+    if _CROSS_INDUSTRY is not None:
+        return _CROSS_INDUSTRY
+    seen = {}
+    for cat, titles in CATEGORY_JOBS_MAP.items():
+        for t in titles:
+            seen.setdefault(_clean_title(t), set()).add(cat)
+    for m, titles in MAJOR_BASE.items():
+        cat = major_category(m)
+        for t in titles:
+            seen.setdefault(_clean_title(t), set()).add(cat)
+    _CROSS_INDUSTRY = {t: len(cs) for t, cs in seen.items()}
+    return _CROSS_INDUSTRY
+
+
+def _needs_tag(title: str, major: str = "") -> bool:
+    """这个岗位在这个专业下要不要加行业后缀。
+
+    三个条件缺一不可：跨 3 个大类以上（职能岗而非方向岗）、名字里没写行业、
+    且确实属于这个专业看得见的那批岗（基线岗 / 大类泛岗）。第三条是防串味：
+    计算机的候选如果混进「工艺工程师」，按大类推出「（互联网/软件）」就是胡说。
+    """
+    t = _clean_title(title)
+    if not t or any(w in t for w in _INDUSTRY_WORDS):
+        return False
+    if _cross_industries().get(t, 0) < 3:
+        return False
+    if not major:
+        return True
+    own = {_clean_title(x) for x in base_jobs(major)}
+    own |= {_clean_title(x) for x in category_pool(major)}
+    return t in own
+
+
+def with_display(items, major):
+    """给每个候选补 display（展示名）：跨行业通用岗带「（化工/医药）」后缀。
+
+    返回新 dict，不改池子里的原条目——池子是缓存对象，就地改会把后缀写进缓存，
+    下次换个专业读同一池就串味了。
+    """
+    tag = industry_tag(major)
+    out = []
+    for c in items or []:
+        d = dict(c)
+        t = d.get("title") or ""
+        d["display"] = ("%s（%s）" % (t, tag)) if (tag and _needs_tag(t, major)) else t
+        out.append(d)
+    return out
+
+
 def has_own_jobs(major: str) -> bool:
     """该专业是否有「专属对口岗」（权威表或 MAJOR_BASE 命中）。
 
@@ -592,6 +709,202 @@ def base_jobs(major: str):
                 base = v
                 break
     return list(base or category_pool(major)[:8])
+
+
+# ── 93 类专业池接线（2026-11-18）────────────────────────────────────────
+#
+# 背景：data/major_job_pools.json 是 93 个专业类的 L1/L2 岗位池，此前只被
+# 生成/审核脚本（scratch/gen_major_pools.py）和单测读，采集端一次都没调用
+# （major_pools.py 注释里写着「接入方式：在 job_recommend 里，后续做」）。
+# 后果是「模型没给研发工程师 → 推荐里就没有研发工程师」，学生看到的池子
+# 全靠模型一次性的运气。现在接进来做两件事，都只做补充、不替代模型：
+#   ① 补位：模型给不满 MIN_FILL 时优先用同类 L1 补齐，再退 rule_pool；
+#   ② 判据：_l1_rank 里「表里 L1 命中」记 2 分（与 core_jobs 同级）。
+# 模型给够 10 条时表一个都不进——它的定位是兜底，不是主源。
+_POOL_TABLE = os.path.join(DATA, "major_job_pools.json")
+_TABLE = {"mtime": None, "classes": {}, "version": None}
+
+# 专业名 → 类名的特例，**顺序敏感、长词在前**。这些专业名里含多个类名词根
+# （「机械设计制造及其自动化」同时含「机械」「自动化」，「中药学」含「药学」），
+# 纯词根匹配会串到隔壁类，必须先定死。
+_CLASS_ALIAS = (
+    ("化学工程", "化工与制药类"), ("化学工艺", "化工与制药类"),
+    ("化工", "化工与制药类"), ("制药工程", "化工与制药类"),
+    ("生物医学工程", "生物医学工程类"),
+    ("生物工程", "生物工程类"), ("生物科学", "生物科学类"),
+    ("生物技术", "生物科学类"),
+    ("机械设计", "机械类"), ("机械制造", "机械类"), ("机械电子", "机械类"),
+    ("车辆工程", "机械类"), ("汽车", "机械类"),
+    ("电气工程", "电气类"),
+    ("电子信息", "电子信息类"), ("通信工程", "电子信息类"),
+    ("计算机", "计算机类"), ("软件工程", "计算机类"), ("人工智能", "计算机类"),
+    ("网络空间安全", "计算机类"), ("数据科学与大数据", "计算机类"),
+    ("临床医学", "临床医学类"), ("口腔医学", "口腔医学类"),
+    ("中药", "中药学类"), ("药学", "药学类"),
+    ("会计", "工商管理类"), ("财务管理", "工商管理类"),
+    ("市场营销", "工商管理类"), ("人力资源", "工商管理类"),
+    ("工商管理", "工商管理类"),
+    ("物流管理", "物流管理与工程类"), ("工业工程", "工业工程类"),
+    ("电子商务", "电子商务类"), ("国际经济与贸易", "经济与贸易类"),
+    ("金融", "金融学类"),
+    ("汉语言文学", "中国语言文学类"), ("新闻学", "新闻传播学类"),
+    ("环境设计", "设计学类"),
+)
+
+
+_EVIDENCE_OK = re.compile("校招|校园招聘|宣讲会|就业|招聘简章|秋招|春招|双选会|招聘会")
+_EVIDENCE_BAD = re.compile("报道|文章|提到|媒体|新闻|公众号")
+
+
+def _table_trust(why):
+    """表条目的证据类型可信吗：只认校招公告 / 就业网 / 宣讲会。
+
+    93 表逐类调模型生成，模型的 why 有三种来源，质量差三个档：
+      ① 校招公告、就业信息网、宣讲会 —— 真实在招的常设入口（可信）；
+      ② 媒体报道里的一次性新岗（「人机交互伦理顾问」「智能体与智能经济
+         产业政策研究」）—— 全公司可能只招一人，不能当专业入口；
+      ③ 代码兜底的「专业X的主流入口」—— 没有证据，且这类岗 base_jobs /
+         大类池本来就有，表里再放一遍没有增量。
+    只收 ①，②③一律不进 L1（也不参与补位）。
+    """
+    w = str(why or "")
+    if not w or _EVIDENCE_BAD.search(w):
+        return False
+    return bool(_EVIDENCE_OK.search(w))
+
+
+# 产品线/行业前缀词：这些词后面跟的才是职能，前面的属于某家公司的口径。
+_PRODUCT_PREFIX = (
+    "寡核苷酸", "多肽", "电池", "纳米", "新能源", "半导体", "无机非金属",
+    "精细化工", "涂料", "胶粘", "催化", "中试", "高分子", "复合材料", "智能装备",
+)
+# 职能词 → 通用校招岗名（只在剥掉产品线前缀时用）
+_GENERIC_JOB = {
+    "研发": "研发工程师", "合成": "合成研究员", "分析": "分析测试岗",
+    "检测": "检测工程师", "化验": "化验/质检岗", "质检": "化验/质检岗",
+    "工艺": "工艺工程师", "质量": "质量工程师", "注册": "注册专员",
+    "销售": "销售专员", "市场": "市场专员", "运营": "运营专员",
+    "采购": "采购专员", "生产": "生产技术员", "设备": "设备工程师",
+    "测试": "测试工程师", "开发": "开发工程师", "算法": "算法工程师",
+    "数据": "数据分析师", "产品": "产品经理", "项目": "项目助理",
+    "法务": "法务专员", "财务": "财务专员", "人力": "人力资源专员",
+    "审计": "审计岗", "税务": "税务岗",
+}
+
+
+def _generalize(title):
+    """把「产品线 + 职能」的企业定制岗名剥回通用校招岗名。
+
+    93 表是从各家校招公告里直接摘岗位名的，实测化学类给出「寡核苷酸化学
+    合成研发岗」「多肽化学合成研发岗」——产品线是某家公司的，不是专业出口。
+    项目口径本来就要求「岗位名不带产品线/客户名」，这里剥成「研发工程师」。
+    保守起见只剥 _PRODUCT_PREFIX 里的词，且职能词必须在开头之后（i>0），
+    「数据分析师」这种职能词起头的原样保留。
+    """
+    t = _clean_title(title)
+    if not t or not any(p in t for p in _PRODUCT_PREFIX):
+        return t
+    best = None
+    for kw, gen in _GENERIC_JOB.items():
+        i = t.find(kw)
+        if i > 0 and (best is None or i > best[0]):
+            best = (i, gen)
+    return best[1] if best else t
+
+
+def _class_table():
+    """读 93 类专业池（按 mtime 缓存）。文件缺失/损坏 → 空表，静默退化。"""
+    try:
+        m = os.path.getmtime(_POOL_TABLE)
+    except OSError:
+        return {}
+    if _TABLE["mtime"] == m:
+        return _TABLE["classes"]
+    try:
+        d = json.load(io.open(_POOL_TABLE, encoding="utf-8"))
+        cs = {k: v for k, v in (d.get("classes") or {}).items()
+              if isinstance(v, dict) and not v.get("_error")}
+        _TABLE.update(mtime=m, classes=cs, version=d.get("catalog_version"))
+    except Exception:
+        _TABLE.update(mtime=m, classes={}, version=None)
+    return _TABLE["classes"]
+
+
+def major_class(major):
+    """专业名 → 93 专业类名；判不出返回 None。只做字面匹配，不猜语义。"""
+    m = str(major or "").strip()
+    if not m:
+        return None
+    cs = _class_table()
+    if not cs:
+        return None
+    for key, cls in _CLASS_ALIAS:
+        if key in m and cls in cs:
+            return cls
+    if m in cs:
+        return m
+    if m + "类" in cs:
+        return m + "类"
+    hits = []
+    for name in cs:
+        root = name[:-1] if name.endswith("类") else name
+        if len(root) >= 2 and root in m:
+            hits.append((len(root), name))
+    if not hits:
+        return None
+    hits.sort(reverse=True)
+    return hits[0][1]
+
+
+def table_l1(major):
+    """93 表里该专业类的 L1（[{title, why, _cls}]）；判不出类则空。
+
+    三条规矩（2026-11-18 用户拍板）：
+      ① base 齐全的专业不接表——化学/材料/机械这些 MAJOR_BASE 或权威表有
+         专属岗的，表补出来的全是「寡核苷酸化学合成研发岗」这类更细的企业
+         岗，粒度反而变差；表只服务 base 缺失的专业类（经济学类、财政学类…）；
+      ② 只收证据来自校招公告的条目，见 _table_trust；
+      ③ 剥掉产品线前缀再入池，见 _generalize。
+    """
+    if has_own_jobs(major):
+        return []
+    cls = major_class(major)
+    if not cls:
+        return []
+    rec = _class_table().get(cls) or {}
+    out, seen = [], set()
+    for c in rec.get("L1") or []:
+        if not _table_trust(c.get("why")):
+            continue
+        t = _generalize(c.get("title"))
+        if t and t not in seen:
+            seen.add(t)
+            out.append({"title": t, "why": c.get("why") or "", "_cls": cls})
+    return out
+
+
+def _fill_sources(major, cats, tier, accept):
+    """模型给不满 MIN_FILL 时的补位来源，按「越对口越前」排：
+
+      93 表同类 L1（这一类专业正常投的入口岗）
+      → base_jobs（MAJOR_BASE 里这个专业自己的岗）
+      → rule_pool（经历信号 / 大类表 / 相邻层）
+
+    为什么把 93 表放最前：它比 rule_pool 的 tier0 截断（只到 MIN_FILL//2）
+    全得多，化学实测能补出「寡核苷酸化学合成研发岗」这类模型想不到的岗。
+    """
+    out = []
+    if tier <= 1:
+        cls = major_class(major)
+        for c in table_l1(major):
+            out.append({"title": c["title"],
+                        "why": "「%s」这个专业类的对口入口岗" % (cls or major)})
+        for j in base_jobs(major):
+            t = _clean_title(j)
+            out.append({"title": t,
+                        "why": "专业「%s」的主流校招入口" % (major or "")})
+    out.extend(rule_pool(major, cats, tier, accept))
+    return out
 
 
 def _as_list(xs):
@@ -718,6 +1031,12 @@ def _l1_rank(major, title):
         l1.add(_clean_title(x))
     if t in l1:
         return 2
+    # 93 类专业池里明写为本类 L1 的岗，与 core_jobs 同级（2026-11-18 接线）。
+    # 单独列一条是因为 core_jobs 只认 MAJOR_BASE/权威表，93 表覆盖面更宽
+    # （「寡核苷酸化学合成研发岗」这类模型想不到、代码里也没登记的岗）。
+    for x in table_l1(major):
+        if x["title"] == t:
+            return 2
     head = (major or "").strip()[:2]
     if len(head) == 2 and head not in _GENERIC_HEAD and head in t:
         return 1
@@ -746,6 +1065,59 @@ def _pool_key(major, cats, tier, accept, model_tag="", use_llm=True, prev=None):
                       cache_guard.code_fp(name="job_recommend_pool")],
                      ensure_ascii=False, sort_keys=True)
     return hashlib.md5(raw.encode("utf-8")).hexdigest()[:20]
+
+
+# ── 层级归位的暂存池（2026-11-18）──────────────────────────────────────
+#
+# 「材料研发工程师」对化学是 L2，模型却把它塞进 tier0 的第一条。以前只靠
+# _l1_rank 把它排到最后，但它仍然出现在「专业 + 经历」层里——学生看到的就是
+# 一条不该在这一层的岗。现在切合层（tier0/tier1）按 _l1_rank 分流：rank<2 的
+# 不进这一层，转存到 demote 桶，等学生点「放宽一档」进 tier2 时并回池首。
+DEMOTE_PREFIX = "__demote__:"
+
+
+def _demote_key(major, cats, model_tag):
+    raw = json.dumps([major, cats, model_tag,
+                      cache_guard.code_fp(name="job_recommend_pool")],
+                     ensure_ascii=False, sort_keys=True)
+    return DEMOTE_PREFIX + hashlib.md5(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _merge_demoted(items, major, cats, model_tag, tier):
+    """tier2 把切合层剔下来的邻专业岗并到池首；其它层原样返回。"""
+    if tier != 2:
+        return items
+    try:
+        with _LOCK:
+            bucket = _load_pools().get(_demote_key(major, cats, model_tag)) or {}
+    except Exception:
+        return items
+    have = {c["title"] for c in items}
+    extra = [{"title": c["title"], "why": c.get("why") or ""}
+             for c in (bucket.get("items") or [])
+             if c.get("title") and c["title"] not in have]
+    return extra + items if extra else items
+
+
+def _save_demoted(demoted, major, cats, model_tag, from_tier):
+    if not demoted:
+        return
+    with _LOCK:
+        pools = _load_pools()
+        dk = _demote_key(major, cats, model_tag)
+        bucket = pools.get(dk) if isinstance(pools.get(dk), dict) else {}
+        its = [c for c in (bucket.get("items") or []) if isinstance(c, dict)]
+        have = {c.get("title") for c in its}
+        for c in demoted:
+            if c.get("title") and c["title"] not in have:
+                its.append({"title": c["title"], "why": c.get("why") or "",
+                            "_from_tier": from_tier})
+                have.add(c["title"])
+        pools[dk] = {"items": its,
+                     "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                     "_cg": cache_guard.stamp("job_recommend_pool",
+                                              model=model_tag)}
+        _save_pools(pools)
 
 
 def _load_pools():
@@ -1021,6 +1393,12 @@ def _major_ok(title, major, tier):
     if tier is None or tier >= 4:
         return True
     t = title or ""
+    # 本专业 L1 的岗不需要再过方向闸门（2026-11-18 用户实测「化学只返回一条」）：
+    # student_domain("化学") 的词表是「化学/化工/化验/分析/材料/配方…」，不含
+    # 「研发」「工艺」这类职能词，于是「研发工程师」「工艺工程师」被判成跑题岗，
+    # 12 条落地只剩邻专业的「材料研发工程师」。已判为 L1 的直接放行。
+    if _l1_rank(major, title) >= 2:
+        return True
     # 邻专业核心岗：先于 kw 判定，避免合并大类词表把它放行
     if _neighbor_core_blocked(t, major):
         return False
@@ -1262,7 +1640,8 @@ def get_pool(major, cats, tier, accept, cfg, use_llm=True):
         pools = _load_pools()
         hit = pools.get(key)
         if isinstance(hit, dict) and hit.get("items"):
-            return hit["items"], hit.get("mode", "rules")
+            return (_merge_demoted(hit["items"], major, cats, model, tier),
+                    hit.get("mode", "rules"))
 
     items, mode = None, None
     if api_key and use_llm:
@@ -1274,14 +1653,23 @@ def get_pool(major, cats, tier, accept, cfg, use_llm=True):
             _p = set(prev)
             items = [c for c in items if c["title"] not in _p] or None
     mode = mode if items else "rules"
+    # 切合层（tier0/tier1）只放本专业 L1 及以上：模型混进来的邻专业岗
+    # （化学的「材料研发工程师」）不在这一层展示，转存到 tier2 待用桶。
+    # 只对模型来源生效——规则池 tier0 的信号岗（数据分析师等）本就该在这一层。
+    demoted = []
+    if tier <= 1 and mode != "rules" and items:
+        keep = [c for c in items if _l1_rank(major, c["title"]) >= 2]
+        demoted = [c for c in items if c["title"] not in {k["title"] for k in keep}]
+        items = keep
     if not items:
         items = rule_pool(major, cats, tier, accept)
-    elif len(items) < MIN_FILL:
-        # 模型常只给 6~8 个：用同层规则池补到 10 个，保证「换一批」本层还有货。
-        # 只设下限、不设上限——这一层有多少就给多少，凑够 10 就停，不多塞。
-        # 补的时候同样跳过低层已给过的岗，否则补出来的还是上一层的货。
+    if len(items) < MIN_FILL:
+        # 模型常只给 6~8 个（实测还见过只给 1 个的）：按 93 表同类 L1 →
+        # base_jobs → rule_pool 补到 10 个，保证「换一批」本层还有货。只设
+        # 下限、不设上限——凑够 10 就停，不多塞。补的时候同样跳过低层已给过
+        # 的岗，否则补出来的还是上一层的货。
         seen = {c["title"] for c in items} | set(prev)
-        for c in rule_pool(major, cats, tier, accept):
+        for c in _fill_sources(major, cats, tier, accept):
             if c["title"] not in seen:
                 items.append(c)
                 seen.add(c["title"])
@@ -1304,6 +1692,7 @@ def get_pool(major, cats, tier, accept, cfg, use_llm=True):
     # 只是 L2），学生一进来就被领到邻专业去。按「与本专业 L1 的贴近度」稳定
     # 重排，切合岗前置；同分保持原顺序，内容一个不删。判据见 _l1_rank。
     items = sorted(items, key=lambda c: -_l1_rank(major, c["title"]))
+    items = _merge_demoted(items, major, cats, model, tier)
     with _LOCK:
         pools = _load_pools()
         pools[key] = {"tier": tier, "mode": mode, "items": items,
@@ -1311,6 +1700,7 @@ def get_pool(major, cats, tier, accept, cfg, use_llm=True):
                       "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
                       "_cg": cache_guard.stamp("job_recommend_pool", model=model)}
         _save_pools(pools)
+    _save_demoted(demoted, major, cats, model, tier)
     return items, mode
 
 
@@ -1365,7 +1755,7 @@ def recommend(major, internships=None, competitions=None, papers=None,
         pool, mode = get_pool(major, cats, t, accept_no_major, cfg, use_llm)
         fresh = [c for c in pool if c["title"] not in shown]
         if fresh:
-            batch = fresh[:6]
+            batch = with_display(fresh[:6], major)
             left = len(fresh) - len(batch)
             has_next = t < max_tier
             if has_next:
