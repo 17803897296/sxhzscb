@@ -2440,7 +2440,11 @@ def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
     # 预览链路同样过校验——前后端读的是同一份接口承诺。
     payload_contract.ensure_valid(out)
     if persist:
-        with open(OUT, "w", encoding="utf-8") as f:
+        # newline="\n"：.gitattributes 规定 eol=lf，而 Windows 上默认会按
+        # os.linesep 写成 CRLF —— 于是 CI「checkout 出 LF → build 写出 CRLF →
+        # git diff 非空」必然红。build_fair_page 在 2026-11-18 修过同一处，
+        # 这里当时漏了（提交时报 “CRLF will be replaced by LF” 才现形）。
+        with open(OUT, "w", encoding="utf-8", newline="\n") as f:
             json.dump(out, f, ensure_ascii=False, indent=1)
     return out
 
