@@ -2148,14 +2148,109 @@ def match_rows(st):
     # 名次只由排序分决定。
 
     # 名次只由排序分决定。
-    # 可信度 / 待核实 / 岗位状态一律不进名次比较——它们是展示标注，不是排序依据。
-    # 0 岗与 inferred 也不顺延：分数高就说明硬件条件更适配，值得先去问一句。
-    # 唯一例外：「现场确认不招」属于事实出局，仍顺延到队尾。
-    # 同分并列时要给确定性次序，否则顺序取决于数据库返回顺序（页面上同分企业
-    # 谁在前谁在后会莫名其妙地变）。规则：命中 > 推断，再按展位号，最后按名称。
+    # 段内不排序，名次统一由 assemble() 定（见那里的 rank_tier 与排序键）。
+    # 2026-11-18 纠偏：早先「分数高就先去问一句」的口径，会让一家没有对口
+    # 岗位、只有行业推断的企业凭 85.2 分排在有实岗的企业前面（材料专业的
+    # 半导体公司就是这么冒到第 1 名的）。现在分数只在「同层」内生效。
     # （历史注：fit=no 曾走「顺延到队尾 + 折叠组」，2026-11-18 起改为直接撤出
     # 主榜、进 biz_fit_no 留档；下面的排序键保留 fit=no 分支作防御，正常已空。）
     return rows, _campus_nofit, _bizfit_nofit, _biz_diag_all
+
+
+# ── 主榜分层：复检判「有限对口」的往后，管培生垫底 ────────────────────
+# 2026-11-18 用户定的规矩，起因是材料专业的榜单第 1 名是一家半导体企业
+# （睿创微纳）：它按行业推断出来的对口，复检判的却是「行业码有限对口，
+# 只放通用职能岗」——等于复检自己都没确认对口，却凭城市/性质/行业地位
+# 攒的 85.2 分压过一堆有真实岗位名单的企业。
+# 用户原话：「推断有岗命中的正常排，而是复检判断有限对口的这个，复检失效了，
+# 他不确定的往后排，正常的没岗位推断的，和我的方向一致，岗位一致，那就正常排」
+#
+# 所以分层看的是**复检结论**，不是「有没有岗位名」：
+#   0 正常     —— code_core（行业码对口）/ name_dir（岗位名自带方向词）/
+#                 没有复检结论。推断来的也算，只要方向和岗位对得上。
+#   1 不确定   —— code_edge（有限对口，只放通用职能岗）/ code_out（不是这个
+#                 方向）/ biz_other（主营是别的行业）：复检没能确认，往后排。
+#   2 管培生类 —— 看得见的岗全是管培生/储备干部/轮岗，谁都能投，垫最后。
+# 层内才比分数：分数只衡量城市/企业性质/行业地位，本来就不含岗位匹配度，
+# 不能跨层把「复检都不确定」的企业顶到确定对口的前面。
+_GENERIC_ROLE = ("管培", "培训生", "储备干部", "储干", "储备生", "轮岗",
+                 "校招生", "见习")
+
+# 复检说「这里只是沾边 / 压根不是这个方向」的结论码。三类的共同点是
+# **复检没能确认对口**：行业码有限对口、行业码不是这个方向、主营是别的行业。
+# （`biz_other` 在 biz_recheck 里本来就算 drop，只是历史原因行没真撤下——
+#  2026-11-18 实测法学、新闻两个用户的榜首就是它，学生一看就知道不对。）
+# 刻意先不含 biz_weak / biz_missing / biz_no_word：它们表示「主营只是沾边」
+# 或「查不到主营」，当前榜单里没出现过，先不扩大范围，出现后再定。
+_UNCERTAIN_CODES = frozenset(["code_edge", "code_out", "biz_other"])
+
+
+def _is_generic_role(title):
+    """岗位名是不是「谁都能投」的泛岗（管培生 / 储备干部 / 轮岗 / 校招生）。
+
+    这类名字不携带方向信息：金融公司的「管培生」和物流公司的「管培生」
+    字面一模一样。所以它是「不确定」的证据，不能当「对口」用。
+    """
+    t = str(title or "").strip()
+    return bool(t) and any(g in t for g in _GENERIC_ROLE)
+
+
+def _row_job_titles(row):
+    out = []
+    for j in (row.get("matched_jobs") or []):
+        t = j.get("title") if isinstance(j, dict) else j
+        t = str(t or "").strip()
+        if t:
+            out.append(t)
+    return out
+
+
+def recheck_code(row):
+    """这一行的复检结论码（没有复检就返回空串）。"""
+    return str((row.get("biz_recheck") or {}).get("code") or "")
+
+
+def rank_tier(row):
+    """对口确定度分层（0 正常 / 1 复检判不确定 / 2 只看得见管培生）。
+
+    **前端 report.js 的 fitTier() 必须与此逐条同规则**：页面会把 rows
+    拿过去自己再排一遍，两端一旦不同源，同一家企业前后端名次就不一样。
+    """
+    js = _row_job_titles(row)
+    if js and all(_is_generic_role(t) for t in js):
+        return 2
+    if recheck_code(row) in _UNCERTAIN_CODES:
+        return 1
+    return 0
+
+
+def _only_ask(row):
+    """没命中、也没有推断岗，只能现场问一句的企业（前端 onlyAsk 同义）。
+
+    原型：`state!='hit' && !infer_matches.length && ask_jobs.length`。
+    保留它是因为「只能问一句」比「有推断线索」更虚，层内该垫底。
+    """
+    return (row.get("state") != "hit"
+            and not (row.get("infer_matches_backend") or [])
+            and bool(row.get("ask_jobs") or []))
+
+
+def rank_sort_key(row):
+    """主榜排序键：先分层，层内才比分数。
+
+    抽成函数是为了能被测试直接调用 —— 名次规则现在有「分层」和
+    「层内比分数」两段，散在 sort 的 lambda 里没法单独验证。
+    """
+    return (
+        1 if (row.get("feedback") or {}).get("result") == "no" else 0,
+        1 if (row.get("fit") == "no" and (row.get("biz_fit") or {}).get("via") == "llm"
+             and row["state"] == "inferred") else 0,
+        rank_tier(row),
+        1 if _only_ask(row) else 0,
+        -row["score"],
+        0 if row["state"] == "hit" else 1,
+        str(row.get("booth") or "999"),
+        row["name"])
 
 
 def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
@@ -2180,23 +2275,27 @@ def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
     _bizfit_nofit = bizfit_nofit
     _biz_diag_all = biz_diag_all
 
-    rows.sort(key=lambda r: (
-        1 if (r.get("feedback") or {}).get("result") == "no" else 0,
-        1 if (r.get("fit") == "no" and (r.get("biz_fit") or {}).get("via") == "llm"
-             and r["state"] == "inferred") else 0,
-        -r["score"],
-        0 if r["state"] == "hit" else 1,
-        str(r.get("booth") or "999"),
-        r["name"]))
+    # 名次规则（2026-11-18 起）：先看「复检确认了对口没有」，层内才比分数。
+    # 细节见 rank_tier() / rank_sort_key() 的注释，前端 report.js 同规则。
+    rows.sort(key=rank_sort_key)
     by_booth = sorted([r for r in rows if r["booth"]], key=lambda r: str(r["booth"]))
     booth_pos = {r["name"]: i for i, r in enumerate(by_booth)}
     for i, r in enumerate(rows):
         r["next"] = rows[i + 1]["name"] if i + 1 < len(rows) else ""
         r["rank"] = i + 1
-        r["rank_reason"] = ("第 %d 位：排序分 %s / %s"
-                            % (i + 1, r["score"],
-                               {"hit": "有真实 JD 命中", "inferred": "按行业推断待核实",
-                                "miss": "无对口岗位"}[r["state"]]))
+        # 名次理由要能解释「为什么它排在后面」：先给复检分层，再给分数。
+        # 只写分数会让人以为 85.2 分 = 对口，实际分数里没有岗位匹配度。
+        _st_txt = {"hit": "有真实 JD 命中", "inferred": "按行业推断待核实",
+                   "miss": "无对口岗位"}.get(r["state"], r["state"])
+        _t = rank_tier(r)
+        if _t == 1:
+            _tier_txt = "复检判「%s」，不算确定对口" % (
+                (r.get("biz_recheck") or {}).get("label") or "有限对口")
+        elif _t == 2:
+            _tier_txt = "只看得见管培生类岗位，不算对口"
+        else:
+            _tier_txt = "对口（%s）" % _st_txt
+        r["rank_reason"] = ("第 %d 位：%s / 排序分 %s" % (i + 1, _tier_txt, r["score"]))
         if (r.get("feedback") or {}).get("result") == "yes":
             r["rank_reason"] += "；现场已确认招，升级为明确命中"
         if (r.get("feedback") or {}).get("result") == "no":

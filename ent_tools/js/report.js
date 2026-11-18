@@ -1252,6 +1252,39 @@ function onlyAsk(r){
     && !(r.infer_matches&&r.infer_matches.length)
     && !!(r.ask_jobs&&r.ask_jobs.length);
 }
+/* ---------- 复检分层（2026-11-18 用户定的规矩） ----------
+   起因：材料专业榜单第 1 名是家半导体企业，它按行业推断出来的对口，复检
+   判的却是「行业码有限对口，只放通用职能岗」——复检自己都没确认对口，却
+   凭城市/性质/行业地位攒的 85.2 分压过一堆有真实岗位名单的企业。
+   用户原话：「推断有岗命中的正常排，而是复检判断有限对口的这个，复检失效
+   了，他不确定的往后排，正常的没岗位推断的，和我的方向一致，岗位一致，
+   那就正常排」。
+
+   所以分层依据是**复检结论**，不是「有没有岗位名」：
+   0 正常     —— code_core / name_dir / 没有复检结论。推断来的也算，
+                 只要方向和岗位对得上。
+   1 不确定   —— code_edge（有限对口）/ code_out（不是这个方向）/
+                 biz_other（主营是别的行业）：复检没能确认，往后排。
+   2 管培生类 —— 看得见的岗全是管培生/储备干部/轮岗，垫最后。
+
+   **必须与后端 fair_bridge.rank_tier() 逐条同规则**，否则页面自己重排
+   一遍之后，同一家企业前后端名次会对不上。 */
+const GENERIC_ROLE=['管培','培训生','储备干部','储干','储备生','轮岗','校招生','见习'];
+const UNCERTAIN_RECHECK=['code_edge','code_out','biz_other'];
+function isGenericRole(t){
+  t=String(t==null?'':t).trim();
+  if(!t) return false;
+  return GENERIC_ROLE.some(function(g){ return t.indexOf(g)>=0; });
+}
+function fitTier(r){
+  const js=(r.matched_jobs||[]).map(function(j){
+    return String(j&&j.title?j.title:j||'').trim();
+  }).filter(Boolean);
+  if(js.length && js.every(isGenericRole)) return 2;
+  const code=String((r.biz_recheck||{}).code||'');
+  if(UNCERTAIN_RECHECK.indexOf(code)>=0) return 1;
+  return 0;
+}
 /* groupTitle 已删（2026-11-17 死代码清理）：无任何调用方，分组标题由 render
    按 state 直出。 */
 
@@ -1567,29 +1600,32 @@ function recompute(P){
     return x;
   });
   rows.sort(function(a,b){
-    // 名次只由排序分决定（用户 2026-11-13 明确要求）。
-    // 可信度 / 待核实 / 岗位状态只是展示标注，不进名次比较；
-    // 唯一例外是「现场确认不招」——那是事实层面的出局，仍顺延到队尾。
+    // 名次规则（2026-11-18 改）：先看「对口有多少实据」，层内才比分数。
+    // 旧口径「名次只由排序分决定」（2026-11-13）会让没有对口岗位的推断企业
+    // 凭 85.2 分排到有实岗的企业前面——材料专业那家半导体公司就是这么来的。
+    // 排序分只衡量城市/性质/行业地位，本来就不含岗位匹配度，不能跨层压人。
+    // 与后端 fair_bridge.assemble() 的排序键逐条同规则。
     const an=(feedback[a.name]||{}).result==='no'?1:0;
     const bn=(feedback[b.name]||{}).result==='no'?1:0;
-    // 同分并列必须给确定性次序，且与后端 rank 完全同规则：
-    // 命中 > 推断 → 展位号 → 名称。否则同分企业前后端名次会不一样。
-    // fit=no 与「现场确认不招」一样顺延到队尾（后端 fair_bridge 同规则）：
-    // 主营方向与意向不交叉的企业在页面底部折叠组，名次不该还占着主榜前排。
     const fn=function(x){return x.fit==='no'&&x.biz_fit&&x.biz_fit.via==='llm'
         &&x.state==='inferred'&&!x.state_recalc?1:0;};
     const afn=fn(a), bfn=fn(b);
     const ao=onlyAsk(a)?1:0, bo=onlyAsk(b)?1:0;
+    const at=fitTier(a), bt=fitTier(b);
     const ah=a.state==='hit'?0:1, bh=b.state==='hit'?0:1;
-    return (an-bn) || (afn-bfn) || (ao-bo) || (b.score-a.score) || (ah-bh)
+    return (an-bn) || (afn-bfn) || (at-bt) || (ao-bo) || (b.score-a.score) || (ah-bh)
         || String(a.booth||'999').localeCompare(String(b.booth||'999'))
         || a.name.localeCompare(b.name);
   });
   rows.forEach(function(r,i){
     r.rank=i+1;
     r.next=rows[i+1]?rows[i+1].name:'';
-    r.rank_reason='第 '+(i+1)+' 位：排序分 '+r.score
-      +' / '+({hit:'明确命中（有真实 JD）',inferred:'推断命中，待现场核实',miss:'无对口岗位'})[r.state];
+    // 与后端 rank_reason 同口径：先说复检分层，再给分数。
+    const _st=({hit:'明确命中（有真实 JD）',inferred:'推断命中，待现场核实',miss:'无对口岗位'})[r.state];
+    const _t=fitTier(r);
+    const _tier=_t===1 ? '复检判「'+(((r.biz_recheck||{}).label)||'有限对口')+'」，不算确定对口'
+      : (_t===2 ? '只看得见管培生类岗位，不算对口' : '对口（'+_st+'）');
+    r.rank_reason='第 '+(i+1)+' 位：'+_tier+' / 排序分 '+r.score;
     const fb=feedback[r.name];
     if(fb&&fb.result==='yes') r.rank_reason+='；现场已确认招，推断升级为明确命中';
     if(fb&&fb.result==='no') r.rank_reason+='；现场确认不招，已顺延（保留在队尾供核对）';
@@ -2264,15 +2300,16 @@ function render(){
     rows.forEach(function(r,i){ r.tour_pos=i+1; });
   }
   if(sortMode==='hit'){
-    // 明确命中优先（用户 2026-11-15 要求）：先排 state==='hit' 的企业（组内按分），
-    // 推断待核实的全部排后面——推断企业分数再高也不越过命中企业。
-    // 现场确认不招的照旧垫底；组内同分用 展位号→名称 定确定性次序。
+    // 「只看命中」模式：对口分层提到最前（2026-11-18），层内先排 state=hit，
+    // 再按分。推断企业分数再高也不越过有实岗的企业；只看得见管培生的垫层。
+    // 现场确认不招的照旧垫底；层内同分用 展位号→名称 定确定性次序。
     rows.sort(function(a,b){
       const an=(feedback[a.name]||{}).result==='no'?1:0;
       const bn=(feedback[b.name]||{}).result==='no'?1:0;
       const ao=onlyAsk(a)?1:0, bo=onlyAsk(b)?1:0;
+      const at=fitTier(a), bt=fitTier(b);
       const ah=a.state==='hit'?0:1, bh=b.state==='hit'?0:1;
-      return (an-bn) || (ah-bh) || (ao-bo) || (b.score-a.score)
+      return (an-bn) || (at-bt) || (ah-bh) || (ao-bo) || (b.score-a.score)
         || String(a.booth||'999').localeCompare(String(b.booth||'999'))
         || a.name.localeCompare(b.name);
     });
