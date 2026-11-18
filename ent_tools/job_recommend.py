@@ -423,7 +423,10 @@ def core_jobs(major):
     """L1：本大类表里扣掉「本大类的相邻岗」和「通用职能岗」之后剩下的。"""
     cat = major_category(major)
     drop = set(NEAR_JOBS.get(cat, [])) | _CORE_EXCLUDE
-    return [j for j in category_pool(major) if j not in drop]
+    # 2026-11-18 全量大类审计：合并大类里「邻专业核心岗」也会混进本层
+    # （如动物医学拿到农艺师/育种/植保这些种植岗），过同一道邻专业闸门。
+    return [j for j in category_pool(major)
+            if j not in drop and not _neighbor_core_blocked(j, major)]
 
 
 NO_MAJOR_JOBS = [
@@ -647,6 +650,12 @@ def rule_pool(major, cats, tier, accept):
         t = _clean_title(title)
         if not t or t in seen:
             return
+        # 规则池所有出口的唯一汇聚点：邻专业核心岗在此统一拦截。
+        # 之前 core_jobs / near_jobs 各自过了闸门，但 base_jobs 兜底
+        # （category_pool 前 8 个）和 tier0 经历命中岗绕过了，动物医学
+        # 又从这条缝里拿到农艺师/育种/植保。放在 add 里一次堵死。
+        if _neighbor_core_blocked(t, major):
+            return
         seen.add(t)
         items.append({"title": t, "why": why})
 
@@ -831,26 +840,41 @@ _NOT_MAJOR_MARK = re.compile(
 # kw 三家的词全在里面，_major_ok 光看 kw 就分不清「材料的相邻岗」和「化工的核心岗」。
 # tier2 的 prompt 明明举的是「化工专业→化工设备/中试放大」，闸门却把同一批岗放给了
 # 材料专业——等于把隔壁专业的核心岗当放宽推给学生，投了必被筛。
-# 这里按「具体专业 → 不许出现的邻专业核心岗」精确拦截；词表只收**别家核心岗**，
-# 材料可投的通用检测/分析岗（金相、材料检测、理化检验）不动。
+# 全量大类审计（2026-11-18）发现同构漏网三处，一并纳入：
+#   · 冶金 / 无机非等「材料侧」专业和材料共用化工池，同样被塞化工设备/中试/催化；
+#   · 通信 / 微电子（弱电）被塞电机设计 / 配电设计 / 电梯暖通（电气强电核心岗）；
+#   · 动物医学 / 畜牧 / 水产（养殖侧）被塞农艺师 / 育种 / 植保（种植核心岗）。
+# 每条形如 (命中本专业的词, 自身豁免词, 禁入的邻专业核心岗)。词表只收**别家核心岗**，
+# 本专业能投的通用岗（金相、材料检测、理化检验）不动。
 _NEIGHBOR_CORE = [
-    # 学生具体专业含这些词 → 拦这些岗位核心词
-    (("材料",), re.compile(r"化工工艺|化工设备|化工设计|中试/?放大|催化研发|"
-                           r"危化品")),
+    (("材料", "冶金", "无机非金属", "复合材料"), ("化工", "化学工程"),
+     re.compile(r"化工工艺|化工设备|化工设计|中试/?放大|催化研发|危化品")),
+    (("通信", "电子", "微电子", "光电", "仪器", "测控"), ("电气",),
+     re.compile(r"电机设计|配电设计|电梯/暖通|电气设计")),
+    (("动物", "兽医", "畜牧", "水产", "养殖"), ("农学", "园艺", "植保", "植物保护"),
+     re.compile(r"农艺师|育种技术员|植保技术员|种子检验|测土配方")),
+    # 对称：种植侧（农学/园艺）不得拿兽医 / 饲料 / 养殖这些养殖核心岗
+    (("农学", "作物", "园艺", "植保", "植物保护", "茶学", "林学", "园林", "种子"),
+     ("动物", "兽医", "畜牧", "水产", "养殖"),
+     re.compile(r"兽医|动物医|饲料|养殖技术员|畜牧|水产|宠物医")),
 ]
 
 
 def _neighbor_core_blocked(title, major):
-    """学生是材料（非化工）时，拦掉化学工程的核心岗。返回是否被拦。"""
+    """学生专业的邻专业核心岗不得混入（材料/冶金↔化工、弱电↔强电、养殖↔种植）。
+
+    按「具体专业 → 不许出现的邻专业核心岗」精确拦截；学生自己就是该专业时
+    （如化工学生看化工设备）由豁免词放行。返回是否被拦。
+    """
     m = str(major or "")
     t = str(title or "")
-    for own_words, pat in _NEIGHBOR_CORE:
-        if any(w in m for w in own_words):
-            # 学生自己就是化工/化学工程，这些是本专业核心岗，不能拦
-            if any(x in m for x in ("化工", "化学工程")):
-                continue
-            if pat.search(t):
-                return True
+    for own_words, exempt_words, pat in _NEIGHBOR_CORE:
+        if not any(w in m for w in own_words):
+            continue
+        if any(x in m for x in exempt_words):
+            continue
+        if pat.search(t):
+            return True
     return False
 
 
