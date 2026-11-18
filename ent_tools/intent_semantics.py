@@ -102,11 +102,28 @@ def _load_env():
     return cfg
 
 
-def _candidate_titles(titles, intended, limit=240):
+def _candidate_titles(titles, intended, limit=1500):
     """语义无关的初筛：只把「可能和意向岗位沾边」的岗位名送进模型，压短 prompt。
 
     纯字符粗筛，不做语义判断；宁可多留，也不把真正相关的岗位名筛掉。
+
+    三处修正（2026-11-18，接上真模型后实测出来的）：
+
+    1. **总量装得下就全给**。旧版对每个岗位名打分，0 分的直接丢，于是
+       「公共卫生」的候选只剩 5 个，`公卫医师`/`流行病学调查员` 因为名字里
+       既没有 core 词、也不含「公共卫生」的相邻二字（相邻二字是「公共/共卫/
+       卫生」，`公卫` 跨字了，对不上）而被丢掉——模型连看都没看到，自然判不
+       出来。字面初筛只在**真的装不下**时才该省。
+    2. **limit 从 240 提到 1500**。活库 1276 个岗位名里有 467 个不含任何 core
+       词（「实验技术员」「品质体系」「工艺技术」「法务合规」「资金（义乌）」
+       ……），这些恰恰是专业职称写法，全被 240 的额度挤掉了。整池拼进 prompt
+       约 1.1 万字符，DeepSeek 的上下文放得下，没理由为了省 token 丢掉对口岗。
+    3. **岗位名直含意向名的，加权排到最前**。缩略写法（公卫、环卫、计科）
+       光靠 2 字窗口永远对不上，但「意向全名出现在岗位名里」是强信号。
     """
+    titles = sorted({str(t).strip() for t in (titles or []) if str(t).strip()})
+    if len(titles) <= limit:
+        return titles
     core = ["管培", "培训生", "专员", "分析师", "工程师", "顾问", "助理", "储备",
             "数据", "分析", "供应链", "计划", "采购", "物流", "运营", "项目",
             "商业", "经营", "风控", "咨询", "市场", "财务", "产品", "管理",
@@ -115,11 +132,14 @@ def _candidate_titles(titles, intended, limit=240):
     for it in intended:
         for i in range(max(0, len(it) - 1)):
             keys.add(it[i:i + 2])
+    its = [str(it).strip() for it in (intended or []) if str(it).strip()]
     scored = []
     for t in titles:
         n = sum(1 for k in keys if k in t)
-        if n:
-            scored.append((n, t))
+        # 岗位名直接含意向全名：缩略/倒装写法也能抓住，比共享 2 字强得多
+        if any(it in t for it in its):
+            n += 5
+        scored.append((n, t))
     scored.sort(key=lambda x: (-x[0], x[1]))
     return sorted(t for _, t in scored[:limit])
 
@@ -836,6 +856,29 @@ FUNC_FAMILY = {
     # 缺了这一族，「国际市场营销」这种明显同类的入口会被字面判成不相关。
     "trade": ("外贸", "国际贸易", "进出口", "海外业务", "海外销售", "国际业务",
               "海外市场", "国际市场营销", "单证", "报关", "货代", "船代", "外销"),
+    # 结构 / 机械设计自成一族（2026-11-18 接上真模型后补）。
+    # 「结构工程师」与「机械设计工程师」一个字都不重合，但制造业里就是同一批人；
+    # 同样漏掉的还有 CAE / 仿真 / 力学分析 —— 那是结构工程师的核心工具，
+    # 不是另一条线。补族之前，这三个意向在企业池里能留住的候选是 0 个。
+    # 「设计」不能裸用（会吃进工业设计、平面设计），所以只收带「结构 / 机械」的写法。
+    "struct": ("结构设计", "结构工程师", "机械设计", "机械工程", "机械制造",
+               "机械", "模具", "力学", "仿真", "CAE", "有限元", "机构设计",
+               "装备设计"),
+    # EHS / 安环自成一族：EHS 在企业里的常用叫法是「安环」「环保」「消防」，
+    # 字面上跟「安全工程师」只共享一个「安全」或者完全不共享。
+    # 「环保设备设计工程师」「环保技术研发工程师」这类仍会被 TECH_WORDS 挡掉
+    # （设备 / 研发 意向里没有），所以放族不会把设计研发岗吃进来。
+    "ehs": ("EHS", "安环", "安全工程", "安全生产", "安全管理", "环保", "环境工程",
+            "环境检测", "环境监测", "消防", "职业健康", "环保工程"),
+    # 医疗 / 公卫自成一族（2026-11-18 补）。这一族之前整个是空的，后果是
+    # 「公共卫生」这个意向在企业池里只能认出「卫生检验技师」——模型明明判了
+    # 「疾病预防控制专员」对口（理由：公卫核心职能），却被字面闸门否掉，
+    # 「公卫医师」「流行病学调查员」更是连候选都进不去。
+    # 刻意不收裸「检验」：那会把「质量检验员」吃进公共卫生；
+    # 也只收带方向的「药学 / 药物 / 药品」，不收裸「药」。
+    "medical": ("医学", "临床", "疾病预防", "公共卫生", "公卫", "卫生检验",
+                "医学检验", "检验技师", "药学", "药物", "药剂", "药品", "原料药",
+                "制剂", "流行病学", "护理", "医师", "疾控"),
 }
 
 # 写理由时允许作为「核心方向」出现的词：族关键词 + 几个动词性职能词。
@@ -847,7 +890,8 @@ MEANING_WORDS = {w for kws in FUNC_FAMILY.values() for w in kws} | {
 FAMILY_LABEL = {
     "supply": "供应链", "data": "数据", "hr": "人力资源", "fin": "财务",
     "legal": "法务", "mkt": "市场", "media": "内容运营", "quality": "质量",
-    "trade": "国际贸易",
+    "trade": "国际贸易", "struct": "结构设计", "ehs": "EHS 安环",
+    "medical": "医疗公卫",
 }
 
 # 意向本身就属于「跑业务 / 谈客户」的销售型岗位：判断「销售 xxx」能否算同类时，
@@ -1688,7 +1732,7 @@ def build_map(intended, all_titles, timeout=45):
     if not (os.environ.get("DEEPSEEK_API_KEY") or cfg.get("DEEPSEEK_API_KEY", "")):
         return _fallback()
     short = _candidate_titles(titles, intended)
-    pool = "、".join(short or titles[:240])
+    pool = "、".join(short or titles)
 
     def _one(it):
         """单个意向 → 判定。纯计算，不发写盘，可并发。"""
@@ -1743,7 +1787,7 @@ def build_map(intended, all_titles, timeout=45):
 
 
 def _live_entry(cfg, intent, titles, title_set, timeout):
-    short = _candidate_titles(titles, [intent]) or titles[:240]
+    short = _candidate_titles(titles, [intent]) or titles
     data = _call(cfg, PROMPT.format(intent=intent, titles="、".join(short)), timeout)
     pairs = []
     for x in (data or {}).get("titles") or []:
