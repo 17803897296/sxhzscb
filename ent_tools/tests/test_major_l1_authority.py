@@ -86,12 +86,20 @@ class TestMajorL1Authority(unittest.TestCase):
                         "%s 的 L1 整段是大类泛岗表" % key)
 
     def test_real_biz_majors_not_hijacked(self):
-        # 真经管不被权威表误伤，仍以泛管理岗为 L1
-        for major in ("会计学", "市场营销", "工商管理"):
+        # 经管专业不得被权威表偷换成别的行业的岗；但「不被劫持」不等于「只能给泛岗」：
+        # 会计/营销有明确职业出口，L1 该是本职岗（2026-11-18 虚拟用户 E2E：会计学
+        # 的 L1 曾是「管培生 / 运营培训生 / 客户成功」，财务会计、审计、税务一个没有）。
+        for major, own in (("会计学", "财务会计岗"), ("市场营销", "市场专员")):
             l1 = J.core_jobs(major)
             with self.subTest(major=major):
-                self.assertIn("管培生", l1)
-                self.assertIn("商业分析岗", l1)
+                self.assertIn(own, l1)
+                self.assertNotIn("机械设计工程师", l1)
+                self.assertNotIn("公卫医师", l1)
+        # 没有明确职业出口的（工商管理），仍以泛管理岗为 L1
+        generic = J.core_jobs("工商管理")
+        with self.subTest(major="工商管理"):
+            self.assertIn("管培生", generic)
+            self.assertIn("商业分析岗", generic)
 
     def test_one_way_match_no_false_hit(self):
         # 输入「生物」是 MAJOR_BASE 既有专业，不得被权威表「生物医学」词根劫走

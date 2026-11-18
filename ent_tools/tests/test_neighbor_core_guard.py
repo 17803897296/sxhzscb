@@ -163,12 +163,24 @@ class TestCoreJobsUsesMajorBase(unittest.TestCase):
                 self.assertIn(title, l2)
 
     def test_real_biz_majors_keep_generic_as_l1(self):
-        # 真经管专业（无专属岗）的 L1 就是泛管理岗，不能被上面的降级误伤
-        for major in ("会计学", "市场营销"):
+        # 没有明确职业出口的经管专业（工商管理），L1 就是泛管理岗，
+        # 不能被「专属岗前置」的降级逻辑误伤。
+        # 会计学/市场营销 2026-11-18 起登记了专属基线岗（财务会计岗、市场专员…），
+        # 按同一条规则，它们的泛管理岗应该降到 L2 —— 见 test_biz_majors_with_exit_*。
+        for major in ("工商管理",):
             core = J.core_jobs(major)
             with self.subTest(major=major):
                 self.assertIn("管培生", core)
                 self.assertIn("商业分析岗", core)
+
+    def test_biz_majors_with_exit_put_own_jobs_in_l1(self):
+        # 会计学/市场营销有职业出口，L1 必须是本职岗，泛管理岗降 L2。
+        for major, own in (("会计学", "财务会计岗"), ("市场营销", "市场专员")):
+            core = J.core_jobs(major)
+            with self.subTest(major=major):
+                self.assertIn(own, core)
+                self.assertNotIn("管培生", core)
+                self.assertIn("管培生", J.near_jobs(major) or [])
 
 
 if __name__ == "__main__":
