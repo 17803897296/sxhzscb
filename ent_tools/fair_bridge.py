@@ -114,6 +114,7 @@ import rules as R            # noqa: E402
 import intent_semantics      # noqa: E402  岗位语义符合度（大模型推断）
 import hit_verify            # noqa: E402  本地规则候选命中的大模型批量复核
 import biz_recheck           # noqa: E402  画像×主营复检（2026-11-17 用户定口径）
+import sector_fit            # noqa: E402  医药细分产业带（生物药 / 化学药 / 非医药）
 import unknown_infer         # noqa: E402  无具体岗企业按意向岗位判定（未知1 / 未知2）
 import biz_fit               # noqa: E402  按主营业务判企业与学生方向是否交叉（yes/ask/no）
 import job_profile           # noqa: E402  方案一：先建企业岗位画像，再和意向比对
@@ -1859,7 +1860,7 @@ def _infer_pack(ctx, name, c, ev, prep):
     return infer_text, ask_question, qs, infer_pairs, biz_diag_out
 
 
-def _compose_row(ctx, name, c, ev, prep, m):
+def _compose_row(ctx, name, c, ev, prep, m, sector=None):
     """装配一行报告：证据段(ev) + 行级原料(prep) + 匹配行(m) 拼成最终 dict。
 
     纯拼装不做判定——所有判定都在前面的纯函数里做完；这里的每个键值
@@ -1868,6 +1869,15 @@ def _compose_row(ctx, name, c, ev, prep, m):
     m_eff, guard = ev["m_eff"], ev["guard"]
     rec = ctx.by_name.get(name, {})
     booth = ctx.bm.get(name, {})
+    _v42 = v42_view(ctx.enrich.get(name) or ctx.v42.get(name))
+    # 医药细分产业带（2026-11-18 用户实测）：行业枚举里「医药」只有一格，
+    # 生物与化学对口的却不是同一批企业。调用方已算过就复用（那里还要用
+    # 结论做「名字带生物、主营不是医药」的剔除）；判不出时 rank=None，
+    # 排序键按 0 处理，等于不参与。
+    _sector = sector if sector is not None else sector_fit.annotate(
+        (ctx.profile or {}).get("major") or "",
+        sector_fit.classify(c.get("industry"), (_v42 or {}).get("segment") or "",
+                            c.get("biz_scope") or ""))
     return {
         # 静态原始层：交给页面按学生当前画像实时重算分数 / 提问 / 队列
         "dims": rec.get("dims", {}),
@@ -1981,7 +1991,11 @@ def _compose_row(ctx, name, c, ev, prep, m):
         # 展示层：行业地位(多榜) / 成长 / 细分领域 / 4 列岗位来源。
         # 数据源优先 145 家增补档案（同名 145/145），缺失回退 v4.2。
         # rank_hits / segment / evidence 只展示，不进 calcOne。
-        "v42": v42_view(ctx.enrich.get(name) or ctx.v42.get(name)),
+        "v42": _v42,
+        # 细分产业带：生物药 / 化学药 / 中药 / 器械诊断 / 医药流通 / 非医药。
+        # 只对「医药」行业码算，rank 是这个专业下的排序档（0 最对胃），
+        # 页面据此把同方向的企业排在前面，并在名次理由里写明为什么。
+        "sector": _sector,
         "data_src": c.get("data_src") or "",
         # 非企业主体（学校/党政/事业单位）：榜单两维不存在，打分层已跳过
         "non_enterprise": int(c.get("non_enterprise") or 0),
@@ -2113,7 +2127,27 @@ def match_rows(st):
             })
             continue
 
-        rows.append(_compose_row(ctx, name, c, ev, prep, m))
+        # —— 名字带「生物」、主营却是别的行当：这不是医药这一行的对口 ——
+        # 2026-11-18 用户实测生物专业：多恩生物（纺织印染助剂）、江苏功成
+        # （卫生杀虫剂）凭企业名里的「生物」两个**字**过了主营闸门，还各凭一个
+        # 通用岗（研发工程师 / 工艺工程师）算成明确命中。名字是工商名，不是业务
+        # ——主营闸门吃的是「企业名 + 行业 + 细分」，名字里的词把主干淹了。
+        # 只对生物类专业生效（别的专业各有各的主营闸门），且只撤「医药」行业码
+        # 下的非医药带，撤下的企业进 biz_fit_no 留档，可回溯。
+        _sector = sector_fit.annotate(
+            (profile.get("major") or ""),
+            sector_fit.classify(c.get("industry"), _seg, c.get("biz_scope") or ""))
+        if (sector_fit.family_of(profile.get("major") or "")
+                and _sector.get("band") == sector_fit.BAND_OTHER):
+            _bizfit_nofit.append({
+                "name": name,
+                "why": ("名字里带「生物」，主营其实是%s（%s），不是医药这行"
+                        % (_sector.get("label") or "别的行当",
+                           _sector.get("why") or "主营描述如此")),
+            })
+            continue
+
+        rows.append(_compose_row(ctx, name, c, ev, prep, m, sector=_sector))
 
     # 名次只由排序分决定。
 
@@ -2205,11 +2239,23 @@ def _only_ask(row):
             and bool(row.get("ask_jobs") or []))
 
 
-def rank_sort_key(row):
-    """主榜排序键：先分层，层内才比分数。
+def sector_rank(row):
+    """细分产业带档位（0 最对胃）；没算过 / 该专业不分带 → 0，不参与排序。
 
-    抽成函数是为了能被测试直接调用 —— 名次规则现在有「分层」和
-    「层内比分数」两段，散在 sort 的 lambda 里没法单独验证。
+    2026-11-18 用户实测：生物专业上榜的 11 家全是「医药」，科伦（大输液）、
+    久安（注射剂）、普洛（原料药）排在最前，做疫苗 / 细胞基因治疗的反倒靠后。
+    行业枚举里「医药」只有一格，但生物对的是生物药、化学对的是原料药与制剂，
+    这几条产业带必须分开排。判据见 sector_fit（只看主营描述，企业名不算证据）。
+    """
+    v = (row.get("sector") or {}).get("rank")
+    return int(v) if isinstance(v, int) else 0
+
+
+def rank_sort_key(row):
+    """主榜排序键：先分层，层内再按细分产业带，最后才比分数。
+
+    抽成函数是为了能被测试直接调用 —— 名次规则现在有「分层」「细分」
+    「层内比分数」三段，散在 sort 的 lambda 里没法单独验证。
     """
     return (
         1 if (row.get("feedback") or {}).get("result") == "no" else 0,
@@ -2217,6 +2263,10 @@ def rank_sort_key(row):
              and row["state"] == "inferred") else 0,
         rank_tier(row),
         1 if _only_ask(row) else 0,
+        # 细分产业带：同一条产业带的企业先聚在一起（生物药 > 器械诊断 > 化学药
+        # > 非医药），再在带内比城市/性质/行业地位攒出来的分数。不分带的专业
+        # 全是 0，等于规则不变。
+        sector_rank(row),
         -row["score"],
         0 if row["state"] == "hit" else 1,
         str(row.get("booth") or "999"),
@@ -2273,6 +2323,11 @@ def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
         if (r.get("fit") == "no" and (r.get("biz_fit") or {}).get("via") == "llm"
                 and r["state"] == "inferred"):
             r["rank_reason"] += "；主营方向与你的意向不交叉，已顺延到队尾"
+        # 细分产业带：同一条带上先排，理由要能念出来（「这家是化学药，隔一层」），
+        # 否则学生看不出为什么同分的两家一前一后。
+        _sec = r.get("sector") or {}
+        if _sec.get("band") and _sec.get("rank") is not None:
+            r["rank_reason"] += "；细分 %s" % (_sec.get("why") or _sec.get("band"))
         p = booth_pos.get(r["name"])
         r["nearby"] = ([by_booth[p - 1]["name"]] if p and p > 0 else []) + \
                       ([by_booth[p + 1]["name"]] if p is not None and p + 1 < len(by_booth) else [])

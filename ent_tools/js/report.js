@@ -1612,8 +1612,13 @@ function recompute(P){
     const afn=fn(a), bfn=fn(b);
     const ao=onlyAsk(a)?1:0, bo=onlyAsk(b)?1:0;
     const at=fitTier(a), bt=fitTier(b);
+    /* 细分产业带（2026-11-18）：行业枚举里「医药」只有一格，但生物对的是生物药、
+       化学对的是原料药与制剂。同层内先把同一条产业带聚在一起，再比分数。
+       不分带的专业全是 0，等于规则不变。与后端 fair_bridge.sector_rank 同规则。 */
+    const as=(a.sector&&a.sector.rank!=null)?a.sector.rank:0;
+    const bs=(b.sector&&b.sector.rank!=null)?b.sector.rank:0;
     const ah=a.state==='hit'?0:1, bh=b.state==='hit'?0:1;
-    return (an-bn) || (afn-bfn) || (at-bt) || (ao-bo) || (b.score-a.score) || (ah-bh)
+    return (an-bn) || (afn-bfn) || (at-bt) || (ao-bo) || (as-bs) || (b.score-a.score) || (ah-bh)
         || String(a.booth||'999').localeCompare(String(b.booth||'999'))
         || a.name.localeCompare(b.name);
   });
@@ -1632,6 +1637,10 @@ function recompute(P){
     if(r.fit==='no'&&r.biz_fit&&r.biz_fit.via==='llm'&&r.state==='inferred'&&!r.state_recalc)
       r.rank_reason+='；主营方向与你的意向不交叉，已顺延到队尾';
     if(onlyAsk(r)) r.rank_reason+='；仅「管培生/储备干部」大类岗待问方向，已后置';
+    /* 细分产业带：同一条带上先排，理由要能念出来（「这家是化学药，隔一层」），
+       否则学生看不出为什么同分的两家一前一后。与后端 assemble 同口径。 */
+    if(r.sector&&r.sector.band&&r.sector.rank!=null)
+      r.rank_reason+='；细分 '+(r.sector.why||r.sector.band);
   });
   /* 薄变体：有行等待换画像预览且没有进行中的请求 → 触发一次 */
   if(!FULL_ENGINE && P && !(PREVIEW&&PREVIEW.inflight)
@@ -2309,7 +2318,9 @@ function render(){
       const ao=onlyAsk(a)?1:0, bo=onlyAsk(b)?1:0;
       const at=fitTier(a), bt=fitTier(b);
       const ah=a.state==='hit'?0:1, bh=b.state==='hit'?0:1;
-      return (an-bn) || (at-bt) || (ah-bh) || (ao-bo) || (b.score-a.score)
+      const as=(a.sector&&a.sector.rank!=null)?a.sector.rank:0;
+      const bs=(b.sector&&b.sector.rank!=null)?b.sector.rank:0;
+      return (an-bn) || (at-bt) || (ah-bh) || (ao-bo) || (as-bs) || (b.score-a.score)
         || String(a.booth||'999').localeCompare(String(b.booth||'999'))
         || a.name.localeCompare(b.name);
     });
