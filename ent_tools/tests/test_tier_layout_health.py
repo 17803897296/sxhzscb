@@ -16,7 +16,6 @@ import unittest
 
 import job_recommend as J
 
-GENERIC = J._GENERIC_MGMT
 BIZ_CATS = ("管理学（经管大类）", "经济学（经管大类）")
 
 
@@ -38,30 +37,30 @@ class TestTierLayoutHealth(unittest.TestCase):
             with self.subTest(major=m):
                 self.assertTrue(J.core_jobs(m), "%s 的 L1 为空" % m)
 
-    def test_specialized_majors_no_generic_in_l1_from_biz_pool(self):
-        # 有专属岗 + 归经管大类的专业：大类表补充里的泛岗必须已降级
+    def test_specialized_majors_l1_only_own_jobs(self):
+        # 结构性规则：有专属岗的专业，L1 必须恰好是专属岗（大类补充全降到 L2）。
+        # 不再依赖「泛岗词表」——那是列不全的（中医的医药代表、仪器的硬件工程师
+        # 都不在旧经管词表里）。
         for m in all_majors():
-            if not has_own_base(m) or J.major_category(m) not in BIZ_CATS:
+            if not has_own_base(m):
                 continue
-            own = J.base_jobs(m)
-            supplement = [j for j in J.category_pool(m) if j not in own]
+            own = [j for j in J.base_jobs(m)
+                   if not J._neighbor_core_blocked(j, m)]
             l1 = J.core_jobs(m)
-            for g in GENERIC:
-                with self.subTest(major=m, title=g):
-                    self.assertFalse(
-                        g in supplement and g in l1 and g not in own,
-                        "%s 的 L1 还留着大类表泛岗 %s" % (m, g))
+            with self.subTest(major=m):
+                self.assertEqual(l1, own, "%s 的 L1 不是纯专属岗" % m)
 
-    def test_demoted_generic_reachable_in_l2(self):
+    def test_demoted_pool_jobs_reachable_in_l2(self):
+        # 降级不丢弃：大类表里不在专属岗的岗，必须都能在 L2 找到
         for m in all_majors():
-            if not has_own_base(m) or J.major_category(m) not in BIZ_CATS:
+            if not has_own_base(m):
                 continue
             own = set(J.base_jobs(m))
             l2 = J.near_jobs(m)
             for j in J.category_pool(m):
-                if J._is_generic_mgmt(j) and j not in own:
+                if not J._neighbor_core_blocked(j, m) and j not in own:
                     with self.subTest(major=m, title=j):
-                        self.assertIn(j, l2, "%s 的泛岗 %s 降级后丢失" % (m, j))
+                        self.assertIn(j, l2, "%s 的大类岗 %s 降级后丢失" % (m, j))
 
     def test_guard_valid_on_both_tiers(self):
         for m in all_majors():
