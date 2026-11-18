@@ -1515,6 +1515,11 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     m_gap["matched_jobs"] = gap_jobs
     guard["ask_jobs"] = gap_jobs   # payload 里也不再留「对口岗位」空占位
     # 行级复检结论（前端 _rk 展示用）：一家可能有多对被问，取最严重的那条。
+    # 2026-11-18 修薄化回归：正本页面已剥离本地兜底（miBizKw/miCodeFit），
+    # 复检展示行只吃这个字段。但 FIT_CORE 直放 / 通用职能岗放行都不写 diag，
+    # 过去靠前端本地补，「薄变体」下就成了每行 biz_rk=None、复检行全部消失。
+    # 这里补齐「通过」结论：有行业码且 core 直放 → code_core；无被问对但
+    # 有 intent 命中 → name_dir。只补展示，不动 kept/blocked 判定。
     _biz_rk = None
     if _biz_diag:
         _codes = [d["code"] for d in _biz_diag]
@@ -1522,6 +1527,25 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
         _one = next(d for d in _biz_diag if d["code"] == _code)
         _biz_rk = {"code": _code, "label": _one["label"], "detail": _one["detail"],
                    "n_watch": len(_biz_watch), "n_blocked": len(_biz_blocked)}
+    elif _ind_code:
+        # 没有被问的对 + 有行业码：行业码 core 直放的情形。给一条_ok 结论，
+        # 让薄变体前端照样显示「行业码复核：对口」，不再整段消失。
+        import ind_code as _ic
+        _ic_name = biz_recheck._code_name(_ind_code)
+        _verdict = biz_recheck.table_verdict(
+            (profile or {}).get("major") or "",
+            (intended[0] if intended else ""), _ind_code)
+        if _verdict == _ic.FIT_CORE:
+            _biz_rk = {"code": "code_core", "label": biz_recheck.DIAG_TEXT["code_core"],
+                       "detail": "这家是「%s」，按行业码与你的专业方向对口，命中照用" % _ic_name,
+                       "n_watch": 0, "n_blocked": 0}
+        elif intended:
+            # 有码但非 core、又没有被问对（岗位名自带方向放行）：归 name_dir，
+            # 说清「靠公告岗位自证」，不冒充查表通过。
+            _biz_rk = {"code": "name_dir", "label": biz_recheck.DIAG_TEXT["name_dir"],
+                       "detail": "这家是「%s」；对口岗位名自带方向，靠本家公告自证，不必靠主营"
+                                 % _ic_name,
+                       "n_watch": 0, "n_blocked": 0}
     return {
         "dir_notes": dir_notes, "dropped_jobs": dropped_jobs, "aligned_all": aligned_all,
         "biz_rk": _biz_rk, "biz_diag": _biz_diag, "biz_text_rk": _biz_text_rk,
