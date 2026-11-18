@@ -250,7 +250,12 @@ html = html.replace("</body>", bundle, 1)
 
 out = DEMO / "fair.html"
 out.parent.mkdir(parents=True, exist_ok=True)   # demo_offline/ 变体首次构建时还不存在
-out.write_text(html, encoding="utf-8")
+# newline="\n" 不能省（2026-11-18 冷克隆验收发现）：`.gitattributes` 是
+# `* text=auto eol=lf`，仓库里存的是 LF；而 Windows 上 write_text 默认用
+# os.linesep 把每个 \n 写成 \r\n。于是 CI（checkout 出 LF）跑完 build 得到
+# CRLF，`git diff --exit-code` 永远非空——**这条门禁从加进来就没绿过**，
+# 只是平时没人盯 CI 状态。显式写 LF 之后，构建产物与提交逐字节可比。
+out.write_text(html, encoding="utf-8", newline="\n")
 
 # v12 匹配端独立页（2026-11-17 三端分工）：同一份页面、同一套内联 JS，
 # 启动即进报告视图（window.__FORCE_REPORT 让 init() 走 ?report=1 分支），
@@ -262,7 +267,7 @@ if "<title>" in match_html:
                         "<title>匹配端 · 双选会匹配排行</title>",
                         match_html, count=1, flags=re.S)
 match_out = DEMO / "match.html"
-match_out.write_text(match_html, encoding="utf-8")
+match_out.write_text(match_html, encoding="utf-8", newline="\n")
 
 # 构建戳：health.py 靠它判断「demo/fair.html 有没有被人直接手改」。
 # fair.html 是生成物，手改它下次构建就全丢，改的人却以为自己改好了。
@@ -284,7 +289,7 @@ try:
             "built_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
         _stamp_p.write_text(json.dumps(_stamp, ensure_ascii=False, indent=2) + "\n",
-                            encoding="utf-8")
+                            encoding="utf-8", newline="\n")
 except Exception as _e:      # 构建戳写不进去不该阻断页面生成
     print("  [warn] 构建戳写入失败：%s" % _e)
 
