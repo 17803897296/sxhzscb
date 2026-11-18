@@ -516,7 +516,10 @@ def dump(profiles, path=DUMP):
     except Exception:
         pass
     try:
-        with open(path, "w", encoding="utf-8") as f:
+        # newline="\n"：与 .gitattributes 的 eol=lf 对齐。缺了它，Windows 上
+        # open(..., "w") 按 os.linesep 写 CRLF，CI 的 git diff --exit-code 必红，
+        # 而本地被 autocrlf 吞掉、看不出来（payload / fair.html 同坑，这是第三处）。
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
             json.dump(profiles, f, ensure_ascii=False, indent=1)
     except Exception as exc:
         print("[job_profile] 落盘失败：%s" % str(exc)[:60])
