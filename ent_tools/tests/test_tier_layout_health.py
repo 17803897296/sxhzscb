@@ -1,34 +1,36 @@
 # -*- coding: utf-8 -*-
-"""全量 L1/L2 分层健康守卫（138 专业逐个检查）。
+"""全量 L1/L2 分层健康守卫（345 专业逐个检查）。
 
-2026-11-18 用户（工业工程本科）发现泛管理岗占据 L1 的语义错误后补。
+2026-11-18 用户（工业工程本科）发现泛管理岗占据 L1 的语义错误后补；
+同日用户实测公共卫生 L1 全是泛医药岗后扩到权威对口岗表覆盖的全部专业。
 锁住三条不变量：
-  1. 有专属岗的专业，L1 不得有「从经管大类表补充进来的」泛管理岗
+  1. 有专属岗的专业，L1 不得有「从大类表补充进来的」泛岗
      （它们降到 L2，由 near_jobs 接住）——专属岗自身含同类词不算。
-  2. 被降级的泛管理岗必须能在 L2 找到（降级 ≠ 丢弃）。
+  2. 被降级的泛岗必须能在 L2 找到（降级 ≠ 丢弃）。
   3. L1 非空、闸门在 L1/L2 全程有效。
 
 判定口径：泛岗是否「串层」看来源，不看词面——同一个词在别的专业大类表里
 是正当对口岗（土木的项目管理、数学的数据分析、人文的产品运营），只有从
-经管大类表异常补充进来的才算。
+大类表异常补充进来的才算。
 """
 import unittest
 
 import job_recommend as J
+import major_l1_authority as AUTH
 
 BIZ_CATS = ("管理学（经管大类）", "经济学（经管大类）")
 
 
 def all_majors():
     names = set(J.MAJOR_BASE)
+    names.update(AUTH.AUTHORITY.keys())
     for keys, _cat in J.CATEGORY_HINT:
         names.update(keys)
     return sorted(names)
 
 
 def has_own_base(major):
-    return (major in J.MAJOR_BASE or any(
-        (k in major) or (major and major in k) for k in J.MAJOR_BASE))
+    return J.has_own_jobs(major)
 
 
 class TestTierLayoutHealth(unittest.TestCase):

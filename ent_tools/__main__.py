@@ -25,6 +25,7 @@ COMMANDS = {
     "offline": "sync_offline",
     "pipeline": "refresh_all",
     "sync-repo": "sync_repo",
+    "virtual-e2e": "virtual_user_e2e",  # 虚拟用户端到端（推荐全量分层+常识复核，--with-match 加 145 匹配）
 }
 
 
