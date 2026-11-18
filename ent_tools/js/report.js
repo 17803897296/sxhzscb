@@ -209,6 +209,7 @@ function refreshFromServer(){
          这里必须同步刷新，否则学生刚勾的岗位查不到映射、静默退化成字面匹配。 */
       if(p.intent_semantics) D.intent_semantics=p.intent_semantics;
       if(p.hard_filter) D.hard_filter=p.hard_filter;
+      if(p.roster) D.roster=p.roster;
       if(p.active_fair_id) D.active_fair_id=p.active_fair_id;
       if(p.province_map) D.province_map=p.province_map;   /* 旧 PM 变量已死，只透传 */
       BASE=D.rows; W0=D.weights;
@@ -2363,6 +2364,14 @@ function render(){
     +'企业端：'+e(D.sources['企业端'])+'<br>匹配端：'+e(D.sources['匹配端'])
       +'；结论已与企业端 JD / 行业做事实校验<br>'
     +_cacheNote
+    +((D.roster&&D.roster.count)
+        ? '名单口径：本榜只排这场名单里的 <b>'+D.roster.count+'</b> 家，已进榜 '
+          +(D.roster.in_rank||0)+' 家'
+          +((D.roster.missing||[]).length
+              ? '；另有 <b>'+(D.roster.missing||[]).length+'</b> 家没进榜'
+                +'（<span title="'+e((D.roster.missing||[]).slice(0,12).map(function(m){return m.name+'：'+(m.why||'');}).join('\n'))+'">悬停看企业名</span>）'
+              : '')+'<br>'
+        : '')
     +'共 '+D.stats.companies+' 家 / '+D.stats.jobs+' 条岗位；明确命中 '+_hitN
       +' · 推断 '+_infN
       +(_customNow?'（按当前画像重算）':'')

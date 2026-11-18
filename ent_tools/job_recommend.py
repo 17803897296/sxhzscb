@@ -1067,6 +1067,184 @@ def _l1_rank(major, title):
     return 0
 
 
+# ── 实习 / 竞赛 → 对应岗位（2026-11-18 用户定口径）────────────────────
+# 「实习干啥，L1 推啥」：一段实习给一个岗，一个竞赛给一个岗，都进 L1；其余岗位
+# 仍按专业推。论文暂不参与。
+#
+# 为什么必须单独做这一层：模型给的岗要过 `_major_ok`（按专业方向筛）。文科生做
+# 供应链实习时，「供应链专员」会被判成跑题直接丢掉——可那恰恰是他真正走得通的
+# 路。经历是学生亲自干过的事，证据强度高于「专业对口」，所以这一层不过专业闸门。
+_EXP_NOISE = ("没有", "无", "暂无", "跳过", "不填")
+
+# 职能词 → 通用校招岗名。顺序即优先级（长词在前，避免「数据分析」被「数据」抢）。
+_FUNC_TITLE = (
+    (("供应链",), "供应链专员"),
+    (("关务", "报关"), "关务专员"),
+    (("仓储", "仓库"), "仓储管理岗"),
+    (("物流",), "物流专员"),
+    (("采购", "供应商管理"), "采购专员"),
+    (("数据分析", "数据挖掘", "数据运营", "BI"), "数据分析岗"),
+    (("算法", "机器学习", "深度学习", "NLP", "CV"), "算法工程师"),
+    (("前端",), "前端开发工程师"),
+    (("后端", "服务端", "Java", "Python开发", "Go开发"), "后端开发工程师"),
+    (("全栈",), "软件开发工程师"),
+    (("软件测试", "测试开发", "自动化测试"), "测试工程师"),
+    (("运维", "SRE"), "运维工程师"),
+    (("嵌入式",), "嵌入式软件工程师"),
+    (("硬件", "电路", "PCB"), "硬件工程师"),
+    (("机械", "结构设计"), "机械设计工程师"),
+    (("电气", "自动化控制", "PLC"), "电气工程师"),
+    (("工艺",), "工艺工程师"),
+    (("研发",), "研发工程师"),
+    (("质量管理", "质量", "QA", "QC"), "质量工程师"),
+    (("生产", "制造", "车间"), "生产技术员"),
+    (("化验", "检测", "检验"), "化验/质检岗"),
+    (("新媒体", "公众号", "短视频"), "新媒体运营"),
+    (("内容运营", "内容编辑", "文案", "编辑"), "内容编辑"),
+    (("用户运营", "社群"), "用户运营"),
+    (("运营",), "运营专员"),
+    (("品牌",), "品牌专员"),
+    (("市场", "营销"), "市场专员"),
+    (("销售", "客户经理"), "销售岗"),
+    (("客户成功",), "客户成功专员"),
+    (("客服",), "客服专员"),
+    (("招聘", "HR", "人力资源", "人事"), "人力资源专员"),
+    (("行政",), "行政专员"),
+    (("会计", "出纳", "财务"), "财务岗"),
+    (("审计",), "审计助理"),
+    (("税务",), "税务专员"),
+    (("法务", "合规"), "法务专员"),
+    (("行研", "行业研究", "研究助理"), "行业研究岗"),
+    (("咨询",), "咨询顾问"),
+    (("产品",), "产品经理"),
+    (("设计", "UI", "平面"), "视觉设计师"),
+    (("翻译",), "翻译"),
+    (("教师", "助教", "家教", "授课"), "教师"),
+    (("医药代表", "医药信息"), "医药信息沟通专员"),
+    (("注册",), "注册专员"),
+    (("临床",), "临床研究岗"),
+    (("环境", "环保"), "环境工程岗"),
+    (("施工", "土木"), "施工管理岗"),
+    (("食品",), "食品研发岗"),
+    (("发酵", "细胞培养"), "生物研发岗"),
+    (("化工",), "化工工艺工程师"),
+    (("材料",), "材料研发工程师"),
+)
+
+# 竞赛 → 一个岗。只认能看出「练了什么」的竞赛；看不出来就不给，不猜。
+_COMP_TITLE = (
+    (("数据分析", "数据挖掘", "统计建模", "数学建模"), "数据分析岗"),
+    (("程序设计", "ACM", "蓝桥", "算法竞赛", "编程"), "软件开发工程师"),
+    (("电子设计", "集成电路", "嵌入式"), "硬件工程师"),
+    (("机器人",), "机器人工程师"),
+    (("商业案例", "案例分析", "商赛", "创业"), "商业分析岗"),
+    (("数学竞赛", "高等数学"), "数据分析岗"),
+)
+
+
+def _exp_clean(s):
+    """清一条经历文本；「没有 / 无 / 跳过」这类占位直接返回空。"""
+    t = str(s or "").strip()
+    if not t:
+        return ""
+    for w in _EXP_NOISE:
+        if t == w or t.startswith(w):
+            return ""
+    return t[:40]
+
+
+def _exp_match(text, table):
+    low = text.lower()
+    for keys, title in table:
+        for k in keys:
+            if k and k.lower() in low:
+                return title
+    return ""
+
+
+def experience_jobs(cats):
+    """实习 / 竞赛 → 「一个经历一个岗」（论文不参与）。
+
+    同一职能的实习只给一次：两段供应链实习不该出两个「供应链专员」；不同职能
+    各给一个（供应链一段 + 数据分析一段，就给两个）。竞赛与实习撞名只留一条，
+    来源写实习——实习是长期投入，比竞赛更能说明这条路走得通。
+    """
+    out, seen = [], set()
+
+    def add(title, kind, src):
+        if not title or title in seen:
+            return
+        seen.add(title)
+        out.append({"title": title, "kind": kind, "from": src,
+                    "why": ("你在「%s」实习过，这条线你上手过" % src if kind == "intern"
+                            else "你在「%s」里练过这块，先给一个对口岗" % src)})
+
+    for s in (cats or {}).get("internships") or []:
+        src = _exp_clean(s)
+        if src:
+            add(_exp_match(src, _FUNC_TITLE), "intern", src)
+    for s in (cats or {}).get("competitions") or []:
+        src = _exp_clean(s)
+        if src:
+            add(_exp_match(src, _COMP_TITLE), "comp", src)
+    return out
+
+
+def experience_drop(cats, exp):
+    """同一段经历「顺手带出来」的那一批信号岗，撤掉，只留经历对应岗那一个。
+
+    这不是删岗位，是收口径。`SIGNAL_RULES` 里一条「供应链」会带出 4 个岗
+    （供应链/计划岗、采购专员、物流运营岗、供应链数据分析岗）——那是给「技能 /
+    课程作业」用的写法，一段实习给 4 个岗，L1 就被这几条撑满、专业岗挤到看不见。
+    学生只干过一段供应链实习，就给一个「供应链专员」，其余仍按专业推。
+
+    只按**实习 / 竞赛**的文本归因（`skills` / `papers` 命中的信号不动）：撤掉的
+    必须是「这段经历带出来的」，不能牵连学生在别处练的东西。
+    """
+    keep = {e["title"] for e in exp}
+    if not keep:
+        return set()
+    text = " ".join(list((cats or {}).get("internships") or []) +
+                    list((cats or {}).get("competitions") or [])).lower()
+    if not text:
+        return set()
+    out = set()
+    for kws, jobs, _why in SIGNAL_RULES:
+        if any(str(k).lower() in text for k in kws):
+            out |= {j for j in jobs if j not in keep}
+    # 数据信号同理：一个数据分析竞赛只给「数据分析岗」，不再顺带给
+    # BI/报表、策略分析、算法——那是四门不同的活。
+    if "数据分析岗" in keep and any(k.lower() in text for k in DATA_KWS):
+        for js in DATA_JOBS.values():
+            out |= {j for j in js if j not in keep}
+    return out
+
+
+def _with_experience(items, exp):
+    """把经历对应岗插到池首（顺序 = 经历顺序），并给同名岗打上经历标记。
+
+    不删任何模型给的岗：经历岗若与专业岗同名（化学的「研发工程师」），就地标成
+    `_exp` 提到前面，理由换成「你在 xx 实习过」——学生看到的是「为什么先给我它」。
+    """
+    by_title = {c.get("title"): c for c in items}
+    head, seen = [], set()
+    for e in exp:
+        cur = by_title.get(e["title"])
+        if cur is None:
+            cur = {"title": e["title"], "why": e["why"]}
+            items = items + [cur]
+            by_title[e["title"]] = cur
+        cur["_exp"] = e["kind"]
+        cur["_exp_from"] = e["from"]
+        if e.get("why"):
+            cur["why"] = e["why"]
+        if e["title"] not in seen:
+            seen.add(e["title"])
+            head.append(cur)
+    hid = {id(c) for c in head}
+    return head + [c for c in items if id(c) not in hid]
+
+
 def _pool_key(major, cats, tier, accept, model_tag="", use_llm=True, prev=None):
     """池子缓存的键。
 
@@ -1683,12 +1861,24 @@ def get_pool(major, cats, tier, accept, cfg, use_llm=True):
         items = keep
     if not items:
         items = rule_pool(major, cats, tier, accept)
+    # 实习 / 竞赛对应岗：一个经历一个岗，只进 L1（tier0/tier1），排在专业岗之前。
+    # 放在补位之前：补位是按缺口凑数的，经历岗是学生自己走出来的路，不该被
+    # 「凑够 10 个」挤掉；放在补位之后又会让它排在 base 岗后面。
+    _edrop = set()
+    if tier <= 1:
+        _exp = experience_jobs(cats)
+        if _exp:
+            _edrop = experience_drop(cats, _exp)
+            if _edrop:
+                items = [c for c in items if c.get("title") not in _edrop]
+            items = _with_experience(items, _exp)
     if len(items) < MIN_FILL:
         # 模型常只给 6~8 个（实测还见过只给 1 个的）：按 93 表同类 L1 →
         # base_jobs → rule_pool 补到 10 个，保证「换一批」本层还有货。只设
         # 下限、不设上限——凑够 10 就停，不多塞。补的时候同样跳过低层已给过
         # 的岗，否则补出来的还是上一层的货。
-        seen = {c["title"] for c in items} | set(prev)
+        # _edrop 也要挡：一次经历只留一个岗，补位不能再把同一批信号岗补回来。
+        seen = {c["title"] for c in items} | set(prev) | _edrop
         for c in _fill_sources(major, cats, tier, accept):
             if c["title"] not in seen:
                 items.append(c)
@@ -1711,7 +1901,9 @@ def get_pool(major, cats, tier, accept, cfg, use_llm=True):
     # 模型给的顺序不能全信：化学 tier0 实测第一条是「材料研发工程师」（对化学
     # 只是 L2），学生一进来就被领到邻专业去。按「与本专业 L1 的贴近度」稳定
     # 重排，切合岗前置；同分保持原顺序，内容一个不删。判据见 _l1_rank。
-    items = sorted(items, key=lambda c: -_l1_rank(major, c["title"]))
+    # 经历对应岗排在最前：它是学生亲手干过的事，与专业是否「对口」无关。
+    items = sorted(items, key=lambda c: (0 if c.get("_exp") else 1,
+                                         -_l1_rank(major, c["title"])))
     items = _merge_demoted(items, major, cats, model, tier)
     with _LOCK:
         pools = _load_pools()

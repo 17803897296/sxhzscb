@@ -109,6 +109,7 @@ OUT = os.path.join(DATA, "fair_payload.json")
 
 sys.path.insert(0, os.path.join(HERE, "demo_v2"))
 import repository            # noqa: E402  sqlite 连接的唯一出口
+import roster_store         # noqa: E402  参会企业名单（企业端导入后落库，榜单按名单收口）
 import core as V2            # noqa: E402  复用五项权重 / 维度取值口径
 import rules as R            # noqa: E402
 import intent_semantics      # noqa: E402  岗位语义符合度（大模型推断）
@@ -2273,6 +2274,44 @@ def rank_sort_key(row):
         row["name"])
 
 
+def apply_roster(fair_id, rows, dropped, bizfit_nofit, campus_nofit,
+                 campus_names, miss_names):
+    """按参会名单收口榜单：只留名单里的企业，并逐条记下没进榜的原因。
+
+    名单为空（没导入 / 冷克隆 / 种子库没有这张表）→ 原样返回，`count=0`。
+    四个排除清单也一起收口：否则报告里会列出「这场会根本没有的企业为什么没进榜」，
+    学生看着莫名其妙。
+
+    返回 (rows, bizfit_nofit, campus_nofit, campus_names, miss_names, block)；
+    block 落到 payload 的 `roster` 段，前端据此说明「本榜只排名单里的 N 家」。
+    """
+    names = roster_store.get_names(fair_id)
+    block = {"count": 0, "in_rank": 0, "missing": []}
+    if not names:
+        return rows, bizfit_nofit, campus_nofit, campus_names, miss_names, block
+    keep = set(names)
+    notes = roster_store.get_notes(fair_id)
+    why_of = {}
+    for it in list(dropped or []) + list(bizfit_nofit or []) + list(campus_nofit or []):
+        if isinstance(it, dict) and it.get("name") and it["name"] not in why_of:
+            why_of[it["name"]] = it.get("why") or "没进榜"
+    rows = [r for r in rows if r.get("name") in keep]
+    bizfit_nofit = [x for x in (bizfit_nofit or [])
+                    if isinstance(x, dict) and x.get("name") in keep]
+    campus_nofit = [x for x in (campus_nofit or [])
+                    if isinstance(x, dict) and x.get("name") in keep]
+    campus_names = [n for n in (campus_names or []) if n in keep]
+    miss_names = [n for n in (miss_names or []) if n in keep]
+    in_rank = {r["name"] for r in rows}
+    missing = [{"name": n,
+                "why": why_of.get(n) or notes.get(n) or "库里没有可用资料，或没匹配上"}
+               for n in names if n not in in_rank]
+    block = {"count": len(names), "in_rank": len(in_rank), "missing": missing}
+    print("  名单口径：名单 %d 家 → 榜单 %d 家，未进榜 %d 家"
+          % (len(names), len(in_rank), len(missing)))
+    return rows, bizfit_nofit, campus_nofit, campus_names, miss_names, block
+
+
 def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
     """组装段：排序、统计，把顶层的表（权重 / 语义 / 状态）与行拼成 payload。
 
@@ -2297,6 +2336,12 @@ def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
 
     # 名次规则（2026-11-18 起）：先看「复检确认了对口没有」，层内才比分数。
     # 细节见 rank_tier() / rank_sort_key() 的注释，前端 report.js 同规则。
+    # 名单口径（2026-11-18 用户拍板）：企业端导入的名单落库后，榜单只排名单里的
+    # 企业——学生看的是「这场会能投谁」，不是全库 145 家。名单为空（没导入 /
+    # 冷克隆 / CI）时一行不动，构建产物与改动前逐字节一致。
+    rows, _campus_nofit, _bizfit_nofit, _campus_names, _miss_names, _roster_block = \
+        apply_roster(profile.get("fair_id"), rows, _dropped, _bizfit_nofit,
+                     _campus_nofit, _campus_names, _miss_names)
     rows.sort(key=rank_sort_key)
     by_booth = sorted([r for r in rows if r["booth"]], key=lambda r: str(r["booth"]))
     booth_pos = {r["name"]: i for i, r in enumerate(by_booth)}
@@ -2456,6 +2501,9 @@ def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
             "zero_jobs": sum(1 for r in rows if r["state"] == "inferred" and not r["job_count"]),
         },
         "rows": rows,
+        # 名单口径：count=0 表示没导入名单（全库口径）。missing 是名单里没进榜的
+        # 企业 + 原因——「没抓到岗位的企业照样保留」这句承诺落在这里，不能悄悄删。
+        "roster": _roster_block,
         "schema_version": payload_contract.SCHEMA_VERSION,
         # 生成这份 payload 的代码指纹。服务端拿它和当前代码比对，代码变了就重建，
         # 不再只靠 active_fair_id ——「同 ID 改内容 / 改了推荐或复检代码」都会漏判。

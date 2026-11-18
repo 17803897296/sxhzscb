@@ -54,6 +54,8 @@ import portal               # noqa: E402  复用企业端搜索/补全接口（/
 import match_fill           # noqa: E402  提交画像后按新画像重算 llm_match（hit/inferred/miss）
 import intent_semantics     # noqa: E402  按需补判意向岗位语义（换画像 / 现场新勾岗位）
 import hit_verify           # noqa: E402  按需批量复核命中（现场新意向）
+import roster_store         # noqa: E402  参会企业名单落库（企业端导入 → 榜单按名单收口）
+import repository           # noqa: E402
 
 PAGE = os.path.join(ROOT, "demo", "fair.html")
 PAYLOAD = os.path.join(HERE, "data", "fair_payload.json")
@@ -183,6 +185,46 @@ def _trigger_recompute():
 
 def _recompute_busy():
     return _RECOMPUTE["busy"]
+
+
+# ---- 名单变更后的轻量重建（2026-11-18）--------------------------------
+# 名单只影响「榜单收口」，不影响命中结论，所以不用跑 match_fill（那一步要调模型、
+# 几十秒）；build 一遍即可。放后台是因为 145 家装配也要十几秒，接口不能干等。
+_ROSTER_REBUILD = {"busy": False, "done": None, "error": None,
+                   "lock": threading.Lock()}
+
+
+def _roster_rebuild_worker():
+    with _ROSTER_REBUILD["lock"]:
+        _ROSTER_REBUILD["busy"] = True
+        _ROSTER_REBUILD["error"] = None
+        try:
+            fair_bridge.build()
+            _ROSTER_REBUILD["done"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            _ROSTER_REBUILD["error"] = "%s: %s" % (type(e).__name__, str(e)[:200])
+            traceback.print_exc()
+        finally:
+            _ROSTER_REBUILD["busy"] = False
+
+
+def _trigger_roster_rebuild():
+    with _ROSTER_REBUILD["lock"]:
+        if _ROSTER_REBUILD["busy"]:
+            return False
+        threading.Thread(target=_roster_rebuild_worker, daemon=True).start()
+        return True
+
+
+def _active_fair_id():
+    """当前生效画像的 fair_id；拿不到就空串（名单按空串存，等于不启用）。"""
+    try:
+        with repository.connect() as con:
+            row = con.execute(
+                "SELECT fair_id FROM fair_active WHERE id='current'").fetchone()
+        return row[0] if row else ""
+    except Exception:
+        return ""
 
 
 # ---------------------------------------------------------------- 响应压缩缓存
@@ -374,6 +416,15 @@ class Handler(BaseHTTPRequestHandler):
                             "code_fp": cache_guard.build_fp(),
                             "db": fair_ingest.DB,
                             "active": fair_ingest.stats().get("active")})
+                return
+            if p == "/api/fair/roster":
+                # 名单状态：前端据此提示「排行是否正在按名单重排」。
+                fid = _active_fair_id()
+                names = roster_store.get_names(fid)
+                self._json({"ok": True, "fair_id": fid, "count": len(names),
+                            "names": names, "rebuilding": _ROSTER_REBUILD["busy"],
+                            "done": _ROSTER_REBUILD["done"],
+                            "error": _ROSTER_REBUILD["error"]})
                 return
             if p == "/api/fair/active-profile":
                 s = fair_ingest.stats()
@@ -572,6 +623,25 @@ class Handler(BaseHTTPRequestHandler):
                     allow_relax=bool(body.get("allow_relax")),
                     experiences=body.get("experiences") or [])
                 self._json(out)
+                return
+            if p == "/api/fair/roster":
+                # 企业端导入的名单落库 → 后台按名单重建 payload。
+                # 名单为空数组 = 清空（回到全库口径）；rebuild=False 只落库不重排。
+                fid = body.get("fair_id") or _active_fair_id()
+                names = body.get("names")
+                if names is None:
+                    self._json({"ok": False, "error": "缺 names；查状态用 GET"})
+                    return
+                notes = {}
+                for m in (body.get("missing") or body.get("missed") or []):
+                    if isinstance(m, dict) and m.get("name"):
+                        notes[m["name"]] = m.get("note") or m.get("why") or ""
+                n = roster_store.set_names(fid, names, notes)
+                started = (False if body.get("rebuild") is False
+                           else _trigger_roster_rebuild())
+                self._json({"ok": True, "fair_id": fid, "count": n,
+                            "rebuilding": started,
+                            "busy": _ROSTER_REBUILD["busy"]})
                 return
             if p == "/api/fair/rebuild":
                 payload = fair_bridge.build()

@@ -839,9 +839,29 @@ window.__mountMatch = function(doc, opts){
 
     const secs = Math.round((Date.now() - started) / 1000);
     try { localStorage.setItem("companies", JSON.stringify(POOL)); } catch (e) {}
+    /* 名单落库（2026-11-18）：以前只写 localStorage，服务端一无所知，点「去匹配端
+       看排行」看到的还是全库排行——「匹配池共 132 家」是句空话。落库后 build 按
+       名单收口，榜单才是「这场会的企业」；没抓到岗位的进 payload.roster.missing
+       留档，不凭空消失。重建在后台跑，页面立即可以用，重排完刷新即见。 */
+    let saved = 0, rebuilding = false;
+    try {
+      const rr = await fetch("/api/fair/roster", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          names: all,
+          missing: (report.missed || []).map(m => ({ name: m.name, note: m.note || "" }))
+        })
+      });
+      const rj = await rr.json();
+      saved = rj.count || 0;
+      rebuilding = !!(rj.rebuilding || rj.busy);
+    } catch (e) { /* 落库失败不挡住本页：至少 localStorage 里还有一份 */ }
     stat.innerHTML = "搜索完成：名单 <b>" + all.length + "</b> 家 · 补到岗位 <b>"
       + gotTotal + "</b> 家 · 没抓到 <b>" + missTotal + "</b> 家（仍保留，按企业资料参与匹配）· 耗时 "
       + secs + " 秒<br>现在匹配池里共 <b>" + POOL.length + "</b> 家企业。"
+      + (saved ? "<br>名单已落库（<b>" + saved + "</b> 家），榜单将只排这些企业"
+                + (rebuilding ? "；排行正在后台按名单重排，约半分钟，稍后刷新即见。" : "。")
+              : "")
       + (rosterOnly
           ? '<br>名单已就绪，<a href="/match.html"><b>去匹配端看排行 →</b></a>'
           : "");
