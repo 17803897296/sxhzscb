@@ -407,6 +407,23 @@ BROAD_JOBS = [
 # 化工学生的第一层就只剩「研发工程师、注册专员、实验员」。
 _CORE_EXCLUDE = set(BROAD_JOBS)
 
+# 泛管理职能岗：不筛专业、哪个专业都能干的那一批。它们在 CATEGORY_JOBS_MAP
+# 的经管大类表里被当成「专业对口岗」，工业工程这类被归进经管的非经管专业
+# 就继承了整张表当 L1（2026-11-18 用户实测：工业工程 L1 全是管培生/运营/
+# 商业分析）。用户拍板：这类岗工业工程当然能干，但不是 L1「切合」的定义，
+# 最低降到 L2。精确识别后只对「有专属对口岗的专业」降级，真经管（会计/
+# 营销，无专属岗）仍以它们为 L1，不受影响。
+_GENERIC_MGMT = {
+    "管培生", "职能管培生", "储备干部", "运营培训生", "业务运营岗",
+    "产品运营岗", "市场/商务岗", "项目管理岗", "客户成功专员",
+    "商业分析岗", "数据分析岗", "经营分析岗", "渠道运营专员",
+    "内审/风控岗", "HRBP",
+}
+
+
+def _is_generic_mgmt(title):
+    return title in _GENERIC_MGMT
+
 
 def near_jobs(major):
     """L2：相邻方向（有专业门槛、方向偏离）。
@@ -416,7 +433,20 @@ def near_jobs(major):
     _major_ok 同一套规则），化工专业的学生不受影响。
     """
     jobs = NEAR_JOBS.get(major_category(major), NEAR_JOBS[UNKNOWN_CAT])
-    return [j for j in jobs if not _neighbor_core_blocked(j, major)]
+    out = [j for j in jobs if not _neighbor_core_blocked(j, major)]
+    # 有专属对口岗的经管大类专业（工业工程/运营供应链…）：core_jobs 已把泛管理岗
+    # 从 L1 剔除，这里接住到 L2（用户：能干但不是 L1 的定义，最低 L2）。
+    # 泛岗来自经管大类表，去掉本就属于 L1 专属岗的、已在本层的、被闸门拦的。
+    has_own = (major in MAJOR_BASE or any(
+        (k in (major or "")) or ((major or "") and (major or "") in k)
+        for k in MAJOR_BASE))
+    if has_own and major_category(major) in ("管理学（经管大类）", "经济学（经管大类）"):
+        own = set(base_jobs(major))
+        for j in category_pool(major):
+            if (_is_generic_mgmt(j) and j not in own and j not in out
+                    and not _neighbor_core_blocked(j, major)):
+                out.append(j)
+    return out
 
 
 def core_jobs(major):
@@ -430,21 +460,26 @@ def core_jobs(major):
     全量诊断 17 个登记专业里 10 个对口岗大面积丢失（工业工程 0/5、运营与供应链
     0/5、药学 1/5…），都是同一个根因。
 
-    修法：MAJOR_BASE 命中的专业，专属岗排在 L1 最前（它们才是「切合」的本意），
-    大类表里不重复、且不被闸门拦的岗追加在后作为补充；没登记的专业行为不变。
+    修法：MAJOR_BASE 命中的专业，专属岗排在 L1（它们才是「切合」的本意），
+    大类表补充里属「泛管理职能岗」的一律降级到 L2（用户拍板：工业工程当然
+    能干管培生，但那不是 L1 的定义）——由 near_jobs 接住，不丢失。
+    真经管专业（会计/营销，无专属岗）仍以泛岗为 L1，不受影响。
     仍过邻专业核心岗闸门（材料不会因此拿回化工岗）。
     """
     cat = major_category(major)
     drop = set(NEAR_JOBS.get(cat, [])) | _CORE_EXCLUDE
     # 专属岗优先（base_jobs 的匹配逻辑：精确名 → 子串包含）
-    own = base_jobs(major) if major in MAJOR_BASE or any(
+    has_own = (major in MAJOR_BASE or any(
         (k in (major or "")) or ((major or "") and (major or "") in k)
-        for k in MAJOR_BASE) else []
+        for k in MAJOR_BASE))
+    own = base_jobs(major) if has_own else []
     own = [j for j in own if not _neighbor_core_blocked(j, major)]
-    # 大类表补充：去掉已在专属岗里、被排除、被闸门拦的
+    # 大类表补充：去掉已在专属岗里、被排除、被闸门拦的；
+    # 有专属岗的专业，泛管理岗不留在 L1（降到 L2，见 near_jobs）。
     generic = [j for j in category_pool(major)
                if j not in drop and j not in own
-               and not _neighbor_core_blocked(j, major)]
+               and not _neighbor_core_blocked(j, major)
+               and not (has_own and _is_generic_mgmt(j))]
     return own + generic
 
 

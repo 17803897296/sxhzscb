@@ -144,6 +144,32 @@ class TestCoreJobsUsesMajorBase(unittest.TestCase):
             with self.subTest(title=title):
                 self.assertNotIn(title, J.core_jobs("材料"))
 
+    def test_generic_mgmt_demoted_out_of_l1_for_specialized_majors(self):
+        # 用户拍板：泛管理岗工业工程能干，但不是 L1「切合」的定义，最低 L2。
+        # 有专属对口岗的经管专业，L1 必须干净（只剩专业对口岗）。
+        generic = ("管培生", "职能管培生", "储备干部", "运营培训生",
+                   "业务运营岗", "商业分析岗", "数据分析岗")
+        for major in ("工业工程", "运营与供应链管理"):
+            core = J.core_jobs(major)
+            for title in generic:
+                with self.subTest(major=major, title=title):
+                    self.assertNotIn(title, core)
+
+    def test_demoted_generic_mgmt_kept_in_l2(self):
+        # 降级不等于丢弃：泛管理岗必须能在 L2 找到
+        l2 = J.near_jobs("工业工程")
+        for title in ("管培生", "商业分析岗", "数据分析岗", "运营培训生"):
+            with self.subTest(title=title):
+                self.assertIn(title, l2)
+
+    def test_real_biz_majors_keep_generic_as_l1(self):
+        # 真经管专业（无专属岗）的 L1 就是泛管理岗，不能被上面的降级误伤
+        for major in ("会计学", "市场营销"):
+            core = J.core_jobs(major)
+            with self.subTest(major=major):
+                self.assertIn("管培生", core)
+                self.assertIn("商业分析岗", core)
+
 
 if __name__ == "__main__":
     unittest.main()
