@@ -144,6 +144,66 @@ class TestInferPairs(unittest.TestCase):
         self.assertEqual(B.filter_infer([("任意岗", "任意意向")], set(), "随便"), [("任意岗", "任意意向")])
 
 
+class TestExpRecheck(unittest.TestCase):
+    """经历岗复检（2026-11-18 用户二次拍板）：轴在实习企业行业，不在专业。
+
+    化工企业的研发岗 × 互联网实习的研发 = 拦；化工实习的研发 = 放；
+    数据分析这类通用岗不拦；实习写不出行业（meta code=None）不刷、放行。
+    """
+
+    META = {
+        "研发工程师": {"code": "it", "conf": "high", "from": "字节跳动（互联网）研发实习",
+                       "generic": False},
+        "数据分析岗": {"code": "it", "conf": "high", "from": "字节跳动 数据分析实习",
+                       "generic": True},
+        "供应链专员": {"code": None, "conf": "none", "from": "某公司供应链实习",
+                       "generic": False},
+        "工艺工程师": {"code": "chem", "conf": "high", "from": "万华化学（化工新材料）工艺实习",
+                       "generic": False},
+    }
+
+    def test_化工企业研发岗_互联网实习_拦(self):
+        r = B.exp_recheck([("研发工程师", "研发工程师")], self.META, "chem")
+        self.assertEqual(r["kept"], [])
+        self.assertEqual(r["blocked"], [("研发工程师", "研发工程师")])
+        self.assertEqual(r["diag"][0]["code"], "exp_out")
+        self.assertIn("实习的公司属", r["diag"][0]["detail"])
+
+    def test_化工企业研发岗_化工实习_放(self):
+        r = B.exp_recheck([("工艺工程师", "研发工程师")], self.META, "chem")
+        self.assertEqual(r["kept"], [("工艺工程师", "研发工程师")])
+        self.assertEqual(r["blocked"], [])
+
+    def test_通用岗_不拦(self):
+        # 数据分析这样的通用职能岗：哪家公司都设，不按行业拦
+        r = B.exp_recheck([("数据分析岗", "数据分析岗")], self.META, "chem")
+        self.assertEqual(r["kept"], [("数据分析岗", "数据分析岗")])
+
+    def test_实习行业判不出_不刷放行(self):
+        # 学生没写实习公司主营/细分行业：复检不在这上面刷入，放行
+        r = B.exp_recheck([("供应链专员", "供应链专员")], self.META, "chem")
+        self.assertEqual(r["kept"], [("供应链专员", "供应链专员")])
+
+    def test_相邻行业_收进weak沉队尾(self):
+        # 纺织实习 vs 化工企业：fit = edge，保留显示但算有限对口
+        meta = dict(self.META, 研发工程师={"code": "textile", "conf": "high",
+                                          "from": "某家纺公司研发实习", "generic": False})
+        r = B.exp_recheck([("研发工程师", "研发工程师")], meta, "chem")
+        self.assertEqual(r["kept"], [])
+        self.assertEqual(r["weak"], [("研发工程师", "研发工程师")])
+
+    def test_企业没打码_放行(self):
+        r = B.exp_recheck([("研发工程师", "研发工程师")], self.META, None)
+        self.assertEqual(r["kept"], [("研发工程师", "研发工程师")])
+
+    def test_code_families_反查(self):
+        # it 的核心专业族对 chem = out；chem 的核心专业族对 chem = core
+        self.assertEqual(B.ind_code.fit(B._code_families("it"), "chem"),
+                         B.ind_code.FIT_OUT)
+        self.assertEqual(B.ind_code.fit(B._code_families("chem"), "chem"),
+                         B.ind_code.FIT_CORE)
+
+
 class TestChemProfileNoRegression(unittest.TestCase):
     """化工画像回归：复检不得误伤原本合理的命中。"""
 
@@ -177,14 +237,16 @@ class TestDiag(unittest.TestCase):
         base.update(kw)
         return B.biz_parts("某某有限公司", base)
 
-    def test_name_dir_kept_without_biz(self):
-        # 公告写的就是「材料研发工程师」：本家公告自证方向，不该拿主营否决
+    def test_name_dir_without_biz_is_weak(self):
+        # 2026-11-18 收紧（用户拍板「都得复检」）：公告自证不再是免检金牌。
+        # 主营没验到、又没行业码：命中保留但算有限对口（weak），不冒充通过
         r = B.recheck_real([("材料研发工程师", "研发工程师")], CHEM_KW, CHEM_FIELDS,
                            "专用集成电路、感知芯片与AI智能整机研发")
         self.assertEqual(r["watch"], [])
         self.assertEqual(r["blocked"], [])
-        self.assertIn(("材料研发工程师", "研发工程师"), r["kept"])
-        self.assertEqual(r["diag"][0]["code"], "name_dir")
+        self.assertEqual(r["kept"], [])
+        self.assertIn(("材料研发工程师", "研发工程师"), r["weak"])
+        self.assertEqual(r["diag"][0]["code"], "code_edge")
 
     def test_other_industry_blocked(self):
         # 主营明确是金融：这才是真不符，降级为现场待问
@@ -224,6 +286,21 @@ class TestDiag(unittest.TestCase):
                            "第三方检测分析与技术咨询服务",
                            parts=self._parts(biz_scope="第三方检测分析与技术咨询服务"))
         self.assertEqual(r["diag"][0]["code"], "biz_weak")
+
+    def test_filter_infer_keeps_edge_in_soft(self):
+        """有限对口（edge）的推断对不丢，收进 soft 供展示；out 仍丢。
+
+        2026-11-18 用户口径：推断岗也能当命中。复检判有限对口只是把名次沉到
+        队尾，不能连岗位名一起藏掉——藏了学生就没法定位「凭什么排这家」。
+        """
+        soft, kept = [], []
+        B.filter_infer([("数据分析岗", "数据分析岗")], LOG_FIELDS, "跨境电商平台运营",
+                       major="生物科学", code="food", soft=soft)
+        self.assertEqual(soft, [("数据分析岗", "数据分析岗")])
+        soft2 = []
+        B.filter_infer([("供应链专员", "供应链专员")], LOG_FIELDS, "中小学在线课程",
+                       major="生物科学", code="edu", soft=soft2)
+        self.assertEqual(soft2, [], "out（方向不交叉）不标，不能当命中展示")
 
     def test_filter_infer_records_diag(self):
         diag = []

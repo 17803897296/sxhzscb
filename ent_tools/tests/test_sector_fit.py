@@ -148,10 +148,16 @@ class TestSortKey(unittest.TestCase):
         self.assertEqual(sorted([chem, bio], key=F.rank_sort_key)[0]["name"], "中科开浦")
 
     def test_细分能压过分数(self):
-        """73.5 分的化学药排在 63.6 分的器械诊断之后——这就是用户要的「更对胃」。"""
+        """73.5 分的化学药排在 63.6 分的器械诊断之后——这就是用户要的「更对胃」。
+
+        器械诊断那家必须带着**推断命中对**进来（真实 payload 里推断行就是这个
+        样子）。2026-11-18 新增第 3 层「推断态但一条岗位证据都没有」会把这行
+        沉到队尾，那是有意的：没有证据的推断不该靠细分带占前排。
+        """
         chem = _row("科伦药业", score=73.5, sector_rank=2, band=S.BAND_CHEMICAL)
         dev = _row("诺尔曼", score=63.6, state="inferred", sector_rank=1,
                    band=S.BAND_DEVICE)
+        dev["infer_matches_backend"] = [{"intent": "生物研发工程师", "job": "研发工程师"}]
         self.assertEqual(sorted([chem, dev], key=F.rank_sort_key)[0]["name"], "诺尔曼")
 
     def test_不分带的专业不受影响(self):

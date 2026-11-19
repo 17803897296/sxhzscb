@@ -1272,10 +1272,21 @@ function onlyAsk(r){
    一遍之后，同一家企业前后端名次会对不上。 */
 const GENERIC_ROLE=['管培','培训生','储备干部','储干','储备生','轮岗','校招生','见习'];
 const UNCERTAIN_RECHECK=['code_edge','code_out','biz_other'];
+const CONFIRMED_RECHECK=['code_core','name_dir'];
 function isGenericRole(t){
   t=String(t==null?'':t).trim();
   if(!t) return false;
   return GENERIC_ROLE.some(function(g){ return t.indexOf(g)>=0; });
+}
+/* 推断态、却一条岗位证据都没有（2026-11-18 用户实测：榜上第 2 名茶饮、第 5 名
+   跨境电商、第 7/8 名教育机构、第 12 名人事考试中心，卡片上只有「推断待核实」
+   四个字）。判据与后端 fair_bridge._no_job_evidence 逐条同源。 */
+function noJobEvidence(r){
+  if(r.state==='hit') return false;
+  if((r.intent_matches||[]).length||(r.infer_matches||[]).length) return false;
+  if((r.intent_matches_backend||[]).length||(r.infer_matches_backend||[]).length) return false;
+  if((r.ask_jobs||[]).length||(r.hits||[]).length||(r.dir_hit_jobs||[]).length) return false;
+  return CONFIRMED_RECHECK.indexOf(String((r.biz_recheck||{}).code||''))<0;
 }
 function fitTier(r){
   const js=(r.matched_jobs||[]).map(function(j){
@@ -1284,6 +1295,7 @@ function fitTier(r){
   if(js.length && js.every(isGenericRole)) return 2;
   const code=String((r.biz_recheck||{}).code||'');
   if(UNCERTAIN_RECHECK.indexOf(code)>=0) return 1;
+  if(noJobEvidence(r)) return 3;
   return 0;
 }
 /* groupTitle 已删（2026-11-17 死代码清理）：无任何调用方，分组标题由 render
@@ -1474,7 +1486,7 @@ function calcOne(r,P){
    画像推断岗（inferred_jobs）× 学生意向。口径与后端 _infer_pairs 同源且刻意
    收紧为「同名或互含」：推断岗不是公告原文，宁可少标不错标（职能族兜底会把
    配方×工艺、研发×配方也放进来，太松）。每意向最多一对，业务链岗优先。 */
-function miInferPairs(intended,pool,MK,biz,major,code){
+function miInferPairs(intended,pool,MK,biz,major,code,expJobs){
   /* 画像×主营复检（2026-11-17，与后端 filter_infer 同源）：推断岗名是猜的，
      不能自证方向 —— 主营文本必须容纳学生方向，否则整个企业的推断对全撤。
      主营为空/纯「未知」一律不标：没有业务依据就不该推断。全局主营判定
@@ -1501,9 +1513,24 @@ function miInferPairs(intended,pool,MK,biz,major,code){
      化工学生的销售意向放行商贸类主营，化学分析意向不跟着吃「贸易」强词。 */
   if(!MK || !MK.fields || !MK.fields.length) return out;
   return out.filter(function(m){
+    /* 经历岗放行（与后端 _recheck_view 同源）：实习/竞赛推出来的线，与专业
+       无关是正常的，不按主营/行业码复检（2026-11-18 用户拍板）。 */
+    if(expJobs && expJobs.indexOf(m.job)>=0){
+      m.exp=true;
+      m.reason='你实习/竞赛做过这条线，与专业无关也放行，不按专业复检';
+      return true;
+    }
     const v=miCodeFit(major,m.intent,code||'');
     if(v==='core') return true;
-    if(v==='edge'||v==='out') return false;   /* 推断岗是猜的，码只沾边就不再往上加猜测 */
+    /* 有限对口（edge）不撤：照样算推断命中、照样显示岗位名，只是标 weak，
+       名次沉到队尾、卡片后面注明复检结论（2026-11-18 用户口径：推断岗也能
+       当命中，不显示就没法定位判断依据）。out 仍然整撤。 */
+    if(v==='edge'){
+      m.weak=true;
+      m.reason='大模型按主营业务推断可能招（非招聘公告原文）；复检判有限对口，已排到队尾，现场核实';
+      return true;
+    }
+    if(v==='out') return false;
     const pf=miBizKw(major||'', [m.intent]).fields;
     return miBizHit(pf.length?pf:(MK&&MK.fields), biz);
   });
@@ -1563,7 +1590,8 @@ function recompute(P){
          真实命中里已有的岗位名不重复标（互含也算同一岗位：真实命中
          「脱硫脱硝工艺工程师」时，推断对不再标「工艺工程师」）。 */
       x.infer_matches = miInferPairs(P.intended_jobs||[],
-        ((r.biz_fit&&r.biz_fit.jobs)||[]).concat(r.inferred_jobs||[]), MK, biz2, MJ, r.ind_code)
+        ((r.biz_fit&&r.biz_fit.jobs)||[]).concat(r.inferred_jobs||[]), MK, biz2, MJ, r.ind_code,
+        (D.profile&&D.profile.exp_jobs)||[])
         .filter(function(m){
           return !jobs.some(function(rj){ return m.job.indexOf(rj)>=0 || rj.indexOf(m.job)>=0; });
         });
@@ -1629,8 +1657,14 @@ function recompute(P){
     // 与后端 rank_reason 同口径：先说复检分层，再给分数。
     const _st=({hit:'明确命中（有真实 JD）',inferred:'推断命中，待现场核实',miss:'无对口岗位'})[r.state];
     const _t=fitTier(r);
-    const _tier=_t===1 ? '复检判「'+(((r.biz_recheck||{}).label)||'有限对口')+'」，不算确定对口'
-      : (_t===2 ? '只看得见管培生类岗位，不算对口' : '对口（'+_st+'）');
+    const _tier=_t===1 ? ({
+        code_edge:'行业码复核：只算有限对口（只放通用职能岗），不算确定对口',
+        code_out:'行业码复核：与你的方向不交叉，不算对口',
+        biz_other:'行业码复核：主营是别的行业，不算对口'
+      }[String((r.biz_recheck||{}).code||'')]
+        || '复检判「'+(((r.biz_recheck||{}).label)||'有限对口')+'」，不算确定对口')
+      : (_t===2 ? '只看得见管培生类岗位，不算对口'
+      : (_t===3 ? '只按行业推断，没有任何岗位证据（不当作对口）' : '对口（'+_st+'）'));
     r.rank_reason='第 '+(i+1)+' 位：'+_tier+' / 排序分 '+r.score;
     const fb=feedback[r.name];
     if(fb&&fb.result==='yes') r.rank_reason+='；现场已确认招，推断升级为明确命中';
@@ -1708,7 +1742,8 @@ function rowHTML(r,idx,P){
   const inferLine=(r.infer_matches&&r.infer_matches.length)
     ? '<span class="hits" style="color:#b7791f">推断命中：'
       +e(r.infer_matches.slice(0,2).map(function(m){
-        return m.job+' ↔ 你选的「'+m.intent+'」';
+        return m.job+' ↔ 你选的「'+m.intent+'」'
+          +(m.weak?'（复检判有限对口，排到队尾）':'');
       }).join('；'))+(r.infer_matches.length>2?' 等 '+r.infer_matches.length+' 对':'')
       +'（大模型按主营业务推断，非企业公告，现场核实）</span>'
     : '';
@@ -1794,9 +1829,10 @@ function rowHTML(r,idx,P){
         +(_bk.n_blocked?('撤下 '+_bk.n_blocked+' 对'):'')+'）'
       : '';
     const _code=_bk&&_bk.code;
+    if(_code==='exp_bypass')
+      return '<span class="hits" style="color:#1a6b4f">'+e(_bk.label||'经历岗放行')+'——'+_d+'</span>';
     if(_code==='name_dir')
-      return '<span class="hits" style="color:#1a6b4f">主营复核：已执行 · 通过——'+_d
-        +'；这条命中靠公告自证，不必靠主营</span>';
+      return '<span class="hits" style="color:#1a6b4f">'+e(_bk.label||'公告自证')+'——'+_d+'</span>';
     if(_code==='biz_missing')
       return '<span class="hits" style="color:#b7791f">主营复核：暂无法判定（待补数据）——'+_d
         +'；按公告岗位暂留，补齐主营后再复检'+_cnt+'</span>';
@@ -1994,23 +2030,46 @@ function rowBrief(r, idx, P){
   const bright=[];
   if(v.industry_rank_label==='榜单在列') bright.push('榜单在列'+(v.rank_tier?' · '+v.rank_tier:''));
   if(v.growth_tier==='rising_star') bright.push('行业新星');
+  const _noEv=noJobEvidence(r);
   const line1='展位 '+e(r.booth||'—')+' · '+e(r.industry)+' · '+e(r.nature)
     +' · '+e(short(r.city,10))
     +(bright.length?' · <b>'+e(bright.join(' / '))+'</b>':'')
-    +' · '+e(stateLabel(r.state));
+    +' · '+e(_noEv?'推断（无岗位证据）':stateLabel(r.state));
   const hit=sm.slice(0,2).map(function(m){return m.job+' ↔ '+m.intent;});
   /* 推断命中也用同一箭头格式上列表（2026-11-17 用户要求）：优先用后端/
      本地现算的推断对；推断对为空但有大类岗位名（管培生之类）时，用
      「大类岗 ↔ 意向」垫上——这类企业本来就只剩「问一句」这一条线索，
      列表上不给学生箭头对，学生就只会看到「推断待核实」三个字没东西可看。 */
-  const imb=(r.infer_matches||[]).slice(0,2).map(function(m){return m.job+' ↔ '+m.intent;});
+  /* 箭头一律保留（2026-11-18 用户口径）：命中、推断、排到队尾的推断都要
+     「岗位 ↔ 意向」。即使两边同词也照画——箭头本身就是「这条岗位对应你勾的
+     哪个意向」的定位标记，省掉就看不出对应关系。 */
+  function _pairTxt(m){
+    const j=String((m&&m.job)||''), it=String((m&&m.intent)||'');
+    return j+' ↔ '+it;
+  }
+  const _infAll=(r.infer_matches||[]);
+  const _infStrong=_infAll.filter(function(m){return !m.weak;});
+  const imb=_infStrong.slice(0,2).map(_pairTxt);
+  /* 经历岗（实习/竞赛推出来的线）：不放「大模型推断」的话术，讲清放行依据。 */
+  const _expHit=_infStrong.some(function(m){return m.exp;});
+  /* 复检判有限对口的推断对：照样上列表，后面写明复检结论——学生要能看见
+     「推断的是什么岗」，否则只看到「推断待核实」等于没有判断依据。 */
+  const imbw=_infAll.filter(function(m){return m.weak;}).slice(0,2).map(_pairTxt);
   /* 大类岗位（无方向的管培生/储备干部）不是命中：不上箭头行，只留在💬问句行；
-     只有这类 ask 证据的企业整体后置到队尾（见排序里的 onlyAsk）。
-     推断命中箭头只认真推断对（主营复核通过的那批）。 */
+     只有这类 ask 证据的企业整体后置到队尾（见排序里的 onlyAsk）。 */
   const focus=top.concat(
     hit.length?['岗位命中：'+hit.join('；')]:[],
-    imb.length?['推断命中：'+imb.join('；')+'（大模型按主营业务推断，现场核实）']:[]);
-  const line2=focus.length?e(focus.join(' · ')):'按当前画像计算，暂无特别突出的命中项';
+    imb.length?['推断命中：'+imb.join('；')+(_expHit?'（你实习/竞赛做过这条线，不按专业复检）':'（大模型按主营业务推断，现场核实）')]:[],
+    imbw.length?['推断命中：'+imbw.join('；')+'（按主营推断，非公告原文；复检判有限对口，排到队尾）']:[]);
+  const line2=focus.length?e(focus.join(' · '))
+    :(_noEv?'没有任何岗位证据：只按「'+e(r.industry)+'」行业推断，没拿到岗位公告，现场问一句'
+      :'按当前画像计算，暂无特别突出的命中项');
+  /* 无岗位证据的行（上面那种）：至少要让学生看见「凭什么把它排在榜上」——
+     主营一句话 + 「这是推断、不是公告」。原来这里一片空白，学生只看到
+     「推断待核实」，等于让人信一个没有依据的结论（2026-11-18 用户实测）。 */
+  const evBasis=(_noEv&&r.biz_fit&&r.biz_fit.basis)
+    ? '<div class="line" style="color:#8a6d3b">推断依据：'+e(short(r.biz_fit.basis,110))
+      +'（按主营推断，非企业公告；未取得对口岗位证据）</div>' : '';
   const basisLine=r.llm_basis
     ? '<div class="line" style="color:#1a6b4f"><b>'+e(short(r.llm_basis,120))+'</b></div>' : '';
   /* 层级提示要出现在列表上，不能只藏在「完整报告」里：
@@ -2036,6 +2095,7 @@ function rowBrief(r, idx, P){
    +   '<div class="sc">'+r.score+'<em>缺数据维度记 0</em></div></div>'
    + '<div class="line">'+line1+'</div>'
    + '<div class="line">'+line2+'</div>'
+   + evBasis
    + basisLine
    + lvlLine
    + askLine
@@ -2302,6 +2362,15 @@ function render(){
   const _noN=rows.filter(function(r){
     return r.biz_fit && r.biz_fit.fit==='no' && !r.state_recalc;
   }).length;
+  /* 复检判 no 的**总家数**：后端已撤出榜单、只留在 payload.biz_fit_no 的那批，
+     加上换画像后本地才判出 no、还没被撤掉的那几行（去重后相加）。 */
+  const _noArch=(D.biz_fit_no&&D.biz_fit_no.items)||[];
+  const _noArchNames={};
+  _noArch.forEach(function(it){ if(it&&it.name) _noArchNames[it.name]=1; });
+  const _noAll=_noArch.length
+    + rows.filter(function(r){
+        return r.biz_fit && r.biz_fit.fit==='no' && !r.state_recalc && !_noArchNames[r.name];
+      }).length;
   if(sortMode==='booth'){
     rows.sort(function(a,b){
       return String(a.booth||'zzz').localeCompare(String(b.booth||'zzz'),'zh',{numeric:true});
@@ -2455,7 +2524,7 @@ function render(){
     html='<div class="note" style="font-size:12px;line-height:1.75;margin:0 0 10px"><b style="white-space:nowrap">共 '
       + D.stats.companies+' 家 / '+D.stats.jobs+' 条岗位</b>　'+live
       + ' · 明确命中 '+_hitN+' / 推断 '+_infN
-      + (_noN?'（其中 '+_noN+' 家的主营与你的方向不交叉，已折叠到列表底部）':'')
+      + (_noAll?'　已撤出榜单 '+_noAll+' 家（公告/复核没对口岗，文末留档可查）':'')
       /* 不在榜里的「不对口」不参与排名（硬过滤直接剔掉），没有可显示的计数；
          原来取 D.stats.states.miss 会渲染成 undefined。换画像后按当前结果重数。 */
       + (_customNow?'（按当前画像重算）':'')
@@ -2511,15 +2580,36 @@ function render(){
       rs.forEach(function(r){ html+=rowBrief(r,idx++,P); });
       html+='</div>';
     });
-    if(_noRows.length){
+    /* 复检判「方向不交叉」（no）的企业：**不在榜上**，只在这里留档。
+       2026-11-18 用户明确：「复检判 no 的应该 pass，不是放后」。所以这里不再
+       渲染成卡片、不给名次不给分，只列名字 + 理由，点开可核对。
+       后端 match_rows 已把它们从 rows 里撤走（进 payload.biz_fit_no）；这段
+       同时兜住换画像 / 预览路径里本地判出 no 的行。 */
+    const _noList=(D.biz_fit_no&&D.biz_fit_no.items)||[];
+    const _noSeen={};
+    const _archive=[];
+    _noList.forEach(function(it){
+      if(!it||!it.name||_noSeen[it.name]) return;
+      _noSeen[it.name]=1;
+      _archive.push({name:it.name, why:it.why||'主营复核判方向不交叉'});
+    });
+    _noRows.forEach(function(r){
+      if(_noSeen[r.name]) return;
+      _noSeen[r.name]=1;
+      _archive.push({name:r.name, why:(r.biz_fit&&r.biz_fit.basis)
+        ? ('主营复核判方向不交叉：'+r.biz_fit.basis) : '主营复核判方向不交叉'});
+    });
+    if(_archive.length){
       html+='<details class="tier" style="margin:14px 0 0">'
         + '<summary class="tier-h" style="cursor:pointer">'
-        + '与你的方向无关 <em>'+_noRows.length+' 家</em>'
+        + '已撤出榜单 · 不在榜上 <em>'+_archive.length+' 家</em>'
         + '<span style="font-weight:400;font-size:12px;color:#8a94a6;margin-left:8px">'
-        + '主营业务与你的意向方向不交叉，建议这个展位跳过；'
-        + '展位号与岗位数据都还在，导逛路线不变</span></summary>'
-        + '<div style="padding:8px 0 0">';
-      _noRows.forEach(function(r){ html+=rowBrief(r,idx++,P); });
+        + '公告里没有对口岗 / 主营复核判方向不交叉 / 主营不是这一行——一律撤出榜单，'
+        + '不给名次、不占排队时间；展位号与岗位数据都还在，导逛路线不变</span></summary>'
+        + '<div style="padding:8px 0 0;font-size:12.5px;line-height:1.9">';
+      _archive.forEach(function(it){
+        html+='<div style="color:#5c6675">· <b>'+e(it.name)+'</b> — '+e(short(it.why,120))+'</div>';
+      });
       html+='</div></details>';
     }
     /* 榜单末尾：结束使用按钮（一键存测试记录） */
@@ -2538,7 +2628,13 @@ function render(){
      （2026-11-15 修复：采集页只提示，不刷新）。 */
   (function(){
     if(window.__verPoll) return; window.__verPoll=1;
-    const REPORT_VIEW = DETAIL_NAME || new URLSearchParams(location.search).get('report')==='1';
+    /* REPORT_VIEW：独立报告页（?report=1 / ?detail=）+ 匹配端独立页
+       （build 注入 window.__FORCE_REPORT=1，URL 没有参数但整页就是报告）。
+       匹配端过去被当成「对话内嵌」只弹 8 秒横幅不刷新，用户看到的数据
+       时间戳一直是旧版（2026-11-19 用户踩坑）。 */
+    const REPORT_VIEW = (DETAIL_NAME
+      || new URLSearchParams(location.search).get('report')==='1'
+      || window.__FORCE_REPORT===1);
     setInterval(function(){
       if(document.hidden) return;
       fetch(SEM_BASE+'/api/fair/version').then(function(r){return r.json();}).then(function(v){
@@ -2554,9 +2650,17 @@ function render(){
             document.body.appendChild(b);
             setTimeout(function(){location.reload();},3000);
           }else{
-            b.textContent='ℹ 匹配端数据已更新（'+fmtGen(v.generated_at)+'）；本次不影响当前对话，稍后可在报告页查看新版结果。';
+            /* 采集对话页：不能自动 reload（会把学生填到一半的对话清零），
+               给一个手动「立即载入」按钮，横幅不再 8 秒自动消失。 */
+            b.appendChild(document.createTextNode('ℹ 匹配端数据已更新（'+fmtGen(v.generated_at)+'）；本次不影响当前对话。'));
+            const rb=document.createElement('button');
+            rb.type='button';
+            rb.textContent='立即载入新版（刷新页面）';
+            rb.style.cssText='margin-left:10px;padding:2px 10px;border:1px solid #b7791f;'
+              +'border-radius:4px;background:#fff;color:#b7791f;cursor:pointer;font-size:12px';
+            rb.onclick=function(){ location.reload(); };
+            b.appendChild(rb);
             document.body.appendChild(b);
-            setTimeout(function(){ b.remove(); },8000);
           }
         }
       }).catch(function(){});

@@ -121,6 +121,56 @@ class TestRankOrder(unittest.TestCase):
         self.assertEqual(sorted([bad, ok], key=F.rank_sort_key)[0]["name"], "Y")
 
 
+class TestNoEvidenceTier(unittest.TestCase):
+    """第 3 层：推断态、一条岗位证据都没有的行（2026-11-18 实测后新增）。
+
+    生物画像的榜上第 2 名古茗（茶饮）、第 5 名跨境电商、第 7/8 名教育机构、
+    第 12 名人事考试中心，卡片上只有「推断待核实」——主营复核把推断对全撤了，
+    state 却还留在 inferred，于是凭 71.9 / 57.1 分压在有真实 JD 的企业前面。
+    """
+
+    def test_只有行业推断_没有岗位证据_下沉(self):
+        r = row("古茗", score=71.9, state="inferred", code="")
+        self.assertEqual(F.rank_tier(r), 3)
+
+    def test_有推断命中对_不下沉(self):
+        r = row("益丰", score=80.2, state="inferred", code="",
+                infer_matches=[{"intent": "数据分析岗", "job": "数据分析岗"}])
+        self.assertEqual(F.rank_tier(r), 0)
+
+    def test_有问一句的大类岗_按only_ask处理不归第三层(self):
+        r = row("嘉盛", score=80.2, state="inferred", code="",
+                ask_jobs=[{"job": "管培生", "intent": "生物研发工程师"}])
+        self.assertEqual(F.rank_tier(r), 0)
+        self.assertTrue(F._only_ask(r))
+
+    def test_复检确认方向_core_不下沉(self):
+        """code_core 是「方向确认过、只是没拿到公告」，与「什么都没确认」不同。"""
+        r = row("天山铝业", score=60.0, state="inferred", code="code_core")
+        self.assertEqual(F.rank_tier(r), 0)
+
+    def test_有限对口的推断命中_照样算命中_只是沉到队尾层(self):
+        """复检判 edge 的行，只要带着推断对，就不是「无岗位证据」。
+
+        2026-11-18 用户口径：推断岗也能当命中；沉到队尾可以，但岗位名必须
+        显示出来，否则学生看不到「凭什么排这家」。层级仍是 1（不算确定对口）。
+        """
+        r = row("古茗", score=71.9, state="inferred", code="code_edge",
+                infer_matches=[{"intent": "数据分析岗", "job": "数据分析岗",
+                                "weak": True}])
+        self.assertEqual(F.rank_tier(r), 1)
+        self.assertFalse(F._no_job_evidence(r))
+        hit = row("科伦", score=53.7, jobs=["生物研发工程师"], code="code_core")
+        self.assertEqual(sorted([r, hit], key=F.rank_sort_key)[0]["name"], "科伦")
+
+    def test_无证据的推断排在真命中之后(self):
+        """71.9 分的纯行业推断不许压过 53.7 分的真实命中。"""
+        inf = row("古茗", score=71.9, state="inferred", code="")
+        hit = row("科伦", score=53.7, jobs=["生物研发工程师"], code="code_core")
+        self.assertEqual(sorted([inf, hit], key=F.rank_sort_key)[0]["name"], "科伦")
+
+
+
 class TestFrontendSameRule(unittest.TestCase):
     """前端 fitTier 与后端 rank_tier 必须同规则（页面会自己再排一遍）。"""
 
@@ -136,6 +186,13 @@ class TestFrontendSameRule(unittest.TestCase):
         self.assertEqual(frozenset(x.strip().strip("'\"") for x in m2.group(1).split(",")),
                          F._UNCERTAIN_CODES,
                          "前端不确定结论码与后端 _UNCERTAIN_CODES 不一致")
+        m3 = re.search(r"CONFIRMED_RECHECK=\[([^\]]+)\]", js)
+        self.assertIsNotNone(m3, "report.js 里找不到 CONFIRMED_RECHECK")
+        self.assertEqual(frozenset(x.strip().strip("'\"") for x in m3.group(1).split(",")),
+                         F._CONFIRMED_CODES,
+                         "前端确定结论码与后端 _CONFIRMED_CODES 不一致")
+        self.assertIn("function noJobEvidence", js,
+                      "前端缺 noJobEvidence：第三层在后端下沉、前端不下沉，名次会打架")
 
     def test_前端排序键含分层(self):
         """两处重排（默认队列序 / 只看命中）都必须带上 fitTier。"""

@@ -657,7 +657,7 @@ window.__mountMatch = function(doc, opts){
   /* 企业名判定：与服务端 portal.looks_like_company 同口径。
      以前这里只要求「4~40 字、含中文」，于是 CSV 表头「所属行业」、岗位列
      「人事行政、财务」都被当成企业名塞进名单，检索时白跑一趟还显示「未找到」。 */
-  const CO_RE = /公司|集团|银行|支行|分行|营业部|研究院|研究所|设计院|科学院|大学|学院|医院|中心|事务所|事业单位|出版社|报社|杂志社|合作社|(?:财政|税务|市场监督|生态环境|人力资源|统计|气象|地震|邮政|铁路|海关|药监|烟草)局|(?:机械|印刷|纺织|食品|化工|电子|建材|造纸|钢铁|冶炼|加工|制造)厂/;
+  const CO_RE = /公司|集团|银行|支行|分行|营业部|研究院|研究所|设计院|科学院|大学|学院|中学|小学|学校|医院|中心|事务所|事业单位|出版社|报社|杂志社|合作社|大队|联络处|办事处|委员会|人才|组织部|人社|社会保障局|管理局|行政审批|政务服务|(?:财政|税务|市场监督|生态环境|人力资源|统计|气象|地震|邮政|铁路|海关|药监|烟草)局|(?:机械|印刷|纺织|食品|化工|电子|建材|造纸|钢铁|冶炼|加工|制造)厂/;
   const HEAD_RE = /^(序号|编号|企业名称|公司名称|单位名称|企业|单位|公司名|所属行业|行业|单位性质|性质|展位号|展位|招聘岗位数|岗位数|岗位方向|岗位|备注|说明|地址|联系人|联系电话|电话|人数|专业|学历|要求)$/;
 
   function pickNames(text, strict){
@@ -754,16 +754,23 @@ window.__mountMatch = function(doc, opts){
     ev.target.value = "";
   });
 
+  /* 内置名单是库里 company_jobs 的真实参会企业（145 家，含学校/机关这类
+     事业单位）。点「用内置名单」后不过 pickNamesSmart 清洗——那道清洗会把
+     学校、政府机关滤掉，145 家进来只剩 132 家（2026-11-19 用户实测踩坑）。
+     用户手动改了名单就恢复清洗。 */
+  let builtinFilled = false;
   wrap.querySelector("#mfill").addEventListener("click", () => {
     box.value = BUILTIN_NAMES.join("\n");
+    builtinFilled = true;
     stat.textContent = "已放入内置名单 " + BUILTIN_NAMES.length + " 家。";
   });
+  box.addEventListener("input", () => { builtinFilled = false; });
 
 
   wrap.querySelector("#mlookup").addEventListener("click", async () => {
     const btn = wrap.querySelector("#mlookup");
     const raw = box.value.trim();
-    const all = raw ? pickNamesSmart(raw) : BUILTIN_NAMES.slice();
+    const all = (!raw || builtinFilled) ? BUILTIN_NAMES.slice() : pickNamesSmart(raw);
     if (!all.length) { stat.textContent = "先导入或粘贴企业名单。"; return; }
 
     const CHUNK = 8;
@@ -874,7 +881,7 @@ window.__mountMatch = function(doc, opts){
     const urlInput = wrap.querySelector("#murl");
     const url = (urlInput.value || "").trim();
     const raw = box.value.trim();
-    const names = raw ? pickNamesSmart(raw) : BUILTIN_NAMES.slice();
+    const names = (!raw || builtinFilled) ? BUILTIN_NAMES.slice() : pickNamesSmart(raw);
 
     const prof = profileFromDoc(doc);
 

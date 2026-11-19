@@ -746,8 +746,8 @@ function fairSteps() {
     fairStep('internship', '做过哪些实习 / 竞赛 / 论文？写岗位、项目或方向就行，也可以留空。', {
       allowCustom: true,
       optional: true,
-      placeholder: '比如：供应链实习 / 美赛 Finalist / 本科论文《…》，做过几个写几个',
-      hint: '自由填写，原样记录；这段会直接喂给后面的岗位推荐模型。不套任何岗位族，想跳过就输入「跳过」。',
+      placeholder: '比如：宁德时代（动力电池）研发实习 / 美赛 Finalist / 本科论文《…》，做过几个写几个',
+      hint: '自由填写，原样记录；这段会直接喂给后面的岗位推荐模型。不套任何岗位族，想跳过就输入「跳过」。实习建议带上企业主营业务或细分行业（如「宁德时代（动力电池）」）：跨行业岗位要按「实习公司行业 × 招聘公司行业」复检，写不清行业就按不限行业放行。',
       after(value, a) { a.direction_interest = value; },
       reset(a) { a.direction_interest = ''; },
     }),

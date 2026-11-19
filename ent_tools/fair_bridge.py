@@ -360,6 +360,61 @@ def read_feedback():
         return {}
 
 
+def exp_job_titles(experiences):
+    """实习 / 竞赛 → 校招岗名（复用 job_recommend 的映射，不另写一张表）。
+
+    用途只有一个：这类岗**与专业无关是正常的**（文科生做供应链实习、生物做
+    数据分析、机械做 PLC），复检要放行——不能拿专业去判「有限对口」再把它
+    沉到队尾（2026-11-18 用户拍板：经历岗一律放行，不然一个都通不过）。
+    """
+    exps = [str(e or "").strip() for e in (experiences or []) if str(e or "").strip()]
+    if not exps:
+        return []
+    try:
+        import job_recommend
+        # 同一批文本两路都过：实习走职能表，竞赛走竞赛表（数学建模 → 数据分析岗）。
+        got = job_recommend.experience_jobs(
+            {"internships": exps, "competitions": exps})
+        return list(dict.fromkeys(g["title"] for g in got if g.get("title")))
+    except Exception:
+        # 映射表出问题不该拖垮整张榜：退回「没有经历岗」，行为与本改动前一致。
+        return []
+
+
+def exp_recheck_meta(experiences):
+    """每条经历 → 经历岗复检元数据 {岗名: {...}}（2026-11-18 用户二次拍板）。
+
+    经历岗的复检轴是「实习企业行业 × 本家企业行业」，前提是知道实习公司属什么
+    行业：拿经历原文跑 ind_code.classify，只收 high/medium 置信度——low/none
+    = 看不出企业细分行业，复检不刷（放行）。采集端已提示学生把实习写成
+    「公司名（主营或细分行业）+ 岗位」；竞赛本来没有企业，判不出就放行。
+    """
+    out = {}
+    exps = [str(e or "").strip() for e in (experiences or []) if str(e or "").strip()]
+    if not exps:
+        return out
+    try:
+        import ind_code
+        import job_recommend
+        got = job_recommend.experience_jobs(
+            {"internships": exps, "competitions": exps})
+    except Exception:
+        # 映射/判码出问题不该拖垮整张榜：退回空表 = 全部按「判不出」放行。
+        return out
+    for g in got:
+        t, src = g.get("title"), str(g.get("from") or "")
+        if not t or t in out:
+            continue
+        try:
+            code, conf, _why = ind_code.classify(scope=src, brief=src)
+        except Exception:
+            code, conf = ind_code.UNKNOWN, "none"
+        out[t] = {"code": code if conf in ("high", "medium") else None,
+                  "conf": conf, "from": src,
+                  "generic": bool(biz_recheck._GENERIC_JOB.search(t))}
+    return out
+
+
 def profile_from(profile):
     """采集端画像 -> 匹配端用的字段；缺的用默认补全。"""
     ans = profile.get("answers") or {}
@@ -372,6 +427,11 @@ def profile_from(profile):
         # 专业空 → 行业码判不了对口、报告写「专业未填」；经历空 → 只按专业算。
         "major": str(ident.get("major") or "").strip(),
         "experiences": _exps,
+        # 经历岗（实习/竞赛 → 校招岗名）：复检对这类岗一律放行，不按专业判。
+        "exp_jobs": exp_job_titles(_exps),
+        # 经历岗复检元数据（2026-11-18 二次拍板）：{岗名: {code, conf, from,
+        # generic}}。code 是实习企业行业码（判不出为 None → 复检不刷）。
+        "exp_meta": exp_recheck_meta(_exps),
         "experiences_missing": not _exps,
         "major_missing": not str(ident.get("major") or "").strip(),
         "intended_jobs": ans.get("intended_jobs") or DEFAULT_PROFILE["intended_jobs"],
@@ -1411,14 +1471,31 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
     # 行业码：建库时打好的枚举（145 家已 100% 覆盖）。有码就查表定论，
     # 没码（新进库还没跑 backfill）退回关键词口径 —— 不拿数据缺口当结论。
     _ind_code = str(c.get("ind_code") or "").strip() or None
+    # 经历岗单拎出来（2026-11-18 二次拍板）：复检轴不在专业，在「实习企业
+    # 行业 × 本家企业行业」——化工企业的研发岗配互联网实习的研发就不行；
+    # 通用岗、判不出实习行业的放行。其余命中照走 recheck_real（专业轴）。
+    _exp_set = set((profile or {}).get("exp_jobs") or [])
+    _exp_meta = (profile or {}).get("exp_meta") or {}
+    _exp_real = [p for p in _real_pairs if p[0] in _exp_set or p[1] in _exp_set]
+    _oth_real = [p for p in _real_pairs if p not in _exp_real]
     _biz_r = biz_recheck.recheck_real(
-        _real_pairs, _dom_kw, _dom_fields, _biz_text_rk,
+        _oth_real, _dom_kw, _dom_fields, _biz_text_rk,
         (profile or {}).get("major") or "", parts=_biz_parts, diag=_biz_diag,
         code=_ind_code)
-    _real_kept, _biz_blocked = _biz_r["kept"], _biz_r["blocked"]
+    _exp_r = biz_recheck.exp_recheck(_exp_real, _exp_meta, _ind_code)
+    _biz_diag.extend(_exp_r["diag"])
+    _real_kept = _biz_r["kept"] + _exp_r["kept"]
+    _biz_blocked = _biz_r["blocked"] + _exp_r["blocked"]
     _biz_watch = _biz_r["watch"]
-    real = [t for t, _it in _real_kept]
-    for _bt, _bi in _biz_blocked:
+    # 有限对口的真实命中（行业码 edge；没打码时未验主营的通用职能/方向岗；
+    # 实习行业与本家只算相邻的经历岗）：2026-11-18 用户拍板「都得复检，
+    # 公告自证不再是免检金牌」——半导体公司的「研发工程师」对生物学生，
+    # 公告里有、意向也有，主营对不上就是匹配不上。复检判 edge 的：命中照样
+    # 显示（不藏判断依据），行级结论标 code_edge，名次沉到队尾（rank_tier
+    # 认 code_edge）；判 out 的进 blocked 转现场待问。
+    _real_weak = (_biz_r.get("weak") or []) + _exp_r["weak"]
+    real = [t for t, _it in _real_kept] + [t for t, _it in _real_weak]
+    for _bt, _bi in _biz_r["blocked"]:
         if any(a.get("job") == _bt for a in asks):
             continue
         asks.append({"job": _bt, "intent": _bi, "kind": "biz",
@@ -1426,6 +1503,13 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
                          _bt, _bi, biz_text, (profile or {}).get("major") or "",
                          (profile or {}).get("intended_jobs") or [],
                          code=_ind_code)})
+    for _bt, _bi in _exp_r["blocked"]:
+        if any(a.get("job") == _bt for a in asks):
+            continue
+        _d = next((d for d in _exp_r["diag"]
+                   if d["job"] == _bt and d["intent"] == _bi), {})
+        asks.append({"job": _bt, "intent": _bi, "kind": "exp",
+                     "why": _d.get("detail") or "你实习的公司与这家行业对不上，现场确认"})
     trust0, _ = audit(c, m_al, by_title, by_title)
     guard = hallucination_guard(c, m_al, trust0, by_title)
     # 对外一律用脱敏后的岗位名（问句、命中列表、显著提示都不再念幻觉岗位）
@@ -1510,17 +1594,37 @@ def _evidence(name, c, m, intent_sem, hit_verdicts, by_title, dir_book, intended
             _biz_rk = {"code": "code_core", "label": biz_recheck.DIAG_TEXT["code_core"],
                        "detail": "这家是「%s」，按行业码与你的专业方向对口，命中照用" % _ic_name,
                        "n_watch": 0, "n_blocked": 0}
-        elif intended:
-            # 有码但非 core、又没有被问对（岗位名自带方向放行）：归 name_dir，
-            # 说清「靠公告岗位自证」，不冒充查表通过。
-            _biz_rk = {"code": "name_dir", "label": biz_recheck.DIAG_TEXT["name_dir"],
-                       "detail": "这家是「%s」；对口岗位名自带方向，靠本家公告自证，不必靠主营"
+        elif intended and not real and _verdict in (_ic.FIT_OUT, _ic.FIT_EDGE):
+            # 行业码判「不是这个方向 / 有限对口」，而推断对被 filter_infer 静默
+            # 丢掉（out/edge 都不记 diag）——过去这里一律落成 name_dir「靠公告
+            # 岗位自证」，等于给一家茶饮连锁贴上「对口岗位名自带方向」的合格章。
+            # 2026-11-18 实测：古茗（茶饮）、跨境电商、两家教育机构、人事考试
+            # 中心全走这条路，于是榜上第 2/5/7/8/11 名都是「推断待核实」，却
+            # 拿不出一个岗位名。**只在没有真实命中岗（real 为空）时改判**——
+            # 有实岗的企业本来就有公告自证，仍归 name_dir。
+            _code = "code_out" if _verdict == _ic.FIT_OUT else "code_edge"
+            _biz_rk = {"code": _code, "label": biz_recheck.DIAG_TEXT[_code],
+                       "detail": "这家是「%s」，按行业码%s；没有任何岗位证据能撑起「对口」"
+                                 % (_ic_name,
+                                    "与你的方向不交叉" if _code == "code_out"
+                                    else "只算有限对口"),
+                       "n_watch": 0, "n_blocked": 0}
+        elif intended and real and not _real_kept:
+            # 真实命中全部靠「有限对口」保住（行业码 edge）：命中保留显示，
+            # 名次沉到队尾（rank_tier 认 code_edge）。2026-11-18 用户拍板：
+            # 都得复检——半导体公司的「研发工程师」对生物学生，公告里有、
+            # 意向也有，主营对不上就是匹配不上；公告自证（name_dir）不再是
+            # 免检金牌，通用职能白名单也不是。
+            _biz_rk = {"code": "code_edge", "label": biz_recheck.DIAG_TEXT["code_edge"],
+                       "detail": "这家是「%s」，按行业码只算有限对口；公告里的命中保留显示，名次排到队尾"
                                  % _ic_name,
                        "n_watch": 0, "n_blocked": 0}
     return {
         "dir_notes": dir_notes, "dropped_jobs": dropped_jobs, "aligned_all": aligned_all,
         "biz_rk": _biz_rk, "biz_diag": _biz_diag, "biz_text_rk": _biz_text_rk,
         "lvl_blocked": lvl_blocked, "ask_blocked": ask_blocked, "real": real, "asks": asks,
+        # 经历岗复检放行的真实命中岗名（公告岗位名 == 经历岗、且实习行业复检通过）
+        "exp_kept": [t for t, _it in _exp_r["kept"]],
         "guard": guard, "m_eff": m_eff, "trust": trust, "check_notes": check_notes,
         "gaps": dynamic_gaps(c, m_gap, bm.get(name)), "sc": score_parts(c, W, profile),
     }
@@ -1700,6 +1804,12 @@ class RowPrep:
     infer_text: str = ""
     ask_question: str = ""
     pairs: list = field(default_factory=list)
+    # 经历岗复检放行的推断岗名（2026-11-18 二次拍板）：通用岗/实习行业判不出/
+    # 两边行业相合的。_recheck_view 拿它判断行级结论要不要改写成 exp_bypass。
+    exp_pass: list = field(default_factory=list)
+    # 有限对口（行业码 edge）的推断对：照样展示成「推断命中」，但不进正式推断对，
+    # 排序时沉到队尾（见 rank_tier）。2026-11-18 用户口径：推断岗也能当命中。
+    soft_pairs: list = field(default_factory=list)
     qs: list = field(default_factory=list)
     hits: list = field(default_factory=list)
     misses: list = field(default_factory=list)
@@ -1811,13 +1921,18 @@ def _infer_pack(ctx, name, c, ev, prep):
     infer_text = _inferred_text(m_eff["state"], prep.fit, prep.fit_info, prep.basis, fj,
                                 evsuf, prep.jobs, prep.js, prep.src_label, prep.intended_ask)
 
-    infer_pairs, infer_diag = [], []
+    infer_pairs, infer_diag, soft_pairs = [], [], []
     real_set = set(ev["real"])
     ipool = list(dict.fromkeys(
         [str(t or "").strip() for t in (prep.fit_info.get("jobs") or []) if str(t or "").strip()]
         + [str(j.get("title") or "").strip() for j in prep.inferred if j.get("title")]))
     seen_it = set()
     biz_diag_out = []
+    # 经历岗复检（2026-11-18 二次拍板）：轴不在专业，在「实习企业行业 × 本家
+    # 企业行业」——化工企业的研发岗配互联网实习的研发就不行；通用职能岗、
+    # 判不出实习行业的放行。edge 的收进 weak（照样显示、沉队尾）。
+    _exp_set = set(ctx.profile.get("exp_jobs") or [])
+    _exp_meta = ctx.profile.get("exp_meta") or {}
     for t in ipool:
         for it in profile_intended:
             if it in seen_it or not t:
@@ -1833,10 +1948,26 @@ def _infer_pack(ctx, name, c, ev, prep):
         # 没有业务依据就不该推断（教育出版推断「物流专员」这类就这么拦下）。
         # 诊断按原样在 t 循环内逐次 extend（diag 列表跨轮次累积共享）——
         # 这是历史口径，动它之前先对拍 data/_recheck_diag.json。
-        infer_pairs = biz_recheck.filter_infer(
-            infer_pairs, ctx._dom_fields, ev["biz_text_rk"],
-            ctx.profile.get("major") or "", diag=infer_diag, name=name,
-            code=(str(c.get("ind_code") or "").strip() or None))
+        # 经历岗的推断对单拎出来走 exp_recheck（实习行业轴），排前面；
+        # 其余照走 filter_infer（专业轴）。
+        _exp_all = [p for p in infer_pairs
+                    if p[0] in _exp_set or p[1] in _exp_set]
+        _exp_r = biz_recheck.exp_recheck(
+            _exp_all, _exp_meta,
+            str(c.get("ind_code") or "").strip() or None)
+        infer_diag.extend(_exp_r["diag"])
+        infer_pairs = (_exp_r["kept"]
+                       + biz_recheck.filter_infer(
+                           [p for p in infer_pairs if p not in set(_exp_all)],
+                           ctx._dom_fields, ev["biz_text_rk"],
+                           ctx.profile.get("major") or "", diag=infer_diag,
+                           name=name,
+                           code=(str(c.get("ind_code") or "").strip() or None),
+                           soft=soft_pairs))
+        soft_pairs = soft_pairs + _exp_r["weak"]
+        prep.exp_pass = list(dict.fromkeys(
+            [t for t, _it in _exp_r["kept"]]
+            + list(prep.exp_pass or [])))
         biz_diag_out.extend(infer_diag)
 
     # 现场问句也念学生自己的意向岗位。llm_match 里的 verify_question 是
@@ -1858,7 +1989,48 @@ def _infer_pack(ctx, name, c, ev, prep):
     infer_text = re.sub(r"建议现场问一句是否招[^。]+。$", "", infer_text)
     # 现场提问：权重 × (1 - 证据可信度)，取前 2；推断岗位固定排第一
     qs = _questions(ev["gaps"], ctx.W, m_eff["state"], prep.fit, infer_text, ask_question)
-    return infer_text, ask_question, qs, infer_pairs, biz_diag_out
+    # 有限对口的推断对：每轮循环都会重新过滤一遍 infer_pairs，soft 也跟着
+    # 重复收，这里去重并按「已算正式推断对」剔除，免得同一对出现两次。
+    soft_pairs = [p for p in dict.fromkeys(soft_pairs) if p not in set(infer_pairs)]
+    return infer_text, ask_question, qs, infer_pairs, biz_diag_out, soft_pairs
+
+
+def _recheck_view(ctx, ev, prep):
+    """行级复检结论：经历岗放行时改写（2026-11-18 用户二次拍板）。
+
+    经历岗复检轴不在专业，在「实习企业行业 × 本家企业行业」（biz_recheck.
+    exp_recheck）：化工企业的研发岗配互联网实习的研发就不行；通用职能岗、
+    判不出实习行业的放行。这里把行业码判 edge/out 的行级结论改写成
+    exp_bypass 的**唯一依据**是确实有经历岗复检放行的命中——
+    ① prep.exp_pass：放行的经历岗推断对；
+    ② ev["exp_kept"]：放行的经历岗真实命中（公告岗位名 == 经历岗）。
+    复检判 edge 被沉队尾的（weak）不算放行，不改写、保持 code_edge。
+    主营真对上的 code_core 不动。
+    """
+    rk = ev.get("biz_rk")
+    if not rk or rk.get("code") not in (_UNCERTAIN_CODES | {"name_dir"}):
+        return rk
+    exp = set(ctx.profile.get("exp_jobs") or [])
+    if not exp:
+        return rk
+    hits = list(dict.fromkeys(
+        [t for t, it in (prep.pairs or []) if t in exp or it in exp]
+        + list(prep.exp_pass or [])
+        + [t for t in (ev.get("exp_kept") or [])]))
+    if not hits:
+        return rk
+    if rk.get("code") == "name_dir":
+        _m = re.search(r"这家是「(.+?)」", str(rk.get("detail") or ""))
+        _why = (("这家主营是「%s」，与你专业无关，但公告里真有这个岗，跨行业照算命中" % _m.group(1))
+                if _m else "这家主营与你专业无关，但公告里真有这个岗，跨行业照算命中")
+    else:
+        _why = "行业码原结论：%s" % (rk.get("label") or "有限对口")
+    return {"code": "exp_bypass",
+            "label": "经历岗放行（按实习行业复检，不按专业）",
+            "detail": ("你实习/竞赛做过「%s」这条线；复检按实习企业行业判、不按专业，"
+                       "实习行业与这家相合（或属通用职能岗/实习行业没写清）就放行；%s"
+                       % ("、".join(dict.fromkeys(hits)), _why)),
+            "n_watch": rk.get("n_watch", 0), "n_blocked": rk.get("n_blocked", 0)}
 
 
 def _compose_row(ctx, name, c, ev, prep, m, sector=None):
@@ -1870,6 +2042,8 @@ def _compose_row(ctx, name, c, ev, prep, m, sector=None):
     m_eff, guard = ev["m_eff"], ev["guard"]
     rec = ctx.by_name.get(name, {})
     booth = ctx.bm.get(name, {})
+    # 经历岗名单：实习/竞赛 → 校招岗名。这些岗与专业无关是正常的，复检放行。
+    _exp_set = set(ctx.profile.get("exp_jobs") or [])
     _v42 = v42_view(ctx.enrich.get(name) or ctx.v42.get(name))
     # 医药细分产业带（2026-11-18 用户实测）：行业枚举里「医药」只有一格，
     # 生物与化学对口的却不是同一批企业。调用方已算过就复用（那里还要用
@@ -1926,9 +2100,20 @@ def _compose_row(ctx, name, c, ev, prep, m, sector=None):
                                    if prep.state_final == "hit" else []),
         # 推断命中对（2026-11-17 用户要求）：与真实命中同一箭头格式，但显式
         # 标「推断」。前端未改画像时直接采信，换画像走本地同源规则。
-        "infer_matches_backend": [{"intent": it, "job": t, "via": "infer",
-                                   "reason": "大模型按主营业务推断可能招（非招聘公告原文），现场核实"}
-                                  for t, it in prep.pairs],
+        "infer_matches_backend": (
+            [{"intent": it, "job": t, "via": "infer", "weak": False,
+              "exp": (t in _exp_set or it in _exp_set),
+              "reason": ("你实习/竞赛做过这条线，与专业无关也放行，不按专业复检"
+                         if (t in _exp_set or it in _exp_set) else
+                         "大模型按主营业务推断可能招（非招聘公告原文），现场核实")}
+             for t, it in prep.pairs]
+            # 有限对口（行业码 edge）的推断对：照样算命中、照样显示岗位名，
+            # 只是名次沉到队尾、理由写明「复检判有限对口」。2026-11-18 用户
+            # 口径：推断岗也能当命中，不显示就没法定位判断依据。
+            + [{"intent": it, "job": t, "via": "infer", "weak": True,
+                "reason": ("大模型按主营业务推断可能招（非招聘公告原文）；"
+                           "复检判有限对口，已排到队尾，现场核实")}
+               for t, it in prep.soft_pairs]),
         "hit_total": len(prep.hits_all), "miss_total": len(prep.misses_all),
         "job_title_total": prep.title_total,
         # v18：无具体岗企业的粗略描述、标签、大模型按意向岗位挑出的可能岗位
@@ -1976,7 +2161,7 @@ def _compose_row(ctx, name, c, ev, prep, m, sector=None):
         "ask_jobs": ev["ask_blocked"],
         # 画像×主营复检结论（2026-11-17）：{code,label,detail,n_watch,n_blocked}。
         # 前端只读不算，避免前端重算一套分类、两边各说各话。
-        "biz_recheck": ev["biz_rk"],
+        "biz_recheck": _recheck_view(ctx, ev, prep),
         # 行业码 + 中文名：前端查表（专业族 × 行业码）和「这家是什么行业」
         # 的解释都读它。码本身来自建库流程，不在前端算。
         "ind_code": str(c.get("ind_code") or ""),
@@ -2072,7 +2257,7 @@ def match_rows(st):
                            _clean_jobs(c.get("jobs")), _inferred_jobs(c.get("jobs")))
         prep.fit_info, prep.fit, prep.basis = _fit_verdict(ctx, name, c, prep, m_eff["state"])
         (prep.infer_text, prep.ask_question, prep.qs, prep.pairs,
-         pack_diag) = _infer_pack(ctx, name, c, ev, prep)
+         pack_diag, prep.soft_pairs) = _infer_pack(ctx, name, c, ev, prep)
         _biz_diag_all.extend(pack_diag)
 
         prep.hits, prep.hits_all, prep.misses, prep.misses_all, prep.title_total = \
@@ -2148,6 +2333,21 @@ def match_rows(st):
             })
             continue
 
+        # —— 行业码复核判「不是这个方向」（code_out）且没有任何真实命中 → 撤榜 ——
+        # 2026-11-18 用户口径：「复检判 no 的应该 pass，不是放后」。主营复核判
+        # no 的已经在上面的分支撤了；行业码判 out（不是这个方向）与它是同一个
+        # 意思，不该只靠分层垫到队尾。有真实命中岗（real 非空）的不撤：那是有
+        # 公告原文撑着的，交给分层处理。
+        _rk_code = (ev.get("biz_rk") or {}).get("code")
+        if (_rk_code == "code_out" and not ev.get("real")
+                and prep.state_final != "hit"):
+            _bizfit_nofit.append({
+                "name": name,
+                "why": "行业码复核判「不是这个方向」，与你的意向不交叉；"
+                       "也没有任何岗位证据，不进榜",
+            })
+            continue
+
         rows.append(_compose_row(ctx, name, c, ev, prep, m, sector=_sector))
 
     # 名次只由排序分决定。
@@ -2188,6 +2388,9 @@ _GENERIC_ROLE = ("管培", "培训生", "储备干部", "储干", "储备生", "
 # 刻意先不含 biz_weak / biz_missing / biz_no_word：它们表示「主营只是沾边」
 # 或「查不到主营」，当前榜单里没出现过，先不扩大范围，出现后再定。
 _UNCERTAIN_CODES = frozenset(["code_edge", "code_out", "biz_other"])
+# 复检**确认过方向**的结论码：有这两个码的行，即便还没拿到岗位公告，也按
+# 「方向一致」正常排（2026-11-18 用户口径）。与 _UNCERTAIN_CODES 互斥。
+_CONFIRMED_CODES = frozenset(["code_core", "name_dir"])
 
 
 def _is_generic_role(title):
@@ -2215,8 +2418,31 @@ def recheck_code(row):
     return str((row.get("biz_recheck") or {}).get("code") or "")
 
 
+def _no_job_evidence(row):
+    """推断态、却拿不出一条岗位证据的行（2026-11-18 用户实测后的新分层）。
+
+    现象：生物画像的榜上第 2 名古茗（茶饮）、第 5 名跨境电商、第 7/8 名教育机构、
+    第 12 名人事考试中心，卡片上只有「推断待核实」四个字——因为主营复核把它们的
+    推断对全撤了（行业码不在本专业核心带上、主营文本里没有方向词），可 state 还
+    留在 inferred，于是凭城市/性质/行业地位攒的 71.9 / 57.1 分排在有真实 JD 的
+    企业前面。用户原话：「怎么又来这种推断待证实，却不给命中啥的在排行表里」。
+
+    判据（缺一不可，全满足才算「没有证据」）：不是明确命中、没有真实命中对、
+    没有推断命中对、没有「问一句」的大类岗（管培生）、复检也没给确定结论。
+    复检判了 code_core / name_dir 的照样正常排——那是「方向确认过、只是没拿到
+    公告」，与「什么都没确认」不是一回事（见 test_推断但方向一致_不下沉）。
+    """
+    if row.get("state") == "hit":
+        return False
+    if row.get("intent_matches_backend") or row.get("infer_matches_backend"):
+        return False
+    if row.get("ask_jobs") or row.get("hits") or row.get("dir_hit_jobs"):
+        return False
+    return recheck_code(row) not in _CONFIRMED_CODES
+
+
 def rank_tier(row):
-    """对口确定度分层（0 正常 / 1 复检判不确定 / 2 只看得见管培生）。
+    """对口确定度分层（0 正常 / 1 复检判不确定 / 2 只看得见管培生 / 3 无岗位证据）。
 
     **前端 report.js 的 fitTier() 必须与此逐条同规则**：页面会把 rows
     拿过去自己再排一遍，两端一旦不同源，同一家企业前后端名次就不一样。
@@ -2226,6 +2452,8 @@ def rank_tier(row):
         return 2
     if recheck_code(row) in _UNCERTAIN_CODES:
         return 1
+    if _no_job_evidence(row):
+        return 3
     return 0
 
 
@@ -2295,6 +2523,14 @@ def apply_roster(fair_id, rows, dropped, bizfit_nofit, campus_nofit,
     for it in list(dropped or []) + list(bizfit_nofit or []) + list(campus_nofit or []):
         if isinstance(it, dict) and it.get("name") and it["name"] not in why_of:
             why_of[it["name"]] = it.get("why") or "没进榜"
+    # 只留了名字、没留理由的那批（excluded_miss）：它们**不是**「库里没资料」，
+    # 而是「岗位记录 / 校招公告里没有与你所报方向对口的岗位」。2026-11-18 实测：
+    # 132 家名单里 61 家落到这里，页面统一写成「库里没有可用资料，或没匹配上」，
+    # 老师会以为数据没抓到（企业端的搜索明明 131 家都补到岗了）。
+    for n in (miss_names or []):
+        why_of.setdefault(
+            n, "岗位记录里没有与你所报方向对口的岗位（已排除，不进榜；"
+               "企业资料与展位都在，现场可以顺路问一句）")
     rows = [r for r in rows if r.get("name") in keep]
     bizfit_nofit = [x for x in (bizfit_nofit or [])
                     if isinstance(x, dict) and x.get("name") in keep]
@@ -2354,13 +2590,40 @@ def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
                    "miss": "无对口岗位"}.get(r["state"], r["state"])
         _t = rank_tier(r)
         if _t == 1:
-            _tier_txt = "复检判「%s」，不算确定对口" % (
-                (r.get("biz_recheck") or {}).get("label") or "有限对口")
+            # 说清是**哪一道复核**：主营复核（大模型，判 yes/ask/no，判 no 已撤榜）
+            # 与行业码复核（表，判 core/edge/out）是两道关，学生看到「复检判…」
+            # 会以为是被判了 no 却还留在榜上（2026-11-18 用户问过）。
+            _tier_txt = {
+                "code_edge": "行业码复核：只算有限对口（只放通用职能岗），不算确定对口",
+                "code_out": "行业码复核：与你的方向不交叉，不算对口",
+                "biz_other": "行业码复核：主营是别的行业，不算对口",
+            }.get(recheck_code(r),
+                  "复检判「%s」，不算确定对口"
+                  % ((r.get("biz_recheck") or {}).get("label") or "有限对口"))
         elif _t == 2:
             _tier_txt = "只看得见管培生类岗位，不算对口"
+        elif _t == 3:
+            _tier_txt = "只按行业推断，没有任何岗位证据（不当作对口）"
         else:
             _tier_txt = "对口（%s）" % _st_txt
         r["rank_reason"] = ("第 %d 位：%s / 排序分 %s" % (i + 1, _tier_txt, r["score"]))
+        # 沉到后面的行也要把「推断的是什么岗」念出来，否则「为什么在榜上」
+        # 只有一句复检结论、没有判断依据（2026-11-18 用户要求）。
+        _weak_jobs = [m.get("job") for m in (r.get("infer_matches_backend") or [])
+                      if m.get("weak") and m.get("job")][:2]
+        if _weak_jobs:
+            r["rank_reason"] += ("；推断可能招「%s」（按主营推断，非公告原文）"
+                                 % "、".join(_weak_jobs))
+        # 经历岗放行的行：理由要写清「为什么不按专业复检还排这里」。
+        if recheck_code(r) == "exp_bypass":
+            _exp = set(profile.get("exp_jobs") or [])
+            _exp_hit = sorted(
+                {t for t in _row_job_titles(r) if t in _exp}
+                | {m.get("job") for m in (r.get("infer_matches_backend") or [])
+                   if m.get("exp") and m.get("job")})
+            if _exp_hit:
+                r["rank_reason"] += ("；「%s」是你实习/竞赛做过的线，不按专业复检，正常参与排名"
+                                     % "、".join(_exp_hit))
         if (r.get("feedback") or {}).get("result") == "yes":
             r["rank_reason"] += "；现场已确认招，升级为明确命中"
         if (r.get("feedback") or {}).get("result") == "no":
@@ -2423,13 +2686,14 @@ def assemble(st, rows, campus_nofit, bizfit_nofit, biz_diag_all, persist=True):
                      "清单保留在此供核对。"),
             "items": _campus_nofit,
         },
-        # 业务复核 no 的推断命中（2026-11-18 起撤出主榜）：复核判主营方向与
-        # 意向不交叉，「推断可能招」对用户是噪音。清单留档可回溯，现场确认
-        # 招的不在此列。
+        # 撤出主榜的三类（2026-11-18 起统一收在这里留档）：校招公告齐全却没
+        # 对口岗、业务复核判主营方向不交叉、名字带「生物」主营却是别的行当。
+        # 共同点：**不在榜上**（不给名次、不占排队时间），但可回溯、可现场核对。
         "biz_fit_no": {
             "count": len(_bizfit_nofit),
-            "note": ("主营方向与你的意向不交叉、推断命中被复核抑制的企业："
-                     "不进榜单，清单保留在此供核对（现场已确认招的除外）。"),
+            "note": ("已撤出榜单的企业：公告里没有对口岗 / 主营复核判方向不交叉 / "
+                     "主营不是这一行。不进榜单、不给名次，清单保留在此供核对"
+                     "（现场已确认招的不在此列）。"),
             "items": _bizfit_nofit,
         },
         "province_map": R.CITY_PROVINCE,

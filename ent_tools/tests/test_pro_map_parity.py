@@ -110,16 +110,29 @@ class TestRecheckWithCode(unittest.TestCase):
         self.assertEqual(len(r["kept"]), 0)
         self.assertEqual(r["diag"][0]["code"], "code_out")
 
-    def test_out_keeps_named_direction(self):
-        """岗位名自带方向 = 本家公告自证，比 20 类粗码硬。"""
+    def test_out_blocks_named_direction_too(self):
+        """2026-11-18 收紧（用户拍板「都得复检」）：岗位名自带方向不再比码硬。
+
+        半导体公司的「研发工程师」对生物学生，公告里有、意向也有，主营对不上
+        就是匹配不上——机械码对化学判 out，「材料研发工程师」也拦。
+        """
         r = B.recheck_real([("材料研发工程师", "材料研发工程师")], ("材料",),
                            {"化学化工材料"}, self.BIZ, "化学工程与工艺", code="mech")
-        self.assertEqual(len(r["kept"]), 1)
+        self.assertEqual(len(r["kept"]), 0)
+        self.assertEqual(r["blocked"], [("材料研发工程师", "材料研发工程师")])
 
-    def test_generic_job_always_passes(self):
+    def test_generic_job_out_code_also_blocked(self):
+        """通用职能岗白名单同样不再是免检金牌：out 码下拦（都得复检）。"""
         r = B.recheck_real([("采购专员", "采购专员")], ("采购",), {"化学化工材料"},
                            self.BIZ, "化学工程与工艺", code="mech")
-        self.assertEqual(len(r["kept"]), 1)
+        self.assertEqual(len(r["kept"]), 0)
+
+    def test_generic_job_no_code_is_weak(self):
+        """没打码时通用职能岗放行但算有限对口（没验过主营，不装通过）。"""
+        r = B.recheck_real([("采购专员", "采购专员")], ("采购",), {"化学化工材料"},
+                           self.BIZ, "化学工程与工艺", code=None)
+        self.assertEqual(r["kept"], [])
+        self.assertEqual(r["weak"], [("采购专员", "采购专员")])
 
     def test_no_code_uses_keywords(self):
         """企业没打码 → 退回关键词口径，不能当成「不放」。"""
@@ -127,20 +140,22 @@ class TestRecheckWithCode(unittest.TestCase):
                            "化工新材料研发生产", "化学工程与工艺", code=None)
         self.assertEqual(len(r["kept"]), 1)
 
-    def test_edge_needs_direction_evidence(self):
-        """edge：岗位名/意向名/主营词三条证据都没有才拦。"""
+    def test_edge_kept_as_weak(self):
+        """edge：2026-11-18 起一律算有限对口（weak）——命中保留显示、沉队尾，
+        不再因为「岗位名/主营带了方向词」就升成确定对口。"""
         biz = "床上用品、家纺面料的设计与销售"
         r = B.recheck_real([("研发工程师", "研发工程师")], ("研发",),
                            {"化学化工材料"}, biz, "化学工程与工艺", code="textile")
-        self.assertEqual(len(r["kept"]), 0)
+        self.assertEqual(r["weak"], [("研发工程师", "研发工程师")])
+        self.assertEqual(r["kept"], [])
         r2 = B.recheck_real([("研发工程师", "材料研发工程师")], ("研发",),
                             {"化学化工材料"}, biz, "化学工程与工艺", code="textile")
-        self.assertEqual(len(r2["kept"]), 1)
-        # 主营里出现本领域词（印染）也算证据：码是 textile，业务确实是染整
+        self.assertEqual(r2["weak"], [("研发工程师", "材料研发工程师")])
+        # 主营里出现本领域词（印染）也只算有限对口：码是 textile，行业只沾边
         r3 = B.recheck_real([("研发工程师", "研发工程师")], ("研发",),
                             {"化学化工材料"}, "家纺面料印染与后整理",
                             "化学工程与工艺", code="textile")
-        self.assertEqual(len(r3["kept"]), 1)
+        self.assertEqual(r3["weak"], [("研发工程师", "研发工程师")])
 
 
 if __name__ == "__main__":

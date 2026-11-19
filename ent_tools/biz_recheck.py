@@ -505,75 +505,65 @@ def recheck_real(real_pairs, kw, kw_fields, biz_text, major="", parts=None,
       code 为 None（企业没打码）→ 退回下面的关键词通路，口径与之前完全一致。
     这样「判据是枚举还是文本」可回退、可对比，不会一次性推倒重来。
 
-    返回 {"kept", "blocked", "watch", "diag"}；kept 含 watch（开发期口径），
-    strict 下 watch 并入 blocked。kw/kw_fields 都空 → 闸门不咬人，全部放行。
+    返回 {"kept", "blocked", "watch", "weak", "diag"}；kept 含 watch（开发期口径），
+    strict 下 watch 并入 blocked。weak 是「有限对口」：命中保留显示，但名次沉到
+    队尾。2026-11-18 用户拍板：**都得复检**——半导体公司的「研发工程师」对生物
+    学生，公告里有、意向也有，主营对不上就是匹配不上；公告自证（name_dir）与
+    通用职能白名单都不再是免检金牌。kw/kw_fields 都空 → 闸门不咬人，全部放行。
     """
     pairs = list(real_pairs)
     rows = diag if diag is not None else []
     if not kw and not kw_fields:
-        return {"kept": pairs, "blocked": [], "watch": [], "diag": rows}
+        return {"kept": pairs, "blocked": [], "watch": [], "weak": [], "diag": rows}
     dev = (policy or os.environ.get("FAIR_RECHECK_POLICY") or "dev").lower() != "strict"
-    kept, watch, blocked = [], [], []
+    kept, watch, blocked, weak = [], [], [], []
     for pair in pairs:
         t = str((pair[0] if isinstance(pair, (list, tuple)) else pair) or "")
         it = str((pair[1] if isinstance(pair, (list, tuple)) else "") or "")
-        # 跨行业通用职能/实验室岗：哪家公司都设，不依赖主营（也不依赖行业码）
-        if _GENERIC_JOB.search(it) or _GENERIC_JOB.search(t):
-            kept.append(pair)
-            continue
-        pf = pair_fields(it, major) or set(kw_fields or ())
+        # 有行业码就先查表定论（2026-11-18 收紧）：core 直放 / edge 算有限对口
+        # （weak：命中保留、沉队尾）/ out 不算命中——岗位名自带方向、通用职能
+        # 白名单都救不回来。
         v = table_verdict(major, it, code) if code else None
         if v == ind_code.FIT_CORE:
             kept.append(pair)
             continue
-        # 码是 20 类粗粒度：一家企业只有一个码，多元业务会被压成一个
-        #（森一量子材料 = 法拉第旋光片 → elec；振华新云 = 电容器 → elec）。
-        # 所以码不是死判据：岗位名自己写了方向（「材料研发工程师」里的材料）
-        # 就是本家公告自证，比码硬，一律放行；edge 再放宽一层到意向名 ——
-        # 学生意向写着「材料研发工程师」，去电子材料公司做研发本就对口。
-        # 反面：「研发工程师」「工艺工程师」这种不带方向的岗，码不对口就不放。
+        if v == ind_code.FIT_EDGE:
+            weak.append(pair)
+            continue
         if v == ind_code.FIT_OUT:
-            hitw = name_dir_words(t, pf)
-            if hitw:
-                kept.append(pair)
-                continue
             rows.append({"job": t, "intent": it, "code": "code_out",
                          "label": DIAG_TEXT["code_out"], "verdict": "blocked",
                          "detail": ("这家按行业码是「%s」，与你的方向不是一条线（不是没查到主营，"
-                                    "是查到了也对不上）；岗位名也没写方向" % _code_name(code)),
+                                    "是查到了也对不上）；公告里就算真有这个岗，也匹配不上"
+                                    % _code_name(code)),
                          "biz": _clean_biz(biz_text)[:60],
                          "name": (parts or {}).get("name") or ""})
             blocked.append(pair)
             continue
-        if v == ind_code.FIT_EDGE:
-            # 相邻行业要一条额外证据，三条里占一条就放：
-            #   ① 岗位名自带方向（材料研发工程师）；② 意向名自带方向；
-            #   ③ 主营文本里确实出现了本领域强词（森一量子材料：码是 elec，
-            #      主营「法拉第旋光片、光通信核心材料」——材料就是化学的方向）。
-            # 三条都没有，才是「只是行业沾边」的领域岗，不放。
-            hitw = name_dir_words(t, pf) or name_dir_words(it, pf)
-            if hitw or biz_hit(pf, biz_text):
-                kept.append(pair)
-                continue
+        # 没打码（新进库还没跑 backfill）→ 退回关键词通路：主营强词放行；
+        # 通用职能岗、岗位名自带方向保留但算有限对口——没验过主营，不装通过。
+        pf = pair_fields(it, major) or set(kw_fields or ())
+        if _GENERIC_JOB.search(it) or _GENERIC_JOB.search(t):
+            weak.append(pair)
             rows.append({"job": t, "intent": it, "code": "code_edge",
-                         "label": DIAG_TEXT["code_edge"], "verdict": "blocked",
-                         "detail": ("这家是「%s」，跟你的方向只是相邻（行业码有限对口）："
-                                    "通用职能岗照放，但「%s」这种领域岗不在其列"
-                                    % (_code_name(code), t)),
+                         "label": DIAG_TEXT["code_edge"], "verdict": "keep_weak",
+                         "detail": ("「%s」属通用职能岗（哪家公司都设），但这家没打行业码、"
+                                    "主营没法验证：命中保留，名次排到队尾" % t),
                          "biz": _clean_biz(biz_text)[:60],
                          "name": (parts or {}).get("name") or ""})
-            blocked.append(pair)
             continue
         if biz_hit(pf, biz_text):
             kept.append(pair)
             continue
         d = diagnose(t, it, biz_text, major, kw_fields, parts)
-        # 岗位名自带方向词 = 通过（本家公告自证），不是「待补」——记诊断只为
-        # 在报告里说清「这条为什么不靠主营也算数」，别混进待补清单。
         if d["code"] == "name_dir":
-            kept.append(pair)
-            rows.append({"job": t, "intent": it, "code": d["code"], "label": d["label"],
-                         "verdict": "keep_name", "detail": d["detail"],
+            # 岗位名自带方向（「材料研发工程师」）但主营没验到、又没有行业码：
+            # 保留命中但算有限对口，不冒充「主营复核通过」。
+            weak.append(pair)
+            rows.append({"job": t, "intent": it, "code": "code_edge",
+                         "label": DIAG_TEXT["code_edge"], "verdict": "keep_weak",
+                         "detail": ("岗位名自带方向（%s），但主营没验到、这家也没打行业码："
+                                    "命中保留，名次排到队尾" % t),
                          "biz": _clean_biz(biz_text)[:60],
                          "name": (parts or {}).get("name") or ""})
             continue
@@ -587,22 +577,92 @@ def recheck_real(real_pairs, kw, kw_fields, biz_text, major="", parts=None,
         else:
             watch.append(pair)
             kept.append(pair)
-    return {"kept": kept, "blocked": blocked, "watch": watch, "diag": rows}
+    return {"kept": kept, "blocked": blocked, "watch": watch, "weak": weak,
+            "diag": rows}
 
 
 def filter_real(real_pairs, kw, kw_fields, biz_text, major="", parts=None, policy=None):
-    """兼容旧调用的两元组版本：返回 (kept（含待补）, blocked)。
+    """兼容旧调用的两元组版本：返回 (kept（含待补与有限对口）, blocked)。
 
-    新代码请直接用 recheck_real —— 它多返回 watch 与诊断，报告要靠它说清
-    「为什么没通过」。跨行业通用职能/实验室岗直放；其余主营强词一票。
+    新代码请直接用 recheck_real —— 它多返回 weak（有限对口：保留显示、沉队尾）、
+    watch 与诊断，报告要靠它们说清「为什么」。
     """
     r = recheck_real(real_pairs, kw, kw_fields, biz_text, major=major,
                      parts=parts, policy=policy)
-    return r["kept"], r["blocked"]
+    return r["kept"] + r["weak"], r["blocked"]
+
+
+def _code_families(code):
+    """行业码 → 以该码为核心就业方向的专业族集合（PRO_MAP 反查）。
+
+    经历岗复检用：实习公司判出行业码 ec 后，把「ec 的核心专业族」当学生在这段
+    经历里的「专业族」，再与企业行业码查同一张 fit 表——互联网实习推出的研发
+    岗配化工企业的研发岗，fit(计算机族, chem) = out，拦；化工实习配化工企业
+    则 core，放。
+    """
+    code = ind_code.normalize(code)
+    return {fam for fam, m in ind_code.PRO_MAP.items()
+            if (m or {}).get(code) == ind_code.FIT_CORE}
+
+
+def exp_recheck(exp_pairs, meta, company_code):
+    """经历岗复检（2026-11-18 用户二次拍板）：轴不在专业，在实习。
+
+    实习/竞赛带来的岗与专业无关是正常的（文科生做供应链实习），所以不按
+    「专业 × 意向」判；改按「实习企业行业 × 本家企业行业」判——化工企业的
+    研发岗，配互联网公司实习出来的研发，同是研发岗也匹配不上，拦；配化工
+    公司实习出来的研发，放。
+
+    规则（meta = fair_bridge.exp_recheck_meta 的产物）：
+      ① 通用职能岗（数据分析这类哪家都设）→ 不拦；
+      ② 实习文本看不出企业/细分行业（没写主营，或竞赛没有企业）→ 不刷，
+         放行——拿空判据否决经历，等于把采集的锅算到学生头上（采集端已
+         提示补「企业主营业务或细分行业」）；
+      ③ 两边行业 fit = core → 放行；edge → weak（保留显示、沉队尾）；
+      ④ fit = out → 拦，不算命中（诊断记 exp_out，报告写清两边行业）。
+
+    meta 里没有该岗（映射表没认出来）→ 按②放行。
+    返回 {"kept", "weak", "blocked", "diag"}。
+    """
+    kept, weak, blocked, rows = [], [], [], []
+    cc = str(company_code or "").strip() or None
+    for pair in exp_pairs or []:
+        t = str((pair[0] if isinstance(pair, (list, tuple)) else pair) or "")
+        it = str((pair[1] if isinstance(pair, (list, tuple)) else "") or "")
+        me = (meta or {}).get(t) or (meta or {}).get(it) or {}
+        if _GENERIC_JOB.search(it) or _GENERIC_JOB.search(t) or me.get("generic"):
+            kept.append((t, it))
+            continue
+        ec = me.get("code")
+        if not ec or not cc:
+            # 实习行业判不出，或这家企业没打码：复检不刷，放行
+            kept.append((t, it))
+            continue
+        fams = _code_families(ec)
+        v = ind_code.fit(fams, cc) if fams else None
+        if v in (ind_code.FIT_CORE, None):
+            kept.append((t, it))
+        elif v == ind_code.FIT_EDGE:
+            weak.append((t, it))
+            rows.append({"job": t, "intent": it, "code": "code_edge",
+                         "label": DIAG_TEXT["code_edge"], "verdict": "keep_weak",
+                         "detail": ("你实习的公司属「%s」，这家是「%s」，只算相邻行业："
+                                    "这条经历岗保留显示，名次排到队尾"
+                                    % (_code_name(ec), _code_name(cc))),
+                         "biz": "", "name": ""})
+        else:
+            blocked.append((t, it))
+            rows.append({"job": t, "intent": it, "code": "exp_out",
+                         "label": "实习行业与这家对不上", "verdict": "blocked",
+                         "detail": ("同是「%s」，但你实习的公司属「%s」，这家是「%s」——"
+                                    "行业对不上，这条不算命中；现场确认是否接受跨行背景"
+                                    % (t, _code_name(ec), _code_name(cc))),
+                         "biz": "", "name": ""})
+    return {"kept": kept, "weak": weak, "blocked": blocked, "diag": rows}
 
 
 def filter_infer(infer_pairs, kw_fields, biz_text, major="", diag=None, name="",
-                 code=None):
+                 code=None, soft=None):
     """推断命中复检：岗位名是猜的不能自证，主营文本（或行业码）必须容纳方向。
 
     推断命中本来就是「猜的」，缺依据就不猜 —— 这里保持严格（主营为空/纯
@@ -614,6 +674,10 @@ def filter_infer(infer_pairs, kw_fields, biz_text, major="", diag=None, name="",
 
     2026-11-17 起有行业码就先查表：core 直接标，edge/out 不标（推断岗本就
     是猜的，行业码只沾边就不再往上加一对猜测）。code 为 None 走旧关键词口径。
+
+    2026-11-18 修正 edge 口径：edge（有限对口）不再丢，传了 `soft` 就收进去，
+    由调用方以「推断命中·有限对口」展示并沉到队尾——不标岗位名等于让学生
+    无从判断这家为什么在榜上。out（方向不交叉）仍不标。
     """
     pairs = list(infer_pairs)
     rows = diag if diag is not None else []
@@ -646,6 +710,12 @@ def filter_infer(infer_pairs, kw_fields, biz_text, major="", diag=None, name="",
             out.append(p)
             continue
         if v in (ind_code.FIT_EDGE, ind_code.FIT_OUT):
+            # 有限对口（edge）：不再静默丢弃。推断对是学生唯一能看见的
+            # 「凭什么排这家」的线索，藏起来就只剩「推断待核实」四个字，
+            # 没法定位判断依据（2026-11-18 用户明确要求）。名次该沉照沉，
+            # 依据照写。out（方向不交叉）仍然不标：那不是「有限对口」。
+            if v == ind_code.FIT_EDGE and soft is not None:
+                soft.append(p)
             continue
         if biz_hit(pair_fields(it, major) or kw_fields, biz):
             out.append(p)
